@@ -26,7 +26,6 @@ css_data = """
 }
 .window {
   background-color: white;
-  border: 20px;
 }
 .header {
   font-size: 30px;
@@ -56,12 +55,12 @@ class WindwoMatrix(Gtk.Window):
         Gtk.Window.__init__(self, title="Usage & general shortcuts")
         self.connect("destroy", Gtk.main_quit)
         self.set_skip_taskbar_hint(True)
-        self.set_default_size(500, 300)
+        self.set_default_size(500, 100)
         self.move(200, 200)
         self.set_decorated(False)
         self.maingrid = Gtk.Grid()
         self.add(self.maingrid)
-        self.maingrid.set_border_width(40)
+        self.maingrid.set_border_width(30)
         # styling
         self.provider = Gtk.CssProvider.new()
         self.provider.load_from_data(css_data.encode())
@@ -90,7 +89,7 @@ class WindwoMatrix(Gtk.Window):
         title = Gtk.Label("  WindowShuffler", xalign=0)
         self.set_widgetstyle(title, "header")
         self.box.pack_start(title, False, False, 0)
-        usage_title = Gtk.Label("\nUsage", xalign=0)
+        usage_title = Gtk.Label("\nUsage & shortcuts", xalign=0)
         self.set_widgetstyle(usage_title, "title")
         self.maingrid.attach(usage_title, 0, 5, 2, 1)
 
