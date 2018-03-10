@@ -333,6 +333,7 @@ class WindowShufflerMatrix(Gtk.Window):
         # slave of update_subject
         self.curr_subject = win
         self.reset_alltiles()
+        self.current_span = []
 
     def update_subject(self, scr, win, signal):
         # on either focus change or new window, the new subject should be set
