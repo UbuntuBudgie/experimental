@@ -7,6 +7,7 @@ import cairo
 import subprocess
 import os
 import shuffler_tools as st
+from itertools import product
 
 
 """
@@ -40,7 +41,6 @@ css_data = """
   background-color: #505050;
   padding: 4px;
   border-radius: 8px;
-
 }
 .matrixbutton:hover {
   border-width: 1px;
@@ -119,6 +119,38 @@ class WindowShufflerMatrix(Gtk.Window):
             self.show_info()
             open(st.firstrun, "wt").write("")
 
+    def arrange_all(self):
+        xc = self.xycoords[0]
+        yc = self.xycoords[1]
+        scr = self.screendata
+        curr_ws = scr.get_active_workspace()
+        origs = list(
+            product(range(xc), range(yc))
+        )
+        origs.sort(key=lambda x: x[1])
+        windows = [
+            w for w in scr.get_windows() if all([
+                self.check_windowtype(w), self.check_win_name(w),
+                not w.is_minimized(),
+                w.is_on_workspace(curr_ws)
+            ])
+        ]
+        i = 0
+        for w in windows:
+            try:
+                target_orig = origs[i]
+            except IndexError:
+                i = 0
+                target_orig = origs[i]
+            i = i + 1
+            trg = st.windowtarget(
+                [target_orig, target_orig], xc, yc,
+            )
+            st.shuffle(
+                w, scr, trg[0], trg[1] + self.get_yshift(w),
+                trg[2], trg[3]
+            )
+
     def setup_initialgrid(self):
         # create initial button (test)
         for r in range(self.xycoords[1]):
@@ -195,10 +227,10 @@ class WindowShufflerMatrix(Gtk.Window):
             st.save_grid(self.xycoords[0], self.xycoords[1])
             self.resize(10, 10)
 
-    def check_windowtype(self):
+    def check_windowtype(self, window):
         try:
             return "WNCK_WINDOW_NORMAL" in str(
-                self.curr_subject.get_window_type()
+                window.get_window_type()
             )
         except AttributeError:
             pass
@@ -292,7 +324,7 @@ class WindowShufflerMatrix(Gtk.Window):
                 self.curr_subject.get_name() not in [
                     "WindowMatrix", "Usage & general shortcuts",
                 ],
-                self.check_windowtype(),
+                self.check_windowtype(self.curr_subject),
             ]):
                 self.do_move(button, row, col)
             else:
@@ -371,6 +403,8 @@ class WindowShufflerMatrix(Gtk.Window):
             self.exit()
         elif key == "i":
             self.show_info()
+        elif key == "a":
+            self.arrange_all()
 
     def get_pressed(self, button, value, event):
         # detect keypress / release
@@ -383,6 +417,7 @@ class WindowShufflerMatrix(Gtk.Window):
             [None, ["KP_Add", "plus"]], [None, ["KP_Subtract", "minus"]],
             [None, ["Escape", "period", "KP_Decimal"]],
             [None, ["i"]],
+            [None, ["a"]],
         ]
         for k in keydata:
             if key in k[1]:

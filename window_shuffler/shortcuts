@@ -101,6 +101,7 @@ class WindwoMatrix(Gtk.Window):
         for title in [
             "\nAdd a column to the grid", "\nRemove a column from the grid",
             "\nAdd a row to the grid", "\nremove a row from the grid",
+            "\nArrange windows on current workspace to current grid",
             "\nDismiss the grid", "\nOpen (toggle) this window",
         ]:
             newtitle = Gtk.Label(title, xalign=0)
@@ -111,7 +112,7 @@ class WindwoMatrix(Gtk.Window):
         for text in [
             "[ Right ] or [ + ]", "[ Left ] or [ - ]",
             "[ Down ] or [ Ctrl ] + [ + ]", "[ Up ] or [ Ctrl ] + [ - ]",
-            "[ Escape ] or [ . ] (period)", "[ i ]",
+            "[ a ]", "[ Escape ] or [ . ] (period)", "[ i ]",
         ]:
             newtext = Gtk.Label(text, xalign=0)
             self.maingrid.attach(newtext, 0, 11 + ntext, 2, 1)
