@@ -8,6 +8,7 @@ import subprocess
 import os
 import shuffler_tools as st
 from itertools import product
+import shuffler_geo as geo
 
 
 """
@@ -30,10 +31,12 @@ css_data = """
 .matrixmanagebutton {
   border-width: 0px;
   background-color: transparent;
+  padding: 0px;
 }
 .matrixmanagebutton:hover {
   background-color: transparent;
   border-width: 0px;
+  padding: 0px;
 }
 .matrixbutton {
   border-width: 1px;
@@ -51,6 +54,12 @@ css_data = """
 }
 .rounded {
   border-radius: 8px;
+}
+.q_button {
+  font-size: 25;
+}
+.q_button:hover {
+  font-weight: bold;
 }
 """
 
@@ -97,11 +106,25 @@ class WindowShufflerMatrix(Gtk.Window):
         # create initial grid
         self.xycoords = st.get_initialgrid()
         # icons
+        self.qmark = Gtk.Image.new_from_icon_name(
+            "dialog-question-symbolic", Gtk.IconSize.MENU,
+        )
+        self.grid_1 = Gtk.Image.new_from_icon_name(
+            "windowshuffler2-symbolic", Gtk.IconSize.MENU,
+        )
+        self.grid_2 = Gtk.Image.new_from_icon_name(
+            "windowshuffler-symbolic", Gtk.IconSize.MENU,
+        )
         self.bigx_1 = Gtk.Image.new_from_icon_name(
             "exit-splash-symbolic", Gtk.IconSize.MENU,
         )
+
         self.bigx_2 = Gtk.Image.new_from_icon_name(
             "fat-exit-splash-symbolic", Gtk.IconSize.MENU,
+        )
+
+        self.und_icon = Gtk.Image.new_from_icon_name(
+            "edit-undo-symbolic", Gtk.IconSize.MENU,
         )
         # bookkeeping
         self.grid_data = []
@@ -119,22 +142,17 @@ class WindowShufflerMatrix(Gtk.Window):
             self.show_info()
             open(st.firstrun, "wt").write("")
 
-    def arrange_all(self):
+    def arrange_all(self, button=None):
+        scr = self.screendata
+        win_geodata = geo.get_windows_oncurrent(scr)
+        windows = win_geodata["windows"]
+        playfield = self.calc_playfield(win_geodata)
         xc = self.xycoords[0]
         yc = self.xycoords[1]
-        scr = self.screendata
-        curr_ws = scr.get_active_workspace()
         origs = list(
             product(range(xc), range(yc))
         )
         origs.sort(key=lambda x: x[1])
-        windows = [
-            w for w in scr.get_windows() if all([
-                self.check_windowtype(w), self.check_win_name(w),
-                not w.is_minimized(),
-                w.is_on_workspace(curr_ws)
-            ])
-        ]
         i = 0
         for w in windows:
             try:
@@ -144,12 +162,13 @@ class WindowShufflerMatrix(Gtk.Window):
                 target_orig = origs[i]
             i = i + 1
             trg = st.windowtarget(
-                [target_orig, target_orig], xc, yc,
+                [target_orig, target_orig], xc, yc, playfield,
             )
             st.shuffle(
                 w, scr, trg[0], trg[1] + self.get_yshift(w),
                 trg[2], trg[3]
             )
+        self.reset_alltiles()
 
     def setup_initialgrid(self):
         # create initial button (test)
@@ -164,21 +183,47 @@ class WindowShufflerMatrix(Gtk.Window):
             self.grid_data.append(row)
 
         exitbutton = Gtk.Button()
-        exitbutton.connect("enter-notify-event", self.change_icon)
-        exitbutton.connect("leave-notify-event", self.change_icon)
+        exitbutton.connect("enter-notify-event", self.change_icon, self.bigx_2)
+        exitbutton.connect("leave-notify-event", self.change_icon, self.bigx_1)
         exitbutton.set_size_request(10, 10)
         exitbutton.set_image(self.bigx_1)
         exitbutton.connect("clicked", self.exit)
         exitbutton.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(exitbutton, [], ["matrixmanagebutton"])
-        self.maingrid.attach(exitbutton, 0, 0, 1, 1)
+        questionbutton = Gtk.Button("?")
+        questionbutton.set_size_request(1, 1)
+        questionbutton.connect("clicked", self.show_info)
+        questionbutton.set_relief(Gtk.ReliefStyle.NONE)
+        self.set_widgetstyle(
+            questionbutton, [], ["matrixmanagebutton", "q_button"]
+        )
+        gridbutton = Gtk.Button()
+        gridbutton.connect("enter-notify-event", self.change_icon, self.grid_2)
+        gridbutton.connect("leave-notify-event", self.change_icon, self.grid_1)
+        gridbutton.set_size_request(10, 10)
+        gridbutton.set_tooltip_text("Arrange visible windows on grid")
+        gridbutton.set_image(self.grid_1)
+        gridbutton.connect("clicked", self.arrange_all)
+        gridbutton.set_relief(Gtk.ReliefStyle.NONE)
+        self.set_widgetstyle(gridbutton, [], ["matrixmanagebutton"])
+        undo = Gtk.Button()
+        undo.set_image(self.und_icon)
+        undo.set_size_request(1, 1)
+        undo.set_relief(Gtk.ReliefStyle.NONE)
+        self.set_widgetstyle(undo, [], ["matrixmanagebutton", "q_button"])
+        managebox = Gtk.Box()
+        managebox.pack_start(exitbutton, False, True, 0)
+        managebox.pack_start(questionbutton, False, True, 5)
+        managebox.pack_start(gridbutton, False, True, 5)
+        managebox.pack_start(undo, False, True, 5)
+        self.maingrid.attach(managebox, 1, 0, 7, 1)
 
-    def change_icon(self, button, event):
+    def change_icon(self, button, event, icon):
         enter = True if "GDK_ENTER_NOTIFY" in str(event.type) else False
         if enter:
-            button.set_image(self.bigx_2)
+            button.set_image(icon)
         else:
-            button.set_image(self.bigx_1)
+            button.set_image(icon)
 
     def add_row(self):
         n_row = self.xycoords[1]
@@ -318,21 +363,31 @@ class WindowShufflerMatrix(Gtk.Window):
         self.current_span = []
         self.reset_alltiles()
 
+    def calc_playfield(self, win_geodata):
+        wins = win_geodata["windows"]
+        offset = win_geodata["offset"]
+        wa = win_geodata["wa"]
+        return [
+            [offset[0] + wa[0], offset[1] + wa[1]],
+            [wa[2], wa[3]],
+        ]
+
     def move_window(self, button, row, col):
+        win_geodata = geo.get_windows_oncurrent(self.screendata)
+        wins = win_geodata["windows"]
+        playfield = self.calc_playfield(win_geodata)
         try:
             if all([
-                self.curr_subject.get_name() not in [
-                    "WindowMatrix", "Usage & general shortcuts",
-                ],
+                self.curr_subject in wins,
                 self.check_windowtype(self.curr_subject),
             ]):
-                self.do_move(button, row, col)
+                self.do_move(button, row, col, playfield)
             else:
                 self.send_notification()
         except AttributeError:
             self.send_notification()
 
-    def do_move(self, button, row, col):
+    def do_move(self, button, row, col, playfield):
         self.reset_alltiles()
         # after shift-click, next time clean up
         if len(self.current_span) == 2:
@@ -347,7 +402,7 @@ class WindowShufflerMatrix(Gtk.Window):
         self.sum_selection(totalspan)
         y_offs = self.get_yshift(self.curr_subject)
         trg = st.windowtarget(
-            totalspan, self.xycoords[0], self.xycoords[1], y_offs,
+            totalspan, self.xycoords[0], self.xycoords[1], playfield, y_offs,
         )
         st.shuffle(
             self.curr_subject,
@@ -372,13 +427,13 @@ class WindowShufflerMatrix(Gtk.Window):
         if signal == "focus_change":
             newwin = scr.get_active_window()
             if newwin:
-                if self.check_win_name(newwin):
+                if geo.check_win_name(newwin):
                     self.do_set_newsubject(newwin)
         elif signal == "new_win":
-            if self.check_win_name(win):
+            if geo.check_win_name(win):
                 self.do_set_newsubject(win)
 
-    def show_info(self):
+    def show_info(self, button=None):
         if not st.get_window("Usage & general shortcuts"):
             subprocess.Popen(st.shortcuts)
         else:

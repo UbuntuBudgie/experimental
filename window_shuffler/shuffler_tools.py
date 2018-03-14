@@ -3,7 +3,8 @@ import subprocess
 import os
 import gi
 gi.require_version("Wnck", "3.0")
-from gi.repository import Wnck
+
+from gi.repository import Wnck, Gdk
 
 
 """
@@ -65,18 +66,15 @@ def get_initialgrid():
         return [2, 2]
 
 
-def get_area():
-    # get the working area and the x/y offset
-    ws_data = get(["wmctrl", "-d"]).splitlines()
-    match = [l.split("WA:")[1].strip().split() for l in ws_data if "*" in l][0]
-    shift = [int(n) for n in match[0].split(",")]
-    wa = [int(n) for n in match[1].split("x")]
-    return [shift, wa]
+def get_primaryborders():
+    mon = Gdk.Display.get_default().get_primary_monitor().get_geometry()
+    x = mon.x
+    y = mon.y
+    return mon.width, mon.height, mon.x, mon.y
 
 
-def windowtarget(span, cols, rows, yoffset=0):
+def windowtarget(span, cols, rows, playfield, yoffset=0):
     # calculates the targeted position and size of a window
-    playfield = get_area()
     colwidth = int(playfield[1][0] / cols)
     rowheight = int(playfield[1][1] / rows)
     window_width = (span[1][0] + 1 - span[0][0]) * colwidth
