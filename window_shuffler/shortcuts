@@ -43,7 +43,8 @@ css_data = """
 
 usage_content = "Click a window and click the grid to place the " + \
                 "window in the corresponding position. Shift-click to " + \
-                " select multiple tiles." + \
+                "select multiple tiles, press [ a ] to arrange all " + \
+                "windows to grid." + \
                 "\n\nWindows cannot not be resized below their minimum " + \
                 "sizes, nor can fixed-size windows be resized. They will " + \
                 " however be positioned correctly in the grid."
