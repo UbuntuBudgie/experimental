@@ -66,13 +66,6 @@ def get_initialgrid():
         return [2, 2]
 
 
-def get_primaryborders():
-    mon = Gdk.Display.get_default().get_primary_monitor().get_geometry()
-    x = mon.x
-    y = mon.y
-    return mon.width, mon.height, mon.x, mon.y
-
-
 def windowtarget(span, cols, rows, playfield, yoffset=0):
     # calculates the targeted position and size of a window
     colwidth = int(playfield[1][0] / cols)
