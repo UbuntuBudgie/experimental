@@ -39,6 +39,7 @@ matr_file = os.path.join(userdata, "matrix")
 app_path = os.path.dirname(os.path.abspath(__file__))
 shortcuts = os.path.join(app_path, "shortcuts")
 firstrun = os.path.join(userdata, "firstrun")
+recorded_layout = os.path.join(userdata, "recorded")
 
 
 def get(cmd):
@@ -77,7 +78,7 @@ def windowtarget(span, cols, rows, playfield, yoffset=0):
     return [originx, originy, window_width, window_height]
 
 
-def shuffle(win, scr, x, y, w, h):
+def shuffle(win, x, y, w, h):
     win.unmaximize()
     g = Wnck.WindowGravity.NORTHWEST
     flags = Wnck.WindowMoveResizeMask.X | \

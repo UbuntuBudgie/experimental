@@ -9,6 +9,7 @@ import os
 import shuffler_tools as st
 from itertools import product
 import shuffler_geo as geo
+import time
 
 
 """
@@ -29,12 +30,13 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 css_data = """
 .matrixmanagebutton {
-  border-width: 0px;
-  background-color: transparent;
+  border: 0px;
+  background-color: #505050;
+  color: white;
+  border-radius: 0px;
   padding: 0px;
 }
 .matrixmanagebutton:hover {
-  background-color: transparent;
   border-width: 0px;
   padding: 0px;
 }
@@ -123,8 +125,17 @@ class WindowShufflerMatrix(Gtk.Window):
             "fat-exit-splash-symbolic", Gtk.IconSize.MENU,
         )
 
-        self.und_icon = Gtk.Image.new_from_icon_name(
-            "edit-undo-symbolic", Gtk.IconSize.MENU,
+        self.und_icon1 = Gtk.Image.new_from_icon_name(
+            "arr-undo1-symbolic", Gtk.IconSize.MENU,
+        )
+        self.und_icon2 = Gtk.Image.new_from_icon_name(
+            "arr-undo2-symbolic", Gtk.IconSize.MENU,
+        )
+        self.snapshot_icon1 = Gtk.Image.new_from_icon_name(
+            "snapshot1-symbolic", Gtk.IconSize.MENU,
+        )
+        self.snapshot_icon2 = Gtk.Image.new_from_icon_name(
+            "snapshot2-symbolic", Gtk.IconSize.MENU,
         )
         # bookkeeping
         self.grid_data = []
@@ -165,7 +176,7 @@ class WindowShufflerMatrix(Gtk.Window):
                 [target_orig, target_orig], xc, yc, playfield,
             )
             st.shuffle(
-                w, scr, trg[0], trg[1] + self.get_yshift(w),
+                w, trg[0], trg[1] + self.get_yshift(w),
                 trg[2], trg[3]
             )
         self.reset_alltiles()
@@ -181,10 +192,15 @@ class WindowShufflerMatrix(Gtk.Window):
                 self.maingrid.attach(button, colpos, rowpos, 1, 1)
                 row.append(button)
             self.grid_data.append(row)
-
         exitbutton = Gtk.Button()
-        exitbutton.connect("enter-notify-event", self.change_icon, self.bigx_2)
-        exitbutton.connect("leave-notify-event", self.change_icon, self.bigx_1)
+        exitbutton.connect(
+            "enter-notify-event",
+            self.change_icon, self.bigx_2
+        )
+        exitbutton.connect(
+            "leave-notify-event",
+            self.change_icon, self.bigx_1
+        )
         exitbutton.set_size_request(10, 10)
         exitbutton.set_image(self.bigx_1)
         exitbutton.connect("clicked", self.exit)
@@ -198,8 +214,12 @@ class WindowShufflerMatrix(Gtk.Window):
             questionbutton, [], ["matrixmanagebutton", "q_button"]
         )
         gridbutton = Gtk.Button()
-        gridbutton.connect("enter-notify-event", self.change_icon, self.grid_2)
-        gridbutton.connect("leave-notify-event", self.change_icon, self.grid_1)
+        gridbutton.connect(
+            "enter-notify-event", self.change_icon, self.grid_2
+        )
+        gridbutton.connect(
+            "leave-notify-event", self.change_icon, self.grid_1
+        )
         gridbutton.set_size_request(10, 10)
         gridbutton.set_tooltip_text("Arrange visible windows on grid")
         gridbutton.set_image(self.grid_1)
@@ -207,16 +227,87 @@ class WindowShufflerMatrix(Gtk.Window):
         gridbutton.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(gridbutton, [], ["matrixmanagebutton"])
         undo = Gtk.Button()
-        undo.set_image(self.und_icon)
+        undo.set_image(self.und_icon1)
+        undo.connect(
+            "enter-notify-event", self.change_icon, self.und_icon2,
+        )
+        undo.connect(
+            "leave-notify-event", self.change_icon, self.und_icon1,
+        )
         undo.set_size_request(1, 1)
+        undo.connect("clicked", self.undo_layout)
         undo.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(undo, [], ["matrixmanagebutton", "q_button"])
+        snapshot = Gtk.Button()
+        snapshot.set_image(self.snapshot_icon1)
+        snapshot.set_size_request(1, 1)
+        snapshot.connect("clicked", self.record_layout)
+        snapshot.connect(
+            "enter-notify-event", self.change_icon, self.snapshot_icon2
+        )
+        snapshot.connect(
+            "leave-notify-event", self.change_icon, self.snapshot_icon1
+        )
+        snapshot.set_relief(Gtk.ReliefStyle.NONE)
+        self.set_widgetstyle(
+            snapshot, [], ["matrixmanagebutton", "q_button"]
+        )
         managebox = Gtk.Box()
         managebox.pack_start(exitbutton, False, True, 0)
-        managebox.pack_start(questionbutton, False, True, 5)
-        managebox.pack_start(gridbutton, False, True, 5)
-        managebox.pack_start(undo, False, True, 5)
+        managebox.pack_start(questionbutton, False, True, 0)
+        managebox.pack_start(gridbutton, False, True, 0)
+        managebox.pack_start(snapshot, False, True, 0)
+        managebox.pack_start(undo, False, True, 0)
         self.maingrid.attach(managebox, 1, 0, 7, 1)
+
+    def undo_layout(self, button=None):
+        try:
+            data = [
+                l.strip().split()
+                for l in open(st.recorded_layout).read().splitlines()
+            ]
+        except FileNotFoundError:
+            pass
+        else:
+            active = None
+            win_geodata = geo.get_windows_oncurrent(self.screendata)
+            wins = win_geodata["windows"]
+            recwins = sorted([int(w[0]) for w in data])
+            currwins = sorted([w.get_xid() for w in wins])
+            if currwins == recwins:
+                for l in data:
+                    match = [w for w in wins if str(w.get_xid()) == l[0]][0]
+                    st.shuffle(
+                        match, int(l[1]), int(l[2]) + self.get_yshift(match),
+                        int(l[3]), int(l[4])
+                    )
+                    if l[-1] == "*":
+                        active = match
+                if active:
+                    subprocess.Popen(["wmctrl", "-ia", str(active.get_xid())])
+            else:
+                self.send_notification(
+                    "Cannot restore windows",
+                    "The windows are not the same anymore",
+                )
+
+    def record_layout(self, button=None):
+        win_geodata = geo.get_windows_oncurrent(self.screendata)
+        wins = win_geodata["windows"]
+        layout_data = []
+        with open(st.recorded_layout, "wt") as out:
+            for w in wins:
+                curr_mark = "*" if w == self.curr_subject else ""
+                cp = w.get_geometry()
+                xid = w.get_xid()
+                out.write(
+                    " ".join(
+                        [
+                            str(xid), str(cp[0]), str(cp[1]),
+                            str(cp[2]), str(cp[3]), curr_mark
+                        ]
+                    ) + "\n"
+                )
 
     def change_icon(self, button, event, icon):
         enter = True if "GDK_ENTER_NOTIFY" in str(event.type) else False
@@ -355,10 +446,9 @@ class WindowShufflerMatrix(Gtk.Window):
         cr.paint()
         cr.set_operator(cairo.OPERATOR_OVER)
 
-    def send_notification(self):
+    def send_notification(self, title, text):
         subprocess.Popen([
-            "notify-send", "-i", "windowshuffler-symbolic",
-            "Nothing to move...", "Please selct a window first"
+            "notify-send", "-i", "windowshuffler-symbolic", title, text,
         ])
         self.current_span = []
         self.reset_alltiles()
@@ -383,7 +473,10 @@ class WindowShufflerMatrix(Gtk.Window):
             ]):
                 self.do_move(button, row, col, playfield)
             else:
-                self.send_notification()
+                self.send_notification(
+                    "Nothing to move...",
+                    "Please select a window first"
+                )
         except AttributeError:
             self.send_notification()
 
@@ -406,7 +499,6 @@ class WindowShufflerMatrix(Gtk.Window):
         )
         st.shuffle(
             self.curr_subject,
-            self.screendata,
             trg[0], trg[1], trg[2], trg[3],
         )
 
@@ -460,6 +552,10 @@ class WindowShufflerMatrix(Gtk.Window):
             self.show_info()
         elif key == "a":
             self.arrange_all()
+        elif key == "s":
+            self.record_layout()
+        elif key == "u":
+            self.undo_layout()
 
     def get_pressed(self, button, value, event):
         # detect keypress / release
@@ -473,6 +569,8 @@ class WindowShufflerMatrix(Gtk.Window):
             [None, ["Escape", "period", "KP_Decimal"]],
             [None, ["i"]],
             [None, ["a"]],
+            [None, ["s"]],
+            [None, ["u"]],
         ]
         for k in keydata:
             if key in k[1]:

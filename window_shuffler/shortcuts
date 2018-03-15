@@ -57,7 +57,7 @@ class WindwoMatrix(Gtk.Window):
         self.connect("destroy", Gtk.main_quit)
         self.set_skip_taskbar_hint(True)
         self.set_default_size(500, 100)
-        self.move(200, 200)
+        self.move(200, 100)
         self.set_decorated(False)
         self.maingrid = Gtk.Grid()
         self.add(self.maingrid)
@@ -103,6 +103,8 @@ class WindwoMatrix(Gtk.Window):
             "\nAdd a column to the grid", "\nRemove a column from the grid",
             "\nAdd a row to the grid", "\nremove a row from the grid",
             "\nArrange windows on current workspace to current grid",
+            "\nTake a snapshot of the current layout",
+            "\nRestore layout to snapshot",
             "\nDismiss the grid", "\nOpen (toggle) this window",
         ]:
             newtitle = Gtk.Label(title, xalign=0)
@@ -113,7 +115,7 @@ class WindwoMatrix(Gtk.Window):
         for text in [
             "[ Right ] or [ + ]", "[ Left ] or [ - ]",
             "[ Down ] or [ Ctrl ] + [ + ]", "[ Up ] or [ Ctrl ] + [ - ]",
-            "[ a ]", "[ Escape ] or [ . ] (period)", "[ i ]",
+            "[ a ]", "[ s ]", "[ u ]", "[ Escape ] or [ . ] (period)", "[ i ]",
         ]:
             newtext = Gtk.Label(text, xalign=0)
             self.maingrid.attach(newtext, 0, 11 + ntext, 2, 1)
