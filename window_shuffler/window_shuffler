@@ -193,6 +193,7 @@ class WindowShufflerMatrix(Gtk.Window):
                 row.append(button)
             self.grid_data.append(row)
         exitbutton = Gtk.Button()
+        exitbutton.set_can_focus(False)
         exitbutton.connect(
             "enter-notify-event",
             self.change_icon, self.bigx_2
@@ -207,6 +208,7 @@ class WindowShufflerMatrix(Gtk.Window):
         exitbutton.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(exitbutton, [], ["matrixmanagebutton"])
         questionbutton = Gtk.Button("?")
+        questionbutton.set_can_focus(False)
         questionbutton.set_size_request(1, 1)
         questionbutton.connect("clicked", self.show_info)
         questionbutton.set_relief(Gtk.ReliefStyle.NONE)
@@ -214,6 +216,7 @@ class WindowShufflerMatrix(Gtk.Window):
             questionbutton, [], ["matrixmanagebutton", "q_button"]
         )
         gridbutton = Gtk.Button()
+        gridbutton.set_can_focus(False)
         gridbutton.connect(
             "enter-notify-event", self.change_icon, self.grid_2
         )
@@ -227,6 +230,7 @@ class WindowShufflerMatrix(Gtk.Window):
         gridbutton.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(gridbutton, [], ["matrixmanagebutton"])
         undo = Gtk.Button()
+        undo.set_can_focus(False)
         undo.set_image(self.und_icon1)
         undo.connect(
             "enter-notify-event", self.change_icon, self.und_icon2,
@@ -239,6 +243,7 @@ class WindowShufflerMatrix(Gtk.Window):
         undo.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(undo, [], ["matrixmanagebutton", "q_button"])
         snapshot = Gtk.Button()
+        snapshot.set_can_focus(False)
         snapshot.set_image(self.snapshot_icon1)
         snapshot.set_size_request(1, 1)
         snapshot.connect("clicked", self.record_layout)
