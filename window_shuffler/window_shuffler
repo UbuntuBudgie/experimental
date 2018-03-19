@@ -239,6 +239,7 @@ class WindowShufflerMatrix(Gtk.Window):
         exitbutton.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(exitbutton, [], ["matrixmanagebuttonleft"])
         questionbutton = Gtk.Button("?")
+        questionbutton.set_tooltip_text("Show Usage & shortcut overview")
         questionbutton.set_can_focus(False)
         questionbutton.set_size_request(1, 1)
         questionbutton.connect("clicked", self.show_info)
@@ -261,6 +262,7 @@ class WindowShufflerMatrix(Gtk.Window):
         gridbutton.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(gridbutton, [], ["matrixmanagebutton"])
         undo = Gtk.Button()
+        undo.set_tooltip_text("Revert to snapshot")
         undo.set_can_focus(False)
         undo.set_image(self.und_icon1)
         undo.connect(
@@ -274,6 +276,7 @@ class WindowShufflerMatrix(Gtk.Window):
         undo.set_relief(Gtk.ReliefStyle.NONE)
         self.set_widgetstyle(undo, [], ["matrixmanagebuttonright", "q_button"])
         snapshot = Gtk.Button()
+        snapshot.set_tooltip_text("Take a snapshot of current layout")
         snapshot.set_can_focus(False)
         snapshot.set_image(self.snapshot_icon1)
         snapshot.set_size_request(1, 1)
