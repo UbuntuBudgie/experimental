@@ -337,6 +337,7 @@ class WindowShufflerMatrix(Gtk.Window):
                 )
 
     def record_layout(self, button=None):
+        self.key_checker()
         win_geodata = geo.get_windows_oncurrent(self.screendata)
         wins = win_geodata["windows"]
         layout_data = []
@@ -606,9 +607,31 @@ class WindowShufflerMatrix(Gtk.Window):
         elif key == "a":
             self.arrange_all()
         elif key == "s":
-            self.record_layout()
+            if self.key_checker() == 0:
+                self.record_layout()
         elif key == "u":
             self.undo_layout()
+
+    def key_checker(self):
+        # check if keys are in a pressed state
+        n_pressed = 0
+        exclude = ["Button", "Virtual", "pointer"]
+        keyboards = [
+            k for k in subprocess.check_output([
+                "xinput", "--list"
+            ]).decode("utf-8").strip().splitlines()
+            if not any([s in k for s in exclude])
+        ]
+        dev_ids = [[
+            s.split("=")[1] for s in k.split() if "id=" in s
+        ][0] for k in keyboards]
+        pressed = False
+        for d in dev_ids:
+            if "down" in subprocess.check_output([
+                "xinput", "--query-state", d,
+            ]).decode("utf-8"):
+                n_pressed = n_pressed + 1
+        return n_pressed
 
     def get_pressed(self, button, value, event):
         # detect keypress / release
