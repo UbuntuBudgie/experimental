@@ -303,7 +303,7 @@ class WindowShufflerMatrix(Gtk.Window):
         self.buttonholder.attach(self.spacer, 0, 0, 1, 1)
         self.maingrid.attach(self.buttonholder, 0, 0, 10, 1)
         self.resize(10, 10)
-        self.spacer = self.h_spacer()
+        self.edit_spacer()
 
     def undo_layout(self, button=None):
         try:
