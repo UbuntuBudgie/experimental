@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import gi
-
 gi.require_version("Gtk", "3.0")
 gi.require_version("Wnck", "3.0")
 from gi.repository import Gtk, Wnck, Gdk
@@ -10,6 +9,8 @@ import os
 import shuffler_tools as st
 from itertools import product
 import shuffler_geo as geo
+import math
+
 
 """
 WindowShuffler
@@ -36,7 +37,6 @@ css_data = """
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
-
 .matrixmanagebuttonleft {
   border: 0px;
   background-color: #505050;
@@ -195,21 +195,42 @@ class WindowShufflerMatrix(Gtk.Window):
             product(range(xc), range(yc))
         )
         origs.sort(key=lambda x: x[1])
+        # create targeted positions-list
+        position_data = []
+        for n in range(len(origs)):
+            targeted_pos = origs[n]
+            position_data.append(
+                st.windowtarget(
+                    [targeted_pos, targeted_pos], xc, yc, playfield,
+                )
+            )
+        window_data = [
+            [w, w.get_geometry()[:2]] for w in windows
+        ]
         i = 0
-        for w in windows:
+        while window_data:
             try:
-                target_orig = origs[i]
+                p = position_data[i]
+                distances = [
+                    [
+                        w,
+                        int(math.sqrt(
+                            (p[0] - w[1][0])**2 + (p[1] - w[1][1])**2)
+                            )
+                    ] for w in window_data
+                ]
+                distances.sort(key=lambda x: x[1])
+                shortest = distances[0]
+                window = shortest[0][0]
+                y_offs = self.get_yshift(window)
+                window_data.remove(shortest[0])
+                # move window
+                st.shuffle(
+                    window, p[0], p[1] + y_offs, p[2], p[3]
+                )
+                i = i + 1
             except IndexError:
                 i = 0
-                target_orig = origs[i]
-            i = i + 1
-            trg = st.windowtarget(
-                [target_orig, target_orig], xc, yc, playfield,
-            )
-            st.shuffle(
-                w, trg[0], trg[1] + self.get_yshift(w),
-                trg[2], trg[3]
-            )
         self.reset_alltiles()
 
     def setup_initialgrid(self):
