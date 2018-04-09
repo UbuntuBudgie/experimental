@@ -86,6 +86,7 @@ class WindowShufflerMatrix(Gtk.Window):
         self.set_position(Gtk.WindowPosition.CENTER_ALWAYS)
         self.set_keep_above(True)
         self.set_skip_taskbar_hint(True)
+        self.set_type_hint(Gdk.WindowTypeHint.TOOLBAR)
         self.set_decorated(False)
         self.maingrid = Gtk.Grid()
         self.maingrid.set_column_spacing(2)
