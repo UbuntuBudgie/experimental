@@ -5,23 +5,6 @@ import gi.repository
 gi.require_version('Budgie', '1.0')
 from gi.repository import Budgie, GObject, Gtk
 
-
-"""
-Kangaroo
-Author: Jacob Vlijm
-Copyright © 2017-2018 Ubuntu Budgie Developers
-Website=https://ubuntubudgie.org
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or any later version. This
-program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-A PARTICULAR PURPOSE. See the GNU General Public License for more details. You
-should have received a copy of the GNU General Public License along with this
-program.  If not, see <https://www.gnu.org/licenses/>.
-"""
-
-
 userhome = os.environ["HOME"]
 
 
@@ -168,11 +151,32 @@ class KangarooApplet(Budgie.Applet):
         self.hide_tooltips = os.path.exists(hidetooltips)
         self.show_invisibles = os.path.exists(showinvisible)
         self.create_level(self.default_dir, self.menu)
+        self.menu.append(Gtk.SeparatorMenuItem())
+        showhide_state = self.set_showhide()
+        self.toggle_showhide = Gtk.MenuItem(showhide_state)
+        self.toggle_showhide.connect("activate", self.toggle_visible)
+        self.menu.append(self.toggle_showhide)
         self.show_all()
         self.menu.show_all()
         self.menu.popup(
             None, None, None, None, 0, Gtk.get_current_event_time()
         )
+
+    def set_showhide(self):
+        if os.path.exists(showinvisible):
+            return "✓  Invisible items"
+        else:
+            return "✕  Invisble items"
+
+    def toggle_visible(self, menu):
+        state = os.path.exists(showinvisible)
+        if not state:
+            open(showinvisible, "wt").write("")
+        else:
+            try:
+                os.remove(showinvisible)
+            except FileNotFoundError:
+                pass
 
     def check_invisible(self, flist):
         # filter out invisoble files if set
@@ -262,7 +266,7 @@ class KangarooApplet(Budgie.Applet):
         # opens either the directory, if selected,
         # or the superior directory of a file, if selected
         if button.button == 3:
-            if self.fileselect is False:
+            if not self.fileselect:
                 path = self.curr_subject
             else:
                 path = self.currselectedfile[
