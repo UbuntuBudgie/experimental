@@ -198,7 +198,7 @@ class KangarooApplet(Budgie.Applet):
     def check_invisible(self, f):
         # filter out invisoble files if set
         name = f.name
-        return not any([name.startswith("."), name.endswith("~")])
+        return name, not any([name.startswith("."), name.endswith("~")])
 
     def tooltip(self, item, text):
         # set tooltip
@@ -206,9 +206,10 @@ class KangarooApplet(Budgie.Applet):
 
     def create_level(self, dr, master=None, *args):
         # create new menu layer items
-        newitems = [f for f in os.scandir(dr)]
+        newitems = [[f, self.check_invisible(f)] for f in os.scandir(dr)]
         if not self.show_invisibles:
-            newitems = [f for f in newitems if self.check_invisible(f)]
+            newitems = [f for f in newitems if f[1][1]]
+        newitems.sort(key=lambda x: x[1][0])
         # show "Empty" on empty folders. should show a > nevertheless
         if not newitems:
             firstsub = Gtk.MenuItem("Empty")
@@ -216,7 +217,8 @@ class KangarooApplet(Budgie.Applet):
         # if not empty, show content on select / activate
         else:
             for item in newitems:
-                item_name = item.name
+                item_name = item[1][0]
+                item = item[0]
                 # item, firstsub
                 firstsub = Gtk.MenuItem(item_name)
                 master.append(firstsub)
@@ -226,9 +228,7 @@ class KangarooApplet(Budgie.Applet):
                         secondsubitems = [
                             it.name for it in os.scandir(newpath)
                         ]
-                        self.dressup_dirmenuitem(
-                            firstsub, item_name, newpath
-                        )
+                        self.dressup_dirmenuitem(firstsub, item_name, newpath)
                     except PermissionError:
                         firstsub.set_label("✕ " + item_name)
                 else:
