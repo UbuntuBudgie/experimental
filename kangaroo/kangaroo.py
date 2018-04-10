@@ -195,16 +195,10 @@ class KangarooApplet(Budgie.Applet):
             except FileNotFoundError:
                 pass
 
-    def check_invisible(self, flist):
+    def check_invisible(self, f):
         # filter out invisoble files if set
-        if not self.show_invisibles:
-            return [
-                f for f in flist if all([
-                    not f.startswith("."), not f.endswith("~")
-                ])
-            ]
-        else:
-            return flist
+        name = f.name
+        return not any([name.startswith("."), name.endswith("~")])
 
     def tooltip(self, item, text):
         # set tooltip
@@ -212,7 +206,9 @@ class KangarooApplet(Budgie.Applet):
 
     def create_level(self, dr, master=None, *args):
         # create new menu layer items
-        newitems = sorted(self.check_invisible(os.listdir(dr)))
+        newitems = [f for f in os.scandir(dr)]
+        if not self.show_invisibles:
+            newitems = [f for f in newitems if self.check_invisible(f)]
         # show "Empty" on empty folders. should show a > nevertheless
         if not newitems:
             firstsub = Gtk.MenuItem("Empty")
@@ -220,20 +216,23 @@ class KangarooApplet(Budgie.Applet):
         # if not empty, show content on select / activate
         else:
             for item in newitems:
+                item_name = item.name
                 # item, firstsub
-                firstsub = Gtk.MenuItem(item)
+                firstsub = Gtk.MenuItem(item_name)
                 master.append(firstsub)
-                newpath = os.path.join(dr, item)
-                try:
-                    secondsubitems = self.check_invisible(
-                        os.listdir(newpath)
-                    )
-                except NotADirectoryError:
-                    self.dressup_filemenuitem(firstsub, item, newpath)
-                except PermissionError:
-                    pass
+                newpath = item.path
+                if item.is_dir():
+                    try:
+                        secondsubitems = [
+                            it.name for it in os.scandir(newpath)
+                        ]
+                        self.dressup_dirmenuitem(
+                            firstsub, item_name, newpath
+                        )
+                    except PermissionError:
+                        firstsub.set_label("✕ " + item_name)
                 else:
-                    self.dressup_dirmenuitem(firstsub, item, newpath)
+                    self.dressup_filemenuitem(firstsub, item_name, newpath)
 
     def dressup_filemenuitem(self, menuitem, itemname, newpath):
         # setup the file- menuitem
