@@ -181,9 +181,9 @@ class KangarooApplet(Budgie.Applet):
 
     def set_showhide(self):
         if os.path.exists(showinvisible):
-            return "✓  Invisible items"
+            return "✓\tInvisible items"
         else:
-            return "✕  Invisble items"
+            return "✕\tInvisble items"
 
     def toggle_visible(self, menu):
         state = os.path.exists(showinvisible)
