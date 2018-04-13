@@ -7,19 +7,19 @@ from gi.repository import Budgie, GObject, Gtk
 
 
 """
-Kangaroo
-Author: Jacob Vlijm
-Copyright © 2017-2018 Ubuntu Budgie Developers
-Website=https://ubuntubudgie.org
-This program is free software: you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation, either version 3 of the License, or any later version. This
-program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
-A PARTICULAR PURPOSE. See the GNU General Public License for more details. You
-should have received a copy of the GNU General Public License along with this
-program.  If not, see <https://www.gnu.org/licenses/>.
-"""
+-Kangaroo
+-Author: Jacob Vlijm
+-Copyright © 2017-2018 Ubuntu Budgie Developers
+-Website=https://ubuntubudgie.org
+-This program is free software: you can redistribute it and/or modify it under
+-the terms of the GNU General Public License as published by the Free Software
+-Foundation, either version 3 of the License, or any later version. This
+-program is distributed in the hope that it will be useful, but WITHOUT ANY
+-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+-A PARTICULAR PURPOSE. See the GNU General Public License for more details. You
+-should have received a copy of the GNU General Public License along with this
+-program.  If not, see <https://www.gnu.org/licenses/>.
+-"""
 
 
 userhome = os.environ["HOME"]
@@ -230,13 +230,13 @@ class KangarooApplet(Budgie.Applet):
                         ]
                         self.dressup_dirmenuitem(firstsub, item_name, newpath)
                     except PermissionError:
-                        firstsub.set_label("✕ " + item_name)
+                        firstsub.set_label("✕\t" + item_name)
                 else:
                     self.dressup_filemenuitem(firstsub, item_name, newpath)
 
     def dressup_filemenuitem(self, menuitem, itemname, newpath):
         # setup the file- menuitem
-        menuitem.set_label("•    " + itemname)
+        menuitem.set_label("•\t" + itemname)
         menuitem.connect(
             "button-press-event", self.open_file_onone, newpath
         )
@@ -254,7 +254,7 @@ class KangarooApplet(Budgie.Applet):
         menuitem.connect(
             "select", self.get_selectedfile, False, newpath
         )
-        menuitem.set_label("⏍ " + itemname)
+        menuitem.set_label("⏍\t" + itemname)
         if not self.hide_tooltips:
             self.tooltip(menuitem, tooltip2)
 
