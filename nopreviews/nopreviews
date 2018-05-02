@@ -2,8 +2,7 @@
 import subprocess
 import gi
 gi.require_version("Wnck", "3.0")
-gi.require_version("Gtk", "3.0")
-from gi.repository import Wnck, Gdk, Gtk, GdkX11
+from gi.repository import Wnck, Gdk, GdkX11
 import sys
 
 
