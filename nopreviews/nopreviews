@@ -1,0 +1,130 @@
+#!/usr/bin/env python3
+import subprocess
+import gi
+gi.require_version("Wnck", "3.0")
+gi.require_version("Gtk", "3.0")
+from gi.repository import Wnck, Gdk, Gtk, GdkX11
+import sys
+
+
+onlythis = sys.argv[1:]
+
+
+"""
+NoPreviews
+Author: Jacob Vlijm
+Copyright © 2017-2018 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or any later version. This
+program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details. You
+should have received a copy of the GNU General Public License along with this
+program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+
+
+def mousepos():
+    # find out mouse location
+    return Gdk.get_default_root_window().get_pointer()[1:3]
+
+
+def check_win_name(win):
+    # certain windows should be ignored
+    return win.get_name() not in [
+        "WindowMatrix", "Usage & general shortcuts"
+    ]
+
+
+def get_currmonitor_atpos(x, y, display=None):
+    """
+    fetch the current monitor (obj) at position. display is optional to save
+    fuel if it is already fetched elsewhere
+    """
+    if not display:
+        display = Gdk.Display.get_default()
+    display = Gdk.Display.get_default()
+    return display.get_monitor_at_point(x, y)
+
+
+def get_winlist(scr=None, selecttype=None):
+    """
+    get the window list. possible args: screen, select_type, in case it is
+    already fetched elsewhere. select type is optional, to fetch only
+    specific window types.
+    """
+    if not scr:
+        scr = Wnck.Screen.get_default()
+        scr.force_update()
+    windows = scr.get_windows()
+    if selecttype:
+        windows = [w for w in windows if check_windowtype(w, selecttype)]
+    return windows
+
+
+def get_windows_oncurrent(scr=None):
+    """
+    returns all real windows, on current workspace & monitor
+    """
+    # get screen / span size for if plank is on the right
+    if not scr:
+        scr = Wnck.Screen.get_default()
+        scr.force_update()
+    curr_active = scr.get_active_window()
+    screensize = scr.get_width(), scr.get_height()
+    # get all windows
+    relevants = get_winlist(scr, None)
+    mp = mousepos()
+    currmonitor = get_currmonitor_atpos(mp[0], mp[1])
+    planks = []
+    otherdocks = []
+    normal = []
+    # split them up
+    for w in relevants:
+        loc = w.get_geometry()[:2]
+        monitor = get_currmonitor_atpos(loc[0], loc[1])
+        if monitor == currmonitor:
+            typedata = str(w.get_window_type())
+            if "NORMAL" in typedata:
+                if check_win_name(w):
+                    normal.append(w)
+    # normal, visible windows on current monitor on current workspace
+    currws = scr.get_active_workspace()
+    windows = [
+        w for w in normal if w.get_workspace() == currws
+    ]
+
+    try:
+        valid = windows.index(curr_active)
+    except ValueError:
+        valid = False
+
+    if all([onlythis, valid]):
+        currclass = curr_active.get_class_group_name()
+        windows = [w for w in windows if w.get_class_group_name() == currclass]
+        valid = windows.index(curr_active)
+
+    return [windows, valid]
+
+
+wins = get_windows_oncurrent()
+
+
+valid = wins[1]
+if valid is not False:
+    nxt_index = wins[1] + 1
+else:
+    nxt_index = 0
+
+
+try:
+    nxt_win = wins[0][nxt_index]
+except IndexError:
+    nxt_win = wins[0][0]
+
+
+root = Gdk.get_default_root_window()
+now = GdkX11.x11_get_server_time(root)
+nxt_win.activate(now)
