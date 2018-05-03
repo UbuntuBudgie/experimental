@@ -100,7 +100,7 @@ def get_windows_oncurrent(scr=None):
     except ValueError:
         valid = False
 
-    if all([onlythis, valid]):
+    if all([onlythis, valid is not False]):
         currclass = curr_active.get_class_group_name()
         windows = [w for w in windows if w.get_class_group_name() == currclass]
         valid = windows.index(curr_active)
