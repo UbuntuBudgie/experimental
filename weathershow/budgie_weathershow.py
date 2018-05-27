@@ -375,10 +375,13 @@ class BudgieWeatherShowApplet(Budgie.Applet):
                 except KeyError:
                     pass
                 else:
+                    # keep all data
+                    today[t] = gw.check_dictpaths(snapshot)
+                    # 15:00 pm selection
                     currdate = time.strftime("%Y-%m-%d")
-                    if t.startswith(currdate):
-                        today[t] = gw.check_dictpaths(snapshot)
-                    elif t.endswith("15:00:00"):
+                    if all(
+                        [t.endswith("15:00:00"), not t.startswith(currdate)]
+                    ):
                         forecast[t] = gw.check_dictpaths(snapshot)
             return {"today": today, "forecast": forecast}
 
@@ -452,8 +455,12 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             nodatalabel.modify_font(Pango.FontDescription(self.font + " 26"))
             self.popupgrid.attach(nodatalabel, 1, 6, 100, 1)
         else:
-            times = sorted([k for k in today.keys()])
-            self.update_today(today, times)
+            try:
+                times = sorted([k for k in today.keys()])[1:5]
+            except IndexError:
+                pass
+            else:
+                self.update_today(today, times)
         try:
             forec = wdata["forecast"]
         except TypeError:
