@@ -486,6 +486,9 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         self.show_all()
 
     def update_today(self, today, times):
+        days = [s.split()[0] for s in times]
+        if not len(set(days)) == 1:
+            self.today_label.set_text("Today / tomorrow")
         # topleft position in grid
         n1 = 1  # today start (x)
         if times:
