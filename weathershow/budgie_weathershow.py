@@ -480,7 +480,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         except TypeError:
             pass
         else:
-            days = sorted([k for k in forec.keys()])
+            days = sorted([k for k in forec.keys()])[:4]
             self.update_forecast(forec, days)
         self.popupgrid.show_all()
         self.show_all()
