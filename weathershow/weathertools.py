@@ -71,15 +71,7 @@ currcity = os.path.join(prefspath, "currcity")
 wondesktop = os.path.join(app_path, "weathershow")
 user = os.environ["USER"]
 panelrunner = os.path.join(app_path, "wshow_panelrunner")
-
-
-def convert_temp(temp):
-    # prepare temp display
-    return str(round(temp - 273.15)) + "℃" if temp else ""
-
-
-def validate_val(source):
-    return "" if not source else source
+fahrenheit = os.path.join(prefspath, "fahrenheit")
 
 
 # make sure the dirs exist
@@ -87,6 +79,18 @@ try:
     os.makedirs(prefspath)
 except FileExistsError:
     pass
+
+
+def convert_temp(temp):
+    # prepare temp display
+    if os.path.exists(fahrenheit):
+        return str(round((temp * 1.8) - 459.67)) + "°F" if temp else ""
+    else:
+        return str(round(temp - 273.15)) + "℃" if temp else ""
+
+
+def validate_val(source):
+    return "" if not source else source
 
 
 def get(command):

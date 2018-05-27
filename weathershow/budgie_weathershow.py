@@ -69,6 +69,7 @@ cpos_file = wt.pos_file
 transparency = wt.transparency
 currcity = wt.currcity
 currlang = wt.currlang
+fahrenheit = wt.fahrenheit
 
 
 # lists
@@ -200,6 +201,11 @@ class BudgieWeatherShowSettings(Gtk.Grid):
         # space
         space6 = Gtk.Label(" ")
         self.attach(space6, 1, 17, 1, 1)
+        # fahrenheit
+        self.use_fahrenheit = Gtk.CheckButton("Use Fahrenheit")
+        self.use_fahrenheit.set_active(os.path.exists(fahrenheit))
+        self.use_fahrenheit.connect("toggled", self.toggle_fahrenheit)
+        self.attach(self.use_fahrenheit, 1, 18, 1, 1)
         # color buttons & labels
         self.set_initialstate()
         self.setposbutton.connect("toggled", self.toggle_cuspos)
@@ -261,6 +267,14 @@ class BudgieWeatherShowSettings(Gtk.Grid):
         ]:
             entr.set_sensitive(state)
         self.setposbutton.set_active(state)
+
+    def toggle_fahrenheit(self, togglebutton):
+        newstate = togglebutton.get_active()
+        if newstate:
+            open(fahrenheit, "wt").write("")
+        else:
+            os.remove(fahrenheit)
+        wt.restart_weather()
 
     def get_xy(self, button):
         x = self.xpos.get_text()
