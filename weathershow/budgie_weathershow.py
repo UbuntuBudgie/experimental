@@ -239,7 +239,7 @@ class BudgieWeatherShowSettings(Gtk.Grid):
             newselection = newdata[0]
             if not newdata[1]:
                 subprocess.Popen([
-                    "notify-send", "-i", "budgie-wticon-symbolic", "Wooops",
+                    "notify-send", "-i", "budgie-wticon-symbolic", "whoops",
                     "Connection error: please check your internet connection"
                 ])
             for c in newselection:
@@ -506,7 +506,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             self.todaydata = wdata["today"]
         except TypeError:
             # fill popupgrid with message
-            nodatalabel = Gtk.Label("\n\tWooops, no data available\t")
+            nodatalabel = Gtk.Label("\n\twhoops, no data available\t")
             self.forecast_label.set_text("")
             nodatalabel.modify_font(Pango.FontDescription(self.font + " 26"))
             self.popupgrid.attach(nodatalabel, 1, 6, 100, 1)
