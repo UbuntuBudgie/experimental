@@ -8,5 +8,4 @@ Settings include position, textcolor, background transparency and language.
 
 ![screenshot](https://github.com/UbuntuBudgie/experimental/blob/master/weathershow/screenshot2.png)
 
-![screenshot](https://github.com/UbuntuBudgie/experimental/blob/master/weathershow/screenshot3.png)
 
