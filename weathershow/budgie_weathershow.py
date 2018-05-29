@@ -367,6 +367,10 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         wt.restart_weather()
 
     def on_press(self, box, arg):
+        self.justpoppedup = True
+        self.start = 1
+        self.end = 5
+        self.stored = []
         self.run_update()
         self.manager.show_popover(self.box)
 
@@ -409,13 +413,49 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             spacegrid.set_column_spacing(addwidth)
         return spacegrid
 
+    def edit_todayheader(self):
+        # set the first- row header, depending on first / second day
+        firstday = self.times[self.start]
+        fdayname = wt.get_dayname(firstday.split()[0])
+        lastday = self.times[self.end]
+        ldayname = wt.get_dayname(lastday.split()[0])
+        if fdayname == ldayname:
+            self.today_label.set_text(fdayname)
+        else:
+            self.today_label.set_text(fdayname + " / " + ldayname)
+
+    def getnext(self, button):
+        if self.start != 13:
+            for item in self.stored:
+                item.destroy()
+            self.stored = []
+            self.start = self.start + 4
+            self.end = self.end + 4
+            self.edit_todayheader()
+            self.populate_todaysection(self.times[self.start:self.end], 1)
+            self.popupgrid.show_all()
+
+    def getprevious(self, button):
+        if self.start != 1:
+            for item in self.stored:
+                item.destroy()
+            self.stored = []
+            self.start = self.start - 4
+            self.end = self.end - 4
+            self.edit_todayheader()
+            self.populate_todaysection(self.times[self.start:self.end], 1)
+            self.popupgrid.show_all()
+
     def add_timelabel(self, src, t, x, y, spx, spy):
         # time/day section header
         showtime_src = t.split()[1]
         showtime = showtime_src[:showtime_src.rfind(":")]
+
+        # first try edit existing one
         showtime_label = Gtk.Label(showtime)
         showtime_label.modify_font(Pango.FontDescription(self.font + " bold"))
         self.popupgrid.attach(showtime_label, x, y, spx, spy)
+        self.stored.append(showtime_label)
 
     def add_daylabel(self, d, x, y, spx, spy):
         dayname = wt.get_dayname(d.split()[0])
@@ -423,13 +463,15 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         dayname_label.modify_font(Pango.FontDescription(self.font + " bold"))
         self.popupgrid.attach(dayname_label, x, y, 1, 1)
 
-    def add_icon(self, src, x, y, spx, spy):
+    def add_icon(self, src, x, y, spx, spy, store=False):
         image = Gtk.Image()
         self.popupgrid.attach(image, x, y, spx, spy)
         td_icon = src["icon"]  # <- exists by definition, but can be None
         if td_icon:
             index = markers.index(td_icon)
             self.set_smallicon(image, index)
+            if store:
+                self.stored.append(image)
 
     def prepare_windlabel(self, src):
         newdeg = src["wind_deg"]
@@ -446,9 +488,8 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         # space top left / bottom right
         self.popupgrid.attach(Gtk.Label("\t"), 0, 0, 1, 1)
         self.popupgrid.attach(Gtk.Label("\n\t"), 100, 100, 1, 1)
-        # Today header, only show if any items in today section
-        # (not around 24:00)
-        self.today_label = Gtk.Label("Today", xalign=0.5)
+        # initiate oday header
+        self.today_label = Gtk.Label("", xalign=0.5)
         self.today_label.modify_font(Pango.FontDescription(self.font + " 16"))
         # forecast header
         self.forecast_label = Gtk.Label("\nForecast\n", xalign=0.5)
@@ -462,7 +503,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         lang = wt.get_currlang()
         wdata = self.get_multiday(key, city, lang)
         try:
-            today = wdata["today"]
+            self.todaydata = wdata["today"]
         except TypeError:
             # fill popupgrid with message
             nodatalabel = Gtk.Label("\nWooops, no data available\t")
@@ -470,11 +511,11 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             self.popupgrid.attach(nodatalabel, 1, 6, 100, 1)
         else:
             try:
-                times = sorted([k for k in today.keys()])[1:5]
+                self.times = sorted([k for k in self.todaydata.keys()])
             except IndexError:
                 pass
             else:
-                self.update_today(today, times)
+                self.setup_todaysection(self.times)
         try:
             forec = wdata["forecast"]
         except TypeError:
@@ -485,24 +526,45 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         self.popupgrid.show_all()
         self.show_all()
 
-    def update_today(self, today, times):
+    def create_button(self, iconname):
+        button = Gtk.Button()
+        icon = Gtk.Image.new_from_icon_name(
+            iconname, Gtk.IconSize.MENU
+        )
+        button.set_image(icon)
+        button.set_relief(Gtk.ReliefStyle.NONE)
+        return button
+
+    def setup_todaysection(self, times):
         days = [s.split()[0] for s in times]
-        if not len(set(days)) == 1:
-            self.today_label.set_text("Today / tomorrow")
         # topleft position in grid
         n1 = 1  # today start (x)
         if times:
+            time_slice = times[self.start:self.end]
+            # prepare today's row
             self.popupgrid.attach(self.today_label, 1, 1, 100, 1)
-        for t in times:
+            backbutton = self.create_button("go-previous-symbolic")
+            backbutton.connect("pressed", self.getprevious)
+            self.popupgrid.attach(backbutton, 0, 6, 1, 1)
+            self.nextbutton = self.create_button("go-next-symbolic")
+            self.nextbutton.connect("pressed", self.getnext)
+            self.popupgrid.attach(self.nextbutton, 100, 6, 1, 1)
+            self.edit_todayheader()
+        self.populate_todaysection(time_slice, n1)
+
+    def populate_todaysection(self, time_slice, firstcol):
+        # make section below new function
+        for t in time_slice:
             # section start (y)
             n2 = 5
-            src = today[t]
+            src = self.todaydata[t]
             # set width
-            self.popupgrid.attach(self.h_spacer(120), n1, n2, 1, 1)
+            if self.justpoppedup:
+                self.popupgrid.attach(self.h_spacer(120), firstcol, n2, 1, 1)
             # get today's data, time label
-            self.add_timelabel(src, t, n1, n2 + 1, 1, 1)
+            self.add_timelabel(src, t, firstcol, n2 + 1, 1, 1)
             # icon
-            self.add_icon(src, n1, n2 + 2, 1, 1)
+            self.add_icon(src, firstcol, n2 + 2, 1, 1, store=True)
             # prepare wind display
             windmention = self.prepare_windlabel(src)
             # fill in the easy ones
@@ -511,9 +573,12 @@ class BudgieWeatherShowApplet(Budgie.Applet):
                 wt.convert_temp(wt.validate_val(src["temp"])),
                 windmention,
             ]:
-                self.popupgrid.attach(Gtk.Label(item), n1, n2 + 3, 1, 1)
+                label = Gtk.Label(item)
+                self.stored.append(label)
+                self.popupgrid.attach(label, firstcol, n2 + 3, 1, 1)
                 n2 = n2 + 1
-            n1 = n1 + 1
+            firstcol = firstcol + 1
+        self.justpoppedup = False
 
     def update_forecast(self, forec, days):
         # forecast section
