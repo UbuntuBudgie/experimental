@@ -432,7 +432,9 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             self.start = self.start + 4
             self.end = self.end + 4
             self.edit_todayheader()
-            self.populate_todaysection(self.times[self.start:self.end], 1)
+            self.populate_todaysection(
+                self.times[self.start:self.end], 1
+            )
             self.popupgrid.show_all()
 
     def getprevious(self, button):
@@ -443,15 +445,15 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             self.start = self.start - 4
             self.end = self.end - 4
             self.edit_todayheader()
-            self.populate_todaysection(self.times[self.start:self.end], 1)
+            self.populate_todaysection(
+                self.times[self.start:self.end], 1
+            )
             self.popupgrid.show_all()
 
     def add_timelabel(self, src, t, x, y, spx, spy):
         # time/day section header
         showtime_src = t.split()[1]
         showtime = showtime_src[:showtime_src.rfind(":")]
-
-        # first try edit existing one
         showtime_label = Gtk.Label(showtime)
         showtime_label.modify_font(Pango.FontDescription(self.font + " bold"))
         self.popupgrid.attach(showtime_label, x, y, spx, spy)
@@ -486,7 +488,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         self.font = wt.get_font()
         # rows 0-1
         # space top left / bottom right
-        self.popupgrid.attach(Gtk.Label("\t"), 0, 0, 1, 1)
+        self.popupgrid.attach(Gtk.Label("\n"), 0, 0, 1, 1)
         self.popupgrid.attach(Gtk.Label("\n\t"), 100, 100, 1, 1)
         # initiate oday header
         self.today_label = Gtk.Label("", xalign=0.5)
