@@ -461,7 +461,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
 
     def add_daylabel(self, d, x, y, spx, spy):
         dayname = wt.get_dayname(d.split()[0])
-        dayname_label = Gtk.Label(dayname)
+        dayname_label = Gtk.Label(dayname + "\n")
         dayname_label.modify_font(Pango.FontDescription(self.font + " bold"))
         self.popupgrid.attach(dayname_label, x, y, 1, 1)
 
@@ -508,7 +508,8 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             self.todaydata = wdata["today"]
         except TypeError:
             # fill popupgrid with message
-            nodatalabel = Gtk.Label("\nWooops, no data available\t")
+            nodatalabel = Gtk.Label("\n\tWooops, no data available\t")
+            self.forecast_label.set_text("")
             nodatalabel.modify_font(Pango.FontDescription(self.font + " 26"))
             self.popupgrid.attach(nodatalabel, 1, 6, 100, 1)
         else:
