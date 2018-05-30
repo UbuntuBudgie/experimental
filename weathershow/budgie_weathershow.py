@@ -481,12 +481,8 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         # initiate oday header
         self.today_label = Gtk.Label("", xalign=0.5)
         self.today_label.modify_font(Pango.FontDescription(self.font + " 16"))
-        # forecast header
-        self.forecast_label = Gtk.Label("\nForecast\n", xalign=0.5)
-        self.forecast_label.modify_font(
-            Pango.FontDescription(self.font + " 16")
-        )
-        self.popupgrid.attach(self.forecast_label, 1, 20, 4, 1)
+        # forecast distance
+        self.popupgrid.attach(Gtk.Label("\n"), 1, 20, 4, 1)
         # get data
         key = wt.getkey()
         city = str(wt.getcity()[0]).strip()
@@ -497,7 +493,6 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         except TypeError:
             # fill popupgrid with message
             nodatalabel = Gtk.Label("\n\twhoops, no data available\t")
-            self.forecast_label.set_text("")
             nodatalabel.modify_font(Pango.FontDescription(self.font + " 26"))
             self.popupgrid.attach(nodatalabel, 1, 6, 100, 1)
         else:
