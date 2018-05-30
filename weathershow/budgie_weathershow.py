@@ -303,15 +303,6 @@ class BudgieWeatherShowSettings(Gtk.Grid):
             else:
                 wt.restart_weather()
 
-    def h_spacer(self, addwidth):
-        # horizontal spacer
-        spacegrid = Gtk.Grid()
-        if addwidth:
-            spacegrid.attach(Gtk.Label(), 0, 0, 1, 1)
-            spacegrid.attach(Gtk.Label(), 1, 0, 1, 1)
-            spacegrid.set_column_spacing(addwidth)
-        return spacegrid
-
     def set_css(self, hexcol):
         provider = Gtk.CssProvider.new()
         provider.load_from_data(
@@ -402,12 +393,11 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             return {"today": today, "forecast": forecast}
 
     def h_spacer(self, addwidth):
+        # horizontal spacer
         spacegrid = Gtk.Grid()
         if addwidth:
-            label1 = Gtk.Label()
-            label2 = Gtk.Label()
-            spacegrid.attach(label1, 0, 0, 1, 1)
-            spacegrid.attach(label2, 1, 0, 1, 1)
+            spacegrid.attach(Gtk.Label(), 0, 0, 1, 1)
+            spacegrid.attach(Gtk.Label(), 1, 0, 1, 1)
             spacegrid.set_column_spacing(addwidth)
         return spacegrid
 
