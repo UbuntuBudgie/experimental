@@ -486,7 +486,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         self.forecast_label.modify_font(
             Pango.FontDescription(self.font + " 16")
         )
-        self.popupgrid.attach(self.forecast_label, 1, 20, 100, 1)
+        self.popupgrid.attach(self.forecast_label, 1, 20, 4, 1)
         # get data
         key = wt.getkey()
         city = str(wt.getcity()[0]).strip()
@@ -533,7 +533,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
         if times:
             time_slice = times[self.start:self.end]
             # prepare today's row
-            self.popupgrid.attach(self.today_label, 1, 1, 100, 1)
+            self.popupgrid.attach(self.today_label, 1, 1, 4, 1)
             backbutton = self.create_button("go-previous-symbolic")
             backbutton.connect("pressed", self.getprevious)
             self.popupgrid.attach(backbutton, 0, 6, 1, 1)
