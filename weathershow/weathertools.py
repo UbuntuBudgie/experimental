@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import requests
-import calendar as cal
+import calendar
 import json
 import os
 import gi
@@ -9,6 +9,7 @@ gi.require_version('Pango', '1.0')
 from gi.repository import Gio, Pango, Gdk, GdkPixbuf
 import subprocess
 import time
+import locale
 
 
 """
@@ -105,8 +106,9 @@ def get_pid(proc):
 
 
 def get_dayname(datestr):
-    day = time.strptime(datestr, "%Y-%m-%d")
-    return [d for d in cal.day_name][day[6]]
+    cal = calendar.LocaleTextCalendar(locale.getlocale())
+    weekday = cal.formatweekday(time.strptime(datestr, "%Y-%m-%d")[6], 10)
+    return weekday.strip()
 
 
 def restart_weather():

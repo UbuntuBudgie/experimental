@@ -6,6 +6,7 @@ import weathertools as wt
 import getweather as gw
 import time
 import subprocess
+import locale
 
 
 """
