@@ -425,6 +425,10 @@ class BudgieWeatherShowApplet(Budgie.Applet):
                 self.times[self.start:self.end], 1
             )
             self.popupgrid.show_all()
+            if self.start == 13:
+                self.nextbutton.set_sensitive(False)
+            elif self.start == 5:
+                self.backbutton.set_sensitive(True)
 
     def getprevious(self, button):
         if self.start != 1:
@@ -438,6 +442,10 @@ class BudgieWeatherShowApplet(Budgie.Applet):
                 self.times[self.start:self.end], 1
             )
             self.popupgrid.show_all()
+            if self.start == 1:
+                self.backbutton.set_sensitive(False)
+            elif self.start == 9:
+                self.nextbutton.set_sensitive(True)
 
     def add_timelabel(self, src, t, x, y, spx, spy):
         # time/day section header
@@ -530,9 +538,10 @@ class BudgieWeatherShowApplet(Budgie.Applet):
             time_slice = times[self.start:self.end]
             # prepare today's row
             self.popupgrid.attach(self.today_label, 1, 1, 4, 1)
-            backbutton = self.create_button("go-previous-symbolic")
-            backbutton.connect("pressed", self.getprevious)
-            self.popupgrid.attach(backbutton, 0, 6, 1, 1)
+            self.backbutton = self.create_button("go-previous-symbolic")
+            self.backbutton.connect("pressed", self.getprevious)
+            self.backbutton.set_sensitive(False)
+            self.popupgrid.attach(self.backbutton, 0, 6, 1, 1)
             self.nextbutton = self.create_button("go-next-symbolic")
             self.nextbutton.connect("pressed", self.getnext)
             self.popupgrid.attach(self.nextbutton, 100, 6, 1, 1)
