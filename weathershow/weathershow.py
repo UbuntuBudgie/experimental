@@ -64,6 +64,10 @@ searchmsg = """Add two or more characters to the text field,
 then press this button.
 """
 
+errormsg = """\tNo available data to show.
+\tEither weather location needs to be defined,\t\t
+\tor a connection error occurs."""
+
 
 colorpicker = os.path.join(wt.app_path, "colorpicker")
 cpos_file = wt.pos_file
@@ -501,8 +505,8 @@ class WeatherShowApplet(Budgie.Applet):
             self.todaydata = wdata["today"]
         except TypeError:
             # fill popupgrid with message
-            nodatalabel = Gtk.Label("\n\twhoops, no data available\t")
-            nodatalabel.modify_font(Pango.FontDescription(self.font + " 26"))
+            nodatalabel = Gtk.Label(errormsg)
+            nodatalabel.modify_font(Pango.FontDescription(self.font + " 12"))
             self.popupgrid.attach(nodatalabel, 1, 6, 100, 1)
         else:
             try:

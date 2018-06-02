@@ -51,12 +51,16 @@ small_icons = []
 for icon in markers:
     w_icons.append(
         GdkPixbuf.Pixbuf.new_from_file_at_size(
-            "/usr/share/pixmaps/budgie-wt-" + icon + ".svg", 150, 150,
+            os.path.join(
+                app_path, "icons/budgie-wt-" + icon + ".svg"
+            ), 150, 150,
         )
     )
     small_icons.append(
         GdkPixbuf.Pixbuf.new_from_file_at_size(
-            "/usr/share/pixmaps/budgie-wt-" + icon + ".svg", 80, 80,
+            os.path.join(
+                app_path, "icons/budgie-wt-" + icon + ".svg"
+            ), 80, 80,
         )
     )
 
