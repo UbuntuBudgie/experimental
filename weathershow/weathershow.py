@@ -10,7 +10,7 @@ import locale
 
 
 """
-Budgie WeatherShow
+WeatherShow
 Author: Jacob Vlijm
 Copyright © 2017-2018 Ubuntu Budgie Developers
 Website=https://ubuntubudgie.org
@@ -80,13 +80,13 @@ markers = wt.markers
 arrows = wt.arrows
 
 
-class BudgieWeatherShow(GObject.GObject, Budgie.Plugin):
+class WeatherShow(GObject.GObject, Budgie.Plugin):
     """ This is simply an entry point into your Budgie Applet implementation.
         Note you must always override Object, and implement Plugin.
     """
 
     # Good manners, make sure we have unique name in GObject type system
-    __gtype_name__ = "BudgieWeatherShow"
+    __gtype_name__ = "WeatherShow"
 
     def __init__(self):
         """ Initialisation is important.
@@ -98,10 +98,10 @@ class BudgieWeatherShow(GObject.GObject, Budgie.Plugin):
             instance with the given UUID. The UUID is determined by the
             BudgiePanelManager, and is used for lifetime tracking.
         """
-        return BudgieWeatherShowApplet(uuid)
+        return WeatherShowApplet(uuid)
 
 
-class BudgieWeatherShowSettings(Gtk.Grid):
+class WeatherShowSettings(Gtk.Grid):
     def __init__(self, setting):
 
         super().__init__()
@@ -333,7 +333,7 @@ class BudgieWeatherShowSettings(Gtk.Grid):
             self.update_color()
 
 
-class BudgieWeatherShowApplet(Budgie.Applet):
+class WeatherShowApplet(Budgie.Applet):
     """ Budgie.Applet is in fact a Gtk.Bin """
 
     def __init__(self, uuid):
@@ -605,7 +605,7 @@ class BudgieWeatherShowApplet(Budgie.Applet):
 
     def do_get_settings_ui(self):
         """Return the applet settings with given uuid"""
-        return BudgieWeatherShowSettings(self.get_applet_settings(self.uuid))
+        return WeatherShowSettings(self.get_applet_settings(self.uuid))
 
     def do_supports_settings(self):
         """Return True if support setting through Budgie Setting,
