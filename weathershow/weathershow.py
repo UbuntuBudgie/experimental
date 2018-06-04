@@ -362,8 +362,8 @@ class WeatherShowApplet(Budgie.Applet):
 
     def on_press(self, box, arg):
         self.justpoppedup = True
-        self.start = 1
-        self.end = 5
+        self.start = 0
+        self.end = 4
         self.stored = []
         self.run_update()
         self.manager.show_popover(self.box)
