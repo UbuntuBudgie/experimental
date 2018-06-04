@@ -446,9 +446,9 @@ class WeatherShowApplet(Budgie.Applet):
                 self.times[self.start:self.end], 1
             )
             self.popupgrid.show_all()
-            if self.start == 1:
+            if self.start == 0:
                 self.backbutton.set_sensitive(False)
-            elif self.start == 9:
+            elif self.start == 8:
                 self.nextbutton.set_sensitive(True)
 
     def add_timelabel(self, src, t, x, y, spx, spy):
