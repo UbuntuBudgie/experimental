@@ -429,9 +429,9 @@ class WeatherShowApplet(Budgie.Applet):
                 self.times[self.start:self.end], 1
             )
             self.popupgrid.show_all()
-            if self.start == 13:
+            if self.start == 12:
                 self.nextbutton.set_sensitive(False)
-            elif self.start == 5:
+            elif self.start == 4:
                 self.backbutton.set_sensitive(True)
 
     def getprevious(self, button):
