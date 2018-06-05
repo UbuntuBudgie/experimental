@@ -208,11 +208,12 @@ def get_weatherdata(key, city, wtype="weather"):
 
 def get_citymatches(cityname):
     # given a name of a city, return the matches
+    cityname = cityname.lower()
     matches = []
     try:
         test = open(citylist)
         for l in test:
-            if cityname.lower() in l.lower():
+            if cityname in l.lower():
                 matches.append(l)
         return [matches, True]
     except FileNotFoundError:
