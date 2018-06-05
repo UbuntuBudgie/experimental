@@ -182,7 +182,7 @@ class WeatherShow(Gtk.Window):
         self.update_label(self.windlabel, new_windlabel)
         # update pressurelabel
         newpressure = newdata["pressure"]
-        newpressure = str(newpressure) if newpressure else ""
+        newpressure = str(newpressure) + " hPa" if newpressure else ""
         self.update_label(self.pressurelabel, newpressure)
         GObject.idle_add(
             self.set_icon, iconindex,
