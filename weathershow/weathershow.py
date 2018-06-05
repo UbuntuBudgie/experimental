@@ -239,7 +239,10 @@ class WeatherShowSettings(Gtk.Grid):
         currprint = self.cityentry.get_text()
         for item in self.citymenu.get_children():
             item.destroy()
-        if len(currprint) >= 2:
+        if len(currprint) < 2:
+                newmenuitem = Gtk.MenuItem("Too little data")
+                self.citymenu.append(newmenuitem)
+        else:
             newdata = wt.get_citymatches(currprint)
             newselection = newdata[0]
             if not newdata[1]:
@@ -247,15 +250,19 @@ class WeatherShowSettings(Gtk.Grid):
                     "notify-send", "-i", "budgie-wticon-symbolic", "whoops",
                     "Connection error: please check your internet connection"
                 ])
-            for c in newselection:
-                add = c.split()
-                newcity = " ".join(add[1:-3]) + ", " + add[-1]
-                code = add[0]
-                newmenuitem = Gtk.MenuItem(newcity)
+            if len(newselection) == 0:
+                newmenuitem = Gtk.MenuItem("No matches found")
                 self.citymenu.append(newmenuitem)
-                newmenuitem.connect(
-                    "activate", self.apply_selection, newcity, code
-                )
+            else:
+                for c in newselection:
+                    add = c.split()
+                    newcity = " ".join(add[1:-3]) + ", " + add[-1]
+                    code = add[0]
+                    newmenuitem = Gtk.MenuItem(newcity)
+                    self.citymenu.append(newmenuitem)
+                    newmenuitem.connect(
+                        "activate", self.apply_selection, newcity, code
+                    )
         self.citymenu.show_all()
         self.search_button.set_popup(self.citymenu)
         self.show_all()

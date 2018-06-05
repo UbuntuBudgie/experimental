@@ -212,7 +212,7 @@ def get_citymatches(cityname):
     try:
         test = open(citylist)
         for l in test:
-            if cityname in l:
+            if cityname.lower() in l.lower():
                 matches.append(l)
         return [matches, True]
     except FileNotFoundError:
