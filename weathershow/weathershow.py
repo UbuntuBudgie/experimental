@@ -567,11 +567,13 @@ class WeatherShowApplet(Budgie.Applet):
             self.add_icon(src, firstcol, n2 + 2, 1, 1, store=True)
             # prepare wind display
             windmention = wt.prepare_windlabel(src)
+            humidmention = wt.prepare_humidlabel(src)
             # fill in the easy ones
             for item in [
                 wt.validate_val(src["sky"]),
                 wt.convert_temp(wt.validate_val(src["temp"])),
                 windmention,
+                humidmention,
             ]:
                 label = Gtk.Label(item)
                 self.stored.append(label)
@@ -594,11 +596,13 @@ class WeatherShowApplet(Budgie.Applet):
             self.add_icon(src, n1, n2 + 2, 1, 1)
             # prepare wind display
             windmention = wt.prepare_windlabel(src)
+            humidmention = wt.prepare_humidlabel(src)
             # fill in the easy ones
             for item in [
                 wt.validate_val(src["sky"]),
                 wt.convert_temp(wt.validate_val(src["temp"])),
                 windmention,
+                humidmention,
             ]:
                 self.popupgrid.attach(Gtk.Label(item), n1, n2 + 3, 1, 1)
                 n2 = n2 + 1
