@@ -178,11 +178,14 @@ class WeatherShow(Gtk.Window):
         newspeed = newdata["wind_speed"]
         newspeed = str(newspeed) + " m/s" if newspeed else ""
         # so, refresh windlabel
-        new_windlabel = " ".join([newdeg, newspeed])
+        # ok, quickfix, make more elegant one day
+        new_windlabel = " ".join(
+            [newdeg, newspeed]
+        ) if newdeg != "" else newspeed
         self.update_label(self.windlabel, new_windlabel)
         # update pressurelabel
-        newpressure = newdata["pressure"]
-        newpressure = str(newpressure) + " hPa" if newpressure else ""
+        newpressure = newdata["humidity"]
+        newpressure = str(newpressure) + " %" if newpressure else ""
         self.update_label(self.pressurelabel, newpressure)
         GObject.idle_add(
             self.set_icon, iconindex,

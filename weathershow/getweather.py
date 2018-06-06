@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import requests
 import json
+import weathertools as wt
 
 
 """
@@ -55,7 +56,8 @@ def check_dictpaths(raw_data):
         [["main", "temp"], "temp"],
         [["wind", "speed"], "wind_speed"],
         [["wind", "deg"], "wind_deg"],
-        [["main", "pressure"], "pressure"],
+        [["main", "humidity"], "humidity"],
+        [["main", "temp_max"], "temp_min"],
     ]:
         newvalue = try_read(raw_data, item[0], item[1])
         newdata[newvalue[0]] = newvalue[1]
@@ -70,7 +72,7 @@ def get_fields(key, city, lang, wtype="weather"):
         newdata = {}
         for k in [
             "icon", "sunrise", "sunset", "sky", "temp", "wind_speed",
-            "wind_deg", "pressure",
+            "wind_deg", "humidity",
         ]:
             newdata[k] = None
     return newdata
