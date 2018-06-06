@@ -385,24 +385,41 @@ class WeatherShowApplet(Budgie.Applet):
         except (TypeError, KeyError):
             all_data = None
         if all_data:
-            today = {}
+            minmax = {}
+            checked_snapshots = {}
             forecast = {}
             for snapshot in all_data:
+                # snapshot = 3hrs shot
                 try:
                     # get snapshot time
                     t = snapshot["dt_txt"]
                 except KeyError:
                     pass
                 else:
-                    # keep all data
-                    today[t] = gw.check_dictpaths(snapshot)
-                    # 15:00 pm selection
+                    # check if all data exists, set to None if not
+                    fixed_snapshot = gw.check_dictpaths(snapshot)
+                    checked_snapshots[t] = fixed_snapshot
                     currdate = time.strftime("%Y-%m-%d")
-                    if all(
-                        [t.endswith("15:00:00"), not t.startswith(currdate)]
-                    ):
-                        forecast[t] = gw.check_dictpaths(snapshot)
-            return {"today": today, "forecast": forecast}
+                    # split off forecast data, calculate min / max
+                    if not t.startswith(currdate):
+                        currsnapshot = t.split()[0]
+                        try:
+                            minmax[currsnapshot].append(fixed_snapshot["temp"])
+                        except KeyError:
+                            minmax[currsnapshot] = [fixed_snapshot["temp"]]
+                        # split off 3:00 pm snapshots
+                        if t.endswith("15:00:00"):
+                            forecast[currsnapshot] = fixed_snapshot
+            # test for None
+            for k in minmax.keys():
+                templist = [item for item in minmax[k] if item]
+                if templist:
+                    mint = wt.convert_temp(min(templist))
+                    maxt = wt.convert_temp(max(templist))
+                    forecast[k]["minmax"] = mint + " - " + maxt
+                else:
+                    forecast[k]["minmax"] = ""
+            return {"today": checked_snapshots, "forecast": forecast}
 
     def h_spacer(self, addwidth):
         # horizontal spacer
@@ -600,7 +617,8 @@ class WeatherShowApplet(Budgie.Applet):
             # fill in the easy ones
             for item in [
                 wt.validate_val(src["sky"]),
-                wt.convert_temp(wt.validate_val(src["temp"])),
+                # wt.convert_temp(wt.validate_val(src["temp"])),
+                src["minmax"],
                 windmention,
                 humidmention,
             ]:
