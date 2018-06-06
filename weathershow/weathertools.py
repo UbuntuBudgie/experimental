@@ -125,6 +125,19 @@ def restart_weather():
     subprocess.Popen(panelrunner)
 
 
+def prepare_windlabel(src):
+    newdeg = src["wind_deg"]
+    newdeg = arrows[round(newdeg / 45)] if newdeg else None
+    newspeed = src["wind_speed"]
+    speed_mention = str(newspeed) + " m/s" if newspeed else ""
+    return " ".join([newdeg, speed_mention]) if newdeg else speed_mention
+
+
+def prepare_humidlabel(src):
+    newhum = src["humidity"]
+    return str(newhum) + "%" if newhum else ""
+
+
 def get_area():
     # width of the primary screen.
     dspl = Gdk.Display()

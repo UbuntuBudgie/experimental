@@ -100,11 +100,11 @@ class WeatherShow(Gtk.Window):
         self.skylabel = Gtk.Label("---", xalign=0)
         self.templabel = Gtk.Label("---", xalign=0)
         self.windlabel = Gtk.Label("---", xalign=0)
-        self.pressurelabel = Gtk.Label("---", xalign=0)
+        self.humidlabel = Gtk.Label("---", xalign=0)
         # grid the data in wshow
         n = 1
         for item in [
-            self.skylabel, self.templabel, self.windlabel, self.pressurelabel,
+            self.skylabel, self.templabel, self.windlabel, self.humidlabel,
         ]:
             self.wshow_grid.attach(item, 0, n, 1, 1)
             n = n + 1
@@ -115,7 +115,6 @@ class WeatherShow(Gtk.Window):
         self.maingrid.attach(right_marge, 10, 0, 1, 1)
         self.maingrid.show_all()
         self.show_all()
-
         self.update = Thread(target=self.run_cycle)
         # daemonize the thread to make the indicator stopable
         self.update.setDaemon(True)
@@ -178,15 +177,11 @@ class WeatherShow(Gtk.Window):
         newspeed = newdata["wind_speed"]
         newspeed = str(newspeed) + " m/s" if newspeed else ""
         # so, refresh windlabel
-        # ok, quickfix, make more elegant one day
-        new_windlabel = " ".join(
-            [newdeg, newspeed]
-        ) if newdeg != "" else newspeed
+        new_windlabel = wt.prepare_windlabel(newdata)
         self.update_label(self.windlabel, new_windlabel)
-        # update pressurelabel
-        newpressure = newdata["humidity"]
-        newpressure = str(newpressure) + " %" if newpressure else ""
-        self.update_label(self.pressurelabel, newpressure)
+        # update humidity
+        newhumid = wt.prepare_humidlabel(newdata)
+        self.update_label(self.humidlabel, newhumid)
         GObject.idle_add(
             self.set_icon, iconindex,
             priority=GObject.PRIORITY_DEFAULT,

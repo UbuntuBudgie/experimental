@@ -483,13 +483,6 @@ class WeatherShowApplet(Budgie.Applet):
             if store:
                 self.stored.append(image)
 
-    def prepare_windlabel(self, src):
-        newdeg = src["wind_deg"]
-        newdeg = arrows[round(newdeg / 45)] if newdeg else ""
-        newspeed = src["wind_speed"]
-        speed_mention = str(newspeed) + " m/s" if newspeed else ""
-        return " ".join([newdeg, speed_mention])
-
     def run_update(self):
         for c in self.popupgrid.get_children():
             c.destroy()
@@ -573,7 +566,7 @@ class WeatherShowApplet(Budgie.Applet):
             # icon
             self.add_icon(src, firstcol, n2 + 2, 1, 1, store=True)
             # prepare wind display
-            windmention = self.prepare_windlabel(src)
+            windmention = wt.prepare_windlabel(src)
             # fill in the easy ones
             for item in [
                 wt.validate_val(src["sky"]),
@@ -600,7 +593,7 @@ class WeatherShowApplet(Budgie.Applet):
             # set icon
             self.add_icon(src, n1, n2 + 2, 1, 1)
             # prepare wind display
-            windmention = self.prepare_windlabel(src)
+            windmention = wt.prepare_windlabel(src)
             # fill in the easy ones
             for item in [
                 wt.validate_val(src["sky"]),
