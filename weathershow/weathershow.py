@@ -416,12 +416,13 @@ class WeatherShowApplet(Budgie.Applet):
                 if templist:
                     mint = wt.convert_temp(min(templist))
                     maxt = wt.convert_temp(max(templist))
-                    try:
-                        forecast[k]["minmax"] = mint + " - " + maxt
-                    except KeyError:
-                        pass
+                    add_minmax = mint + " - " + maxt
                 else:
-                    forecast[k]["minmax"] = ""
+                    add_minmax = ""
+                try:
+                    forecast[k]["minmax"] = add_minmax
+                except KeyError:
+                    pass
             return {"today": checked_snapshots, "forecast": forecast}
 
     def h_spacer(self, addwidth):
