@@ -385,8 +385,11 @@ class WeatherShowApplet(Budgie.Applet):
         except (TypeError, KeyError):
             all_data = None
         if all_data:
+            # date = key, list of temps
             minmax = {}
+            # fixed snapshots; checked_snapshots[key] set to none if keyerror
             checked_snapshots = {}
+            # date = key, data for future days
             forecast = {}
             for snapshot in all_data:
                 # snapshot = 3hrs shot
@@ -419,10 +422,12 @@ class WeatherShowApplet(Budgie.Applet):
                     add_minmax = mint + " - " + maxt
                 else:
                     add_minmax = ""
+                minmax[k] = add_minmax
+            for k in forecast.keys():
                 try:
-                    forecast[k]["minmax"] = add_minmax
+                    forecast[k]["minmax"] = minmax[k]
                 except KeyError:
-                    pass
+                    forecast[k]["minmax"] = ""
             return {"today": checked_snapshots, "forecast": forecast}
 
     def h_spacer(self, addwidth):
