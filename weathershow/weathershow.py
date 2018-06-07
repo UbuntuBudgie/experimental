@@ -443,7 +443,7 @@ class WeatherShowApplet(Budgie.Applet):
         # set the first- row header, depending on first / second day
         firstday = self.times[self.start]
         fdayname = wt.get_dayname(firstday.split()[0])
-        lastday = self.times[self.end]
+        lastday = self.times[self.end - 1]
         ldayname = wt.get_dayname(lastday.split()[0])
         if fdayname == ldayname:
             self.today_label.set_text(fdayname)
