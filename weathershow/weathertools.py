@@ -33,14 +33,16 @@ prefspath = os.path.join(
     os.environ["HOME"], ".config", "budgie-extras", "weathershow"
 )
 app_path = os.path.dirname(os.path.abspath(__file__))
-iconpath = os.path.join(app_path, "icons")
+iconpath = os.path.join(app_path, "weather_icons")
 
 
 # icons
 iconset = os.listdir(iconpath)
+iconset.append(os.path.join(app_path, "misc_icons", "weather-error.svg"))
 markers = [item[:4] for item in iconset]
 w_icons = []
 small_icons = []
+
 
 for icon in iconset:
     icon = os.path.join(iconpath, icon)
