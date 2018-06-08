@@ -33,36 +33,28 @@ prefspath = os.path.join(
     os.environ["HOME"], ".config", "budgie-extras", "weathershow"
 )
 app_path = os.path.dirname(os.path.abspath(__file__))
+iconpath = os.path.join(app_path, "icons")
 
 
-# lists
-markers = [
-    "10d", "01n", "09n", "03d", "01d", "13d", "11n", "04d", "04n",
-    "10n", "11d", "13n", "02n", "50d", "50n", "02d", "09d", "03n", "qmark",
-]
+# icons
+iconset = os.listdir(iconpath)
+markers = [item[:4] for item in iconset]
+w_icons = []
+small_icons = []
+
+for icon in iconset:
+    icon = os.path.join(iconpath, icon)
+    w_icons.append(
+        GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 150, 150)
+    )
+    small_icons.append(
+        GdkPixbuf.Pixbuf.new_from_file_at_size(icon, 80, 80)
+    )
+
+
 arrows = [
     "↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓",
 ]
-
-
-# pixbuf
-w_icons = []
-small_icons = []
-for icon in markers:
-    w_icons.append(
-        GdkPixbuf.Pixbuf.new_from_file_at_size(
-            os.path.join(
-                app_path, "icons/budgie-wt-" + icon + ".svg"
-            ), 150, 150,
-        )
-    )
-    small_icons.append(
-        GdkPixbuf.Pixbuf.new_from_file_at_size(
-            os.path.join(
-                app_path, "icons/budgie-wt-" + icon + ".svg"
-            ), 80, 80,
-        )
-    )
 
 
 # files / paths
@@ -217,6 +209,21 @@ def get_weatherdata(key, city, wtype="weather"):
             return dict(json.loads(data.text))
     except Exception:
         pass
+
+
+def get_iconmapping(match):
+    mapped = [["221", "212"], ["231", "230"], ["232", "230"], ["301", "300"],
+              ["302", "300"], ["310", "300"], ["312", "311"], ["314", "313"],
+              ["502", "501"], ["503", "501"], ["504", "501"], ["522", "521"],
+              ["531", "521"], ["622", "621"], ["711", "701"], ["721", "701"],
+              ["731", "701"], ["741", "701"], ["751", "701"], ["761", "701"],
+              ["762", "701"],
+              ]
+    for item in mapped:
+        if match == item[0]:
+            match = item[1]
+            break
+    return match
 
 
 def get_citymatches(cityname):

@@ -8,6 +8,7 @@ import weathertools as wt
 import cairo
 import subprocess
 import getweather as gw
+import os
 
 
 """
@@ -160,9 +161,11 @@ class WeatherShow(Gtk.Window):
         # refresh image
         newdata = gw.get_fields(key, city, currlang)
         iconref = newdata["icon"]
-        try:
-            iconindex = markers.index(iconref)
-        except ValueError:
+        weathercode = newdata["weather_code"]
+        if all([weathercode, iconref]):
+            icon_id = str(wt.get_iconmapping(weathercode)) + iconref[-1]
+            iconindex = markers.index(icon_id)
+        else:
             iconindex = -1
         # refresh skylabel
         newsky = wt.validate_val(newdata["sky"])

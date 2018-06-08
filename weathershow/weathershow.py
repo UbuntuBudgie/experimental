@@ -502,12 +502,16 @@ class WeatherShowApplet(Budgie.Applet):
     def add_icon(self, src, x, y, spx, spy, store=False):
         image = Gtk.Image()
         self.popupgrid.attach(image, x, y, spx, spy)
-        td_icon = src["icon"]  # <- exists by definition, but can be None
-        if td_icon:
-            index = markers.index(td_icon)
-            self.set_smallicon(image, index)
+        iconref = src["icon"]  # <- exists by definition, but can be None
+        weathercode = src["weather_code"]
+        if all([weathercode, iconref]):
+            icon_id = str(wt.get_iconmapping(weathercode)) + iconref[-1]
+            iconindex = markers.index(icon_id)
+            self.set_smallicon(image, iconindex)
             if store:
                 self.stored.append(image)
+        else:
+            iconindex = -1
 
     def run_update(self):
         for c in self.popupgrid.get_children():

@@ -57,7 +57,7 @@ def check_dictpaths(raw_data):
         [["wind", "speed"], "wind_speed"],
         [["wind", "deg"], "wind_deg"],
         [["main", "humidity"], "humidity"],
-        [["main", "temp_max"], "temp_min"],
+        [["weather", 0, "id"], "weather_code"],
     ]:
         newvalue = try_read(raw_data, item[0], item[1])
         newdata[newvalue[0]] = newvalue[1]
@@ -72,7 +72,7 @@ def get_fields(key, city, lang, wtype="weather"):
         newdata = {}
         for k in [
             "icon", "sunrise", "sunset", "sky", "temp", "wind_speed",
-            "wind_deg", "humidity",
+            "wind_deg", "humidity", "weather_code",
         ]:
             newdata[k] = None
     return newdata
