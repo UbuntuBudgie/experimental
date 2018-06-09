@@ -23,7 +23,7 @@ program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 dcpath = "/com/solus-project/budgie-panel/applets/"
-app = os.path.join(app_path, "weathershow")
+app = os.path.join(app_path, "weathershow_desktop")
 
 
 def getkey():
