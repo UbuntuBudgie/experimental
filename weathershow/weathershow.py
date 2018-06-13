@@ -505,7 +505,7 @@ class WeatherShowApplet(Budgie.Applet):
         iconref = src["icon"]  # <- exists by definition, but can be None
         weathercode = src["weather_code"]
         if all([weathercode, iconref]):
-            icon_id = str(wt.get_iconmapping(weathercode)) + iconref[-1]
+            icon_id = wt.get_iconmapping(str(weathercode)) + iconref[-1]
             iconindex = markers.index(icon_id)
             self.set_smallicon(image, iconindex)
             if store:

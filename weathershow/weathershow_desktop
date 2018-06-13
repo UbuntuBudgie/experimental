@@ -163,7 +163,7 @@ class WeatherShow(Gtk.Window):
         iconref = newdata["icon"]
         weathercode = newdata["weather_code"]
         if all([weathercode, iconref]):
-            icon_id = str(wt.get_iconmapping(weathercode)) + iconref[-1]
+            icon_id = wt.get_iconmapping(str(weathercode)) + iconref[-1]
             iconindex = markers.index(icon_id)
         else:
             iconindex = -1
