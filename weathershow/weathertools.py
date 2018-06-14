@@ -163,10 +163,11 @@ def get_transparency():
 
 
 def getkey():
+    # please do not copy the key below for other use than WeatherShow
     try:
         return open(keyfile).read().strip()
     except FileNotFoundError:
-        return "<key>"
+        return "cfd52641f834ca80ed94a28de864bb64"
 
 
 def get_currlang():
