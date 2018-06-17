@@ -46,7 +46,7 @@ else:
 color = wt.hexcolor(wt.read_color(wt.textcolor))
 transparency = wt.get_transparency()
 # refresh cycle (seconds)
-refresh_time = 5
+refresh_time = 30
 
 
 # lists

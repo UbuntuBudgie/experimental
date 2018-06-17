@@ -5,35 +5,11 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   id="svg8"
-   version="1.1"
-   viewBox="0 0 79.375 79.375"
-   height="300"
    width="300"
-   sodipodi:docname="800n-clear-sky.svg"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)">
-  <sodipodi:namedview
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1"
-     objecttolerance="10"
-     gridtolerance="10"
-     guidetolerance="10"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:window-width="1632"
-     inkscape:window-height="980"
-     id="namedview65"
-     showgrid="false"
-     inkscape:zoom="0.78666667"
-     inkscape:cx="-229.44915"
-     inkscape:cy="141.90507"
-     inkscape:window-x="48"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg8" />
+   height="300"
+   viewBox="0 0 79.375 79.375"
+   version="1.1"
+   id="svg8">
   <defs
      id="defs2" />
   <metadata
@@ -49,18 +25,16 @@
     </rdf:RDF>
   </metadata>
   <g
-     id="g5455"
+     style="fill:#ffff00"
      transform="translate(-10.675432,-294.59731)"
-     style="fill:#ffff00">
+     id="g5455">
     <path
-       inkscape:connector-curvature="0"
-       id="path5430"
+       style="fill:#ffff00;stroke:none;stroke-width:0.26458332"
        d="m 41.309073,311.26694 a 24.095981,24.095981 0 0 0 -15.136543,22.35627 24.095981,24.095981 0 0 0 24.095685,24.09618 24.095981,24.095981 0 0 0 18.313612,-8.44857 24.095981,24.095981 0 0 1 -8.958625,1.73943 24.095981,24.095981 0 0 1 -24.095688,-24.09621 24.095981,24.095981 0 0 1 5.781559,-15.6471 z"
-       style="fill:#ffff00;stroke:none;stroke-width:0.26458332" />
+       id="path5430" />
     <path
-       inkscape:connector-curvature="0"
-       d="m 64.915017,313.68513 -3.811823,-0.91781 -2.917045,2.61978 -0.305036,-3.90888 -3.392968,-1.96472 3.623301,-1.49802 0.820075,-3.83403 2.544359,2.98305 3.899803,-0.40484 -2.050801,3.34164 z"
+       style="fill:#ffff00;stroke:none;stroke-width:0.26458332"
        id="path5451"
-       style="fill:#ffff00;stroke:none;stroke-width:0.26458332" />
+       d="m 64.915017,313.68513 -3.811823,-0.91781 -2.917045,2.61978 -0.305036,-3.90888 -3.392968,-1.96472 3.623301,-1.49802 0.820075,-3.83403 2.544359,2.98305 3.899803,-0.40484 -2.050801,3.34164 z" />
   </g>
 </svg>

@@ -5,35 +5,11 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   id="svg8"
-   version="1.1"
-   viewBox="0 0 79.374998 79.375002"
-   height="300"
    width="300"
-   sodipodi:docname="802n-scattered-clouds.svg"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)">
-  <sodipodi:namedview
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1"
-     objecttolerance="10"
-     gridtolerance="10"
-     guidetolerance="10"
-     inkscape:pageopacity="0"
-     inkscape:pageshadow="2"
-     inkscape:window-width="1632"
-     inkscape:window-height="980"
-     id="namedview9"
-     showgrid="false"
-     inkscape:zoom="0.78666667"
-     inkscape:cx="-80.720338"
-     inkscape:cy="150"
-     inkscape:window-x="48"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="svg8" />
+   height="300"
+   viewBox="0 0 79.374998 79.375002"
+   version="1.1"
+   id="svg8">
   <defs
      id="defs2" />
   <metadata
@@ -49,28 +25,28 @@
     </rdf:RDF>
   </metadata>
   <g
-     transform="translate(0,-217.62498)"
+     style="fill:#cccccc"
      id="layer1"
-     style="fill:#cccccc">
+     transform="translate(0,-217.62498)">
     <g
-       transform="translate(-97.289927,194.59941)"
+       style="fill:#cccccc"
        id="g343"
-       style="fill:#cccccc">
+       transform="translate(-97.289927,194.59941)">
       <rect
-         style="fill:#cccccc;stroke-width:0.17747767"
-         id="rect12"
-         width="61.610119"
-         height="22.818562"
-         x="107.72322"
+         ry="11.409281"
          y="60.742477"
-         ry="11.409281" />
+         x="107.72322"
+         height="22.818562"
+         width="61.610119"
+         id="rect12"
+         style="fill:#cccccc;stroke-width:0.17747767" />
       <ellipse
-         style="fill:#cccccc;stroke-width:0.17747767"
-         id="path14"
-         cx="133.65398"
-         cy="59.785362"
+         ry="15.592684"
          rx="16.733612"
-         ry="15.592684" />
+         cy="59.785362"
+         cx="133.65398"
+         id="path14"
+         style="fill:#cccccc;stroke-width:0.17747767" />
     </g>
   </g>
 </svg>
