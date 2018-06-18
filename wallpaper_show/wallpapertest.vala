@@ -12,7 +12,6 @@ public
   static int main(string[] args) {
     int seconds = int.parse(args[2]) * 1000000;
     string directory = args[1];
-    walls(directory);
     string settingspath = "org.gnome.desktop.background";
     Settings settings = new Settings(settingspath);
     while (1 == 1) {
