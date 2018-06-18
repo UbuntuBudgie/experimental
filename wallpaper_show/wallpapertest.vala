@@ -1,7 +1,7 @@
 /*
- * First babysteps on programming on Vala. This code will switch
+ * First babysteps on programming in Vala. This code will switch
  * wallpapers from a directory of images. Arguments are the folder of
- * images and the time the images shows. After eacht time the complete
+ * images and the time the images show. After eacht time the complete
  * set of images has passed, the list of images is refreshed, so
  * images may be added or removed from the directory while the
  * executable is running.
