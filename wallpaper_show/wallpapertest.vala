@@ -8,16 +8,15 @@
  */
 
 class Wallpaper.Test : GLib.Object {
-public static int main(string[] args) {
+  public static int main(string[] args) {
     int seconds = int.parse(args[2]) * 1000000;
     string directory = args[1];
     string settingspath = "org.gnome.desktop.background";
     Settings settings = new Settings(settingspath);
-    while (1 == 1) {
+    while (true) {
       string[] getlist = walls(directory);
       run_walls(getlist, settings, seconds);
     }
-    return 0;
   }
 }
 
