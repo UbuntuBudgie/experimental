@@ -8,8 +8,7 @@
  */
 
 class Wallpaper.Test : GLib.Object {
-public
-  static int main(string[] args) {
+public static int main(string[] args) {
     int seconds = int.parse(args[2]) * 1000000;
     string directory = args[1];
     string settingspath = "org.gnome.desktop.background";
@@ -22,8 +21,7 @@ public
   }
 }
 
-private
-string[] walls(string directory) {
+private string[] walls(string directory) {
   string[] somestrings = {};
   try {
     var dr = Dir.open(directory);
@@ -38,8 +36,7 @@ string[] walls(string directory) {
   return somestrings;
 }
 
-private
-void run_walls(string[] paths, Settings settings, int seconds) {
+private void run_walls(string[] paths, Settings settings, int seconds) {
   foreach (string s in paths) {
     Thread.usleep(seconds);
     settings.set_string("picture-uri", "file:///" + s);
