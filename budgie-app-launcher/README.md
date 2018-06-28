@@ -16,7 +16,7 @@ Install
    # Clone or download the repository
    git clone https://github.com/UbuntuBudgie/experimental.git
 
-   # Go to the budgie-hello-world-smile directory (first)
+   # Go to the budgie-app-launcher directory (first)
    cd experimental/budgie-app-launcher
 
    # Configure the the installation
