@@ -6,7 +6,7 @@ App Launcher is a Budgie Desktop applet for productivity. This applet lists your
 
 Evo Pop                    |  Arc Design
 :-------------------------:|:-------------------------:
-<img src="https://github.com/UbuntuBudgie/budgie-experimental/master/budgie-app-launcher/screenshots/screenshot1.gif" width="400"/>  |  <img src="https://github.com/UbuntuBudgie/budgie-experimental/master/budgie-app-launcher/screenshots/screenshot2.gif" width="400"/>
+<img src="https://raw.githubusercontent.com/UbuntuBudgie/experimental/master/budgie-app-launcher/screenshots/screenshot1.gif" width="400"/>  |  <img src="https://raw.githubusercontent.com/UbuntuBudgie/experimental/master/budgie-app-launcher/screenshots/screenshot2.gif" width="400"/>
 
 <br/>
 
