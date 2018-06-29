@@ -1,12 +1,12 @@
-App Launcher
+Trash
 ========
 
-App Launcher is a Budgie Desktop applet for productivity. This applet lists your favourite apps.  
+Trash is a Budgie Desktop applet for productivity.  
 
 
 Evo Pop                    |  Arc Design
 :-------------------------:|:-------------------------:
-<img src="https://raw.githubusercontent.com/UbuntuBudgie/experimental/master/budgie-app-launcher/screenshots/screenshot1.gif" width="400"/>  |  <img src="https://raw.githubusercontent.com/UbuntuBudgie/experimental/master/budgie-app-launcher/screenshots/screenshot2.gif" width="400"/>
+<img src="https://github.com/UbuntuBudgie/experimental/blob/master/budgie-trash/screenshots/screenshot1.gif" width="300"/>  |  <img src="https://github.com/UbuntuBudgie/experimental/blob/master/budgie-trash/screenshots/screenshot2.gif" width="300"/>
 
 <br/>
 
@@ -16,8 +16,8 @@ Install
    # Clone or download the repository
    git clone https://github.com/UbuntuBudgie/experimental.git
 
-   # Go to the budgie-app-launcher directory (first)
-   cd experimental/budgie-app-launcher
+   # Go to the budgie-trash directory (first)
+   cd experimental/budgie-trash
 
    # Configure the the installation
    mkdir build && cd build
@@ -42,6 +42,8 @@ References
 [Ubuntu Budgie](https://ubuntubudgie.org/)<br/>
 [budgie-desktop-examples](https://github.com/budgie-desktop/budgie-desktop-examples/tree/master/python_project)<br/>
 [budgie-desktop applets](https://github.com/solus-project/budgie-desktop/tree/master/src/applets)<br/>
+[bertoldia/gnome-shell-trash-extension](https://github.com/bertoldia/gnome-shell-trash-extension)<br/>
+
 
 License
 -------
