@@ -568,7 +568,7 @@ class AppLauncherApplet(Budgie.Applet):
         for app in self.filteredActiveApps:
             row = Gtk.HBox()
             self.appButtonsContainer.add(row)
-            appButton = AppButton(app, self.iconSize, self.popover)
+            appButton = AppButton(app, 24, self.popover)
             row.pack_start(appButton, True, True, 0)
             appButton.show_all()
             row.show_all()
@@ -583,7 +583,7 @@ class AppLauncherApplet(Budgie.Applet):
             if counter >= self.showOnPanel and app.getActive():
                 row = Gtk.HBox()
                 self.appButtonsContainer.add(row)
-                appButton = AppButton(app, self.iconSize, self.popover)
+                appButton = AppButton(app, 24, self.popover)
                 row.pack_start(appButton, True, True, 0)
                 appButton.show_all()
                 row.show_all()
@@ -608,7 +608,7 @@ class AppLauncherApplet(Budgie.Applet):
             for menuButton in self.menuButtonsContainer.get_children():
                 menuButton.destroy()
         for app in self.allApps:
-            menuButton = MenuButton(app, self.iconSize)
+            menuButton = MenuButton(app, 24)
             menuButton.setChecked(app.getActive())
             menuButton.setToggButtonSensitive(app.getActive())
             menuButton.addOnToggleMethod(self.menuButtonOnToggle)

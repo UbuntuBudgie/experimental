@@ -1,7 +1,7 @@
 App Launcher
 ========
 
-App Launcher is a Budgie Desktop applet for productivity. This applet lists your favourite apps.  
+App Launcher is a Budgie Desktop applet for productivity. This applet lists your favourite apps.  
 
 
 Evo Pop                    |  Arc Design
@@ -37,6 +37,16 @@ Install
 
 <br/>
 
+Changelog
+-------
+### Added
+
+### Changed
+* List icon size is fixed at 24
+### Removed
+
+<br/>
+
 References
 -------
 [Ubuntu Budgie](https://ubuntubudgie.org/)<br/>
@@ -47,4 +57,3 @@ License
 -------
 
 This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or at your option) any later version.
-
