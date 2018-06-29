@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python3
+Module=Trash
+Name=Trash
+Description=Trash
+Authors=Serdar ŞEN <serdarbote@gmail.com>
+Copyright=Copyright © 2018 Serdar ŞEN
+Website=https://github.serdarsen.io
+Icon=budgie-trash-full-symbolic
