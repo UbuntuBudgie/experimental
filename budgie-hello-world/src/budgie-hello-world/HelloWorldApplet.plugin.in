@@ -1,0 +1,8 @@
+[Plugin]
+Module=budgiehelloworldapplet.so
+Name=Hello World
+Description=Hello World
+Authors=Ubuntu Budgie Developers
+Copyright=Copyright © 2018-2019 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org/
+Icon=hello-world-smile-symbolic
