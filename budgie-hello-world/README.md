@@ -30,7 +30,7 @@ Install
    sudo ninja uninstall
 
    # Logout and login after installing the applet.
-   # You can add App Launcher to your panel from Budgie Desktop Settings.
+   # You can add Hello World to your panel from Budgie Desktop Settings.
 
    # Have fun!
 ```
