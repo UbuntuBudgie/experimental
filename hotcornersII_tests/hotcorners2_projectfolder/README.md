@@ -1,4 +1,4 @@
-##HotCorners2
+## HotCorners2
 After having played around, this is the project folder of HotCorners2 -Vala version
 
 compile with:
