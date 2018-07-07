@@ -1,0 +1,55 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the org.ubuntubudgie.applet.trash package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: org.ubuntubudgie.applet.trash\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2017-05-07 22:24+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#:
+msgid "Open"
+msgstr ""
+
+#:
+msgid "Empty"
+msgstr ""
+
+#:
+msgid "Empty Trash"
+msgstr ""
+
+#:
+msgid "Restore"
+msgstr ""
+
+#:
+msgid "Cancel"
+msgstr ""
+
+#:
+msgid "Empty all items from the Trash?"
+msgstr "<b>Empty all items from the Trash?</b>"
+
+#:
+msgid "All items in the Trash will be permanently deleted."
+msgstr ""
+
+
+#:
+msgid "already exist."
+msgstr ""
+
+#:
+msgid "restored."
+msgstr ""

@@ -1,36 +1,43 @@
-project('budgie-trash',
-	version: '2.0',
-	meson_version: '>= 0.40.0'
-)
+project('org.ubuntubudgie.applet.trash',
+        ['vala', 'c'],
+        version: '0.1.0',
+        meson_version: '>=0.40.0',
+        license: 'GPL2')
 
-#i18n = import('i18n')
-python = import('python3')
+am_cflags = [
+    '-fstack-protector',
+    '-pedantic',
+    '-Wstrict-prototypes',
+    '-Wundef',
+    '-Werror-implicit-function-declaration',
+    '-Wformat',
+    '-Wformat-security',
+    '-Werror=format-security',
+    '-Wconversion',
+    '-Wunused-variable',
+    '-Wunreachable-code',
+    '-Wall',
+    '-W'
+]
 
-message('Looking for dependencies')
-python_bin = python.find_python()
-if not python_bin.found()
-	error('No python3 binary found')
-else
-	message('Found python3 binary')
-endif
+add_global_arguments(am_cflags, language: 'c')
 
 # Global path variable
 prefix = get_option('prefix')
 libdir = join_paths(prefix, get_option('libdir'))
 datadir = join_paths(prefix, get_option('datadir'))
 
-PLUGINS_INSTALL_DIR = join_paths(libdir, 'budgie-desktop',
-	'plugins')
+LOCALE_DIR = join_paths(prefix, get_option('localedir'))
+
+VAPI_DIR = join_paths(meson.source_root(), 
+                      'vapi')
+
 PIXMAPS_DIR = join_paths(datadir, 'pixmaps')
-PLUGINS_DATA_DIR = join_paths(datadir, 'budgie-desktop',
-	'plugins')
-APPLICATIONS_DIR = join_paths(datadir, 'applications')
-PLUGIN = 'budgie-trash'
 
-
-conf = configuration_data()
-conf.set('PROJECT_NAME', meson.project_name())
+LIB_INSTALL_DIR = join_paths(prefix, libdir, 'budgie-desktop', 'plugins', meson.project_name())
 
 message('Installing applet...')
 
 subdir('src')
+subdir('po')
+subdir('icons')

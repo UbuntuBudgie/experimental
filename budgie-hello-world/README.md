@@ -10,18 +10,28 @@ Evo Pop                    |  Arc Design
 
 <br/>
 
+Dependencies
+-------
+```
+budgie-1.0 >= 2
+gtk+-3.0
+vala
+```
+<br/>
+
 Install
 -------
 ```bash
    # Clone or download the repository
    git clone https://github.com/UbuntuBudgie/experimental.git
 
-   # Go to the budgie-hello-world directory (first)
+   # Go to the budgie-hello-world directory
    cd experimental/budgie-hello-world
 
    # Configure the the installation
    mkdir build && cd build
    meson --buildtype plain --prefix=/usr --libdir=/usr/lib
+   ninja
 
    # Install
    sudo ninja install
@@ -37,14 +47,25 @@ Install
 
 <br/>
 
+Changelog
+-------
+### Added
+* Locale language support(en_GB, en_US)
+* class namespaces
+### Changed
+* Dependencies
+### Removed
+
+<br/>
+
 References
 -------
 [Ubuntu Budgie](https://ubuntubudgie.org/)<br/>
 [solus-project/budgie-desktop](https://github.com/solus-project/budgie-desktop)<br/>
-[UbuntuBudgie/budgie-weather-applet](https://github.com/UbuntuBudgie/budgie-weather-applet)<br/>
+[cybre/budgie-haste-applet](https://github.com/cybre/budgie-haste-applet)<br/>
 
 
 License
 -------
 
-This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or at your option) any later version.
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License, or at your option) any later version.
