@@ -109,6 +109,14 @@ public class WatchCorners : Gtk.Window {
     private Entry[] entries;
     private ToggleButton[] buttons;
     private CheckButton[] cbuttons;
+
+    string css_data = """
+    .label {
+      padding-bottom: 3px;
+      padding-top: 3px;
+      font-weight: bold;
+    }
+    """;
     //private Array[,] defaults;
 
     public void button_action() {
@@ -128,13 +136,37 @@ public class WatchCorners : Gtk.Window {
         maingrid.set_row_spacing(7);
         maingrid.set_column_spacing(7);
         this.add(maingrid);
-
+        
+        /* header labels */
+        var cornerlabel = new Gtk.Label(" Corner");
+        cornerlabel.set_xalign(0);
+        maingrid.attach(cornerlabel, 0, 0, 1, 1);
+        var actionlabel = new Gtk.Label(" Action");
+        actionlabel.set_xalign(0);
+        maingrid.attach(actionlabel, 1, 0, 1, 1);
+        var customlabel = new Gtk.Label(" Custom");
+        customlabel.set_xalign(0);
+        maingrid.attach(customlabel, 2, 0, 2, 1);
+        /* set styling of headers */
+        Label[] headers = {
+            cornerlabel, actionlabel, customlabel
+        };
+        // ssize_t length = -1;
+        var screen = this.get_screen ();
+        var css_provider = new Gtk.CssProvider();
+        css_provider.load_from_data(css_data);
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+        );
+        foreach (Label l in headers) {
+            l.get_style_context().add_class("label");
+        };
         string[] namelist = {
             "Top-left", "Top-right", "Bottom-left", "Bottom-right"
         };
 
         /* now we have a default list */
-        int y_pos = 0;
+        int y_pos = 1;
 
         foreach (string name in namelist) {
             print(name + "\n");
