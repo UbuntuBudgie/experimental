@@ -1,7 +1,6 @@
 using Gtk;
 using Gdk;
 using Math;
-using Gee;
 using Json;
 
 /* 
