@@ -72,7 +72,7 @@ public class WatchCorners : Gtk.Window {
     private int[] x_arr;
     private int[] y_arr;
     private int pressure;
-    GLib.Settings hc_settings;
+    private GLib.Settings hc_settings;
     private int time_steps; 
     /* GUI stuff */
     private Grid maingrid;
