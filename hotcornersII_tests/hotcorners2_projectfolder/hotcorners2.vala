@@ -75,6 +75,7 @@ public class WatchCorners : Gtk.Window {
     private int pressure;
     private GLib.Settings hc_settings;
     private int time_steps; 
+    private bool include_pressure;
     /* GUI stuff */
     private Grid maingrid;
     private Entry[] entries;
@@ -226,6 +227,12 @@ public class WatchCorners : Gtk.Window {
 
     private void update_pressure () {
         this.pressure = this.hc_settings.get_int("pressure");
+        if (this.pressure > 0) {
+            include_pressure = true;
+        }
+        else {
+            this.include_pressure = false;
+        }
     }
 
     private void read_setcommands () {
@@ -376,6 +383,17 @@ public class WatchCorners : Gtk.Window {
         }
         return -1;
     }
+
+    private bool check_onpressure () {
+        if (this.include_pressure == true) {
+            bool approve = decide_onpressure();
+            return approve;
+        }
+        else {
+            return true;
+        }
+    }
+
     /* decide if the pressure is enough */
     private bool decide_onpressure () {
         double x_travel = Math.pow(
@@ -426,7 +444,7 @@ public class WatchCorners : Gtk.Window {
         GLib.Timeout.add (50, () => {
             int corner = check_corner(xres, yres, seat);
             if (corner != -1 && reported == false) {
-                if (decide_onpressure() == true) {
+                if (check_onpressure() == true) {
                     run_command(corner);
                     reported = true;
                 }
