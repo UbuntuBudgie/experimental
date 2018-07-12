@@ -20,77 +20,48 @@ using Gee;
 */
 
 
-namespace SharedFunctions {
+namespace SupportingFunctions {
 
-    /*
-    * Here we keep the (possibly) shared stuff 
-    */
+    // Here we keep the (possibly) shared stuff
 
-    public string[] getcommands() {
-        
-        /* 
-        * reads the commands from the commands file
-        * if it does not exist, fall back to defaults
-        */
-
-        string[] commands = {};
-        var pathdata = new HashMap<string, string>();
-        pathdata = get_path ("hotcorners", "hotc_commands");
-        string path = pathdata.get ("file");
-        var file = File.new_for_path(path);
-        //string output = "";
-        try {
-            var content = new DataInputStream(file.read());
-            string line;
-            int i = 0;
-            while (i < 4) {
-                line = content.read_line();
-                print(line + "\n");
-                commands += line;
-                i += 1;
-            } 
-        }
-        /* in case the file is not found, fall back to default */
-        catch (GLib.IOError err) {
-            commands = {
-                "false",
-                "false",
-                "false",
-                "false",
-            };
-        }
-        foreach (string add in commands) {
-            print("here we go " + add + "\n");
-        }
-        return commands;
+    private GLib.Settings get_settings(string path) {
+        var settings = new GLib.Settings(path);
+        return settings;
     }
-
-    public HashMap get_path (string applet_name, string ? filename = null) {
-
-        /*
-        * given the applet settingsfolder name, tell the full path
-        * also, if optional filename is used as second arg, tell the
-        * full path to the file
-        */
-        
-        var map = new HashMap<string, string> ();
-        string home = Environment.get_home_dir();
-        string extras = Path.build_filename(
-            home, ".config/budgie-extras", applet_name
-        );
-
-        map.set("appsettings", extras);
-
-        if (filename != null) {
-            string filepath = Path.build_filename(
-                extras, filename
-            );
-            map.set("file", filepath);
-        }
-        else {
-            map.set("file", "");
-        }
-        return map;
+    /* below functions are look- ups for mostly GUI items */
+    private int get_checkbuttonindex (
+        ToggleButton button, CheckButton[] arr
+        ) {
+        for (int i=0; i < arr.length; i++) {
+            if(button == arr[i]) return i;
+        } return -1;
+    }
+    private int get_togglebuttonindex (
+        ToggleButton button, ToggleButton[] arr
+        ) {
+        for (int i=0; i < arr.length; i++) {
+            if(button == arr[i]) return i;
+        } return -1;
+    }
+    private int get_entryindex (Editable entry, Entry[] arr) {
+        for (int i=0; i < arr.length; i++) {
+            if(entry == arr[i]) return i;
+        } return -1;
+    }
+    private bool command_isdefault(string cmd, string[] defaults) {
+        for (int i=0; i < defaults.length; i++) {
+            if(cmd == defaults[i]) return true;
+        } return false;
+    }
+    private int get_stringindex (string s, string[] arr) {
+        for (int i=0; i < arr.length; i++) {
+            if(s == arr[i]) return i;
+        } return -1;
+    }
+    private int get_cboxindex (ComboBox c, ComboBox[] arr) {
+        for (int i=0; i < arr.length; i++) {
+            if(c == arr[i]) return i;
+        } return -1;
     }
 }
 
@@ -101,57 +72,60 @@ public class WatchCorners : Gtk.Window {
     private int[] x_arr;
     private int[] y_arr;
     private int pressure;
-    private int time_steps;
-    private string[] commands;
-    private bool runloop;
+    GLib.Settings hc_settings;
+    private int time_steps; 
     /* GUI stuff */
     private Grid maingrid;
     private Entry[] entries;
     private ToggleButton[] buttons;
     private CheckButton[] cbuttons;
-
-    string css_data = """
-    .label {
-      padding-bottom: 3px;
-      padding-top: 3px;
-      font-weight: bold;
-    }
-    """;
-    //private Array[,] defaults;
-
-    public void button_action() {
-        this.runloop = false;
-        GLib.Timeout.add (200, () => {
-            print("restarting HotCorners...");
-            return false;
-        });
-        this.runloop = true;
-        testmain();
-    }
+    private string[] commands;
+    private ComboBox[] dropdowns;
+    private string[] dropdown_namelist;
+    private string[] dropdown_cmdlist;
 
     /* below is the actual applet popup section */
     public void managewindow(string[] ? args = null) {
+
+        /* data */
+        string css_data = """
+        .label {
+            padding-bottom: 3px;
+            padding-top: 3px;
+            font-weight: bold;
+        }
+        """;
+
+        /* gsettings stuff */
+        this.hc_settings = SupportingFunctions.get_settings(
+            "org.ubuntubudgie.plugins.budgie-hotcorners"
+        );
+        this.hc_settings.changed["pressure"].connect(update_pressure);
+        update_pressure ();
+        read_setcommands ();
+        populate_dropdown ();
+
+        /* window def */
         this.title = "HotCorners Settings";
-        maingrid = new Grid();
-        maingrid.set_row_spacing(7);
-        maingrid.set_column_spacing(7);
-        this.add(maingrid);
-        
+        /* grid */
+        this.maingrid = new Grid();
+        this.maingrid.set_row_spacing(7);
+        this.maingrid.set_column_spacing(7);
+        this.add(this.maingrid);
         /* header labels */
         var cornerlabel = new Gtk.Label(" Corner");
         cornerlabel.set_xalign(0);
-        maingrid.attach(cornerlabel, 0, 0, 1, 1);
+        this.maingrid.attach(cornerlabel, 0, 0, 1, 1);
         var actionlabel = new Gtk.Label(" Action");
         actionlabel.set_xalign(0);
-        maingrid.attach(actionlabel, 1, 0, 1, 1);
+        this.maingrid.attach(actionlabel, 1, 0, 1, 1);
         var customlabel = new Gtk.Label(" Custom");
         customlabel.set_xalign(0);
-        maingrid.attach(customlabel, 2, 0, 2, 1);
+        this.maingrid.attach(customlabel, 2, 0, 2, 1);
         /* set styling of headers */
         Label[] headers = {
             cornerlabel, actionlabel, customlabel
         };
-        // ssize_t length = -1;
         var screen = this.get_screen ();
         var css_provider = new Gtk.CssProvider();
         css_provider.load_from_data(css_data);
@@ -161,64 +135,201 @@ public class WatchCorners : Gtk.Window {
         foreach (Label l in headers) {
             l.get_style_context().add_class("label");
         };
+        /* toggle buttons -names*/
         string[] namelist = {
             "Top-left", "Top-right", "Bottom-left", "Bottom-right"
         };
-
-        /* now we have a default list */
+        /* create rows */
         int y_pos = 1;
 
         foreach (string name in namelist) {
-            print(name + "\n");
-            ToggleButton latest = new ToggleButton.with_label(name);
-            buttons += latest;
-            maingrid.attach(latest, 0, y_pos, 1, 1);
-            latest.toggled.connect(toggle_corner);
-            Entry latest_entry = new Entry();
-            entries += latest_entry;
-            maingrid.attach(latest_entry, 1, y_pos, 1, 1);
+            /* create toggle buttons */
+            var latest_togglebutton = new ToggleButton.with_label(name);
+            buttons += latest_togglebutton;
+            this.maingrid.attach(latest_togglebutton, 0, y_pos, 1, 1);
+            /* create entries */
+            var latest_entry = new Entry();
+            this.entries += latest_entry;  
+            latest_entry.set_size_request(220, 20);
+            /* create dropdown */
+            var command_combo = new ComboBoxText();
+            command_combo.set_size_request(220, 20);
+            foreach (string cmd_name in this.dropdown_namelist) {
+                command_combo.append_text(cmd_name);
+            }
+            this.dropdowns += command_combo;
+            /* space */
             var spacer = new Label(" ");
-            maingrid.attach(spacer, 2, y_pos, 1, 1);
+            this.maingrid.attach(spacer, 2, y_pos, 1, 1);
             var spacer2 = new Label(" ");
-            maingrid.attach(spacer2, 4, y_pos, 1, 1);
-            CheckButton latest_check = new CheckButton();
-            cbuttons += latest_check;
-            maingrid.attach(latest_check, 3, y_pos, 1, 1);
+            this.maingrid.attach(spacer2, 4, y_pos, 1, 1);
+            /* checkbutton cusom command */
+            var latest_check = new CheckButton();
+            this.cbuttons += latest_check;
+            this.maingrid.attach(latest_check, 3, y_pos, 1, 1);
+            /* populate with command situation */
+            string set_command = this.commands[y_pos - 1];
+            if (set_command == "") {
+                latest_togglebutton.set_active(false);
+                this.maingrid.attach(command_combo, 1, y_pos, 1, 1);
+                command_combo.set_sensitive(false);
+                latest_check.set_sensitive(false);
+            }
+            else {
+                latest_togglebutton.set_active(true);
+                bool test = SupportingFunctions.command_isdefault(
+                    set_command, this.dropdown_cmdlist
+                );
+                if (test == true) {
+                    this.maingrid.attach(command_combo, 1, y_pos, 1, 1);
+                    int combo_index = SupportingFunctions.get_stringindex(
+                        set_command, this.dropdown_cmdlist
+                    );
+                    command_combo.active = combo_index;
+                    latest_check.set_active(false);
+                }
+                else {
+                    this.maingrid.attach(latest_entry, 1, y_pos, 1, 1);
+                    latest_entry.set_text(set_command);
+                    latest_check.set_active(true);
+                }
+            }
+            /* connect the whole row */
+            latest_togglebutton.toggled.connect(toggle_corner);
+            latest_check.toggled.connect(act_on_checkbuttontoggle);
+            command_combo.changed.connect(get_fromcombo);
+            latest_entry.changed.connect(update_fromentry);
             y_pos += 1;
-            print(@"$y_pos\n");
         }
+
         this.show_all();
-        this.runloop = true;
-        testmain();
+        watch_loop();
         Gtk.main();
     }
 
-    void toggle_corner(ToggleButton button) {
-        bool active = button.get_active();
-        if (active) { 
-            stdout.printf("Set active" + "\n"); 
-        }
-        else { 
-            stdout.printf("Set inactive" + "\n"); 
-        }            
-        int buttonindex = array_search(button, this.buttons);
-        Entry corr_entry = this.entries[buttonindex];
-        string corr_entrytext = corr_entry.get_text();
-        stdout.printf("Entrytext: " + corr_entrytext + "\n");
-        string showindex = buttonindex.to_string();
-        stdout.printf("button / entry index: " + showindex + "\n\n");
+    private void get_fromcombo (ComboBox combo) {
+        /* 
+        * reads the chosen command from the ComboBoxText and updates
+        * the hotcorner/commands list 
+        */
+        /* corner index */
+        int combo_index = SupportingFunctions.get_cboxindex(
+            combo, this.dropdowns
+        );
+        /* command index */
+        int command_index = combo.get_active();
+        string new_cmd = dropdown_cmdlist[command_index];
+        this.commands[combo_index] = new_cmd;
+        this.hc_settings.set_strv("commands", this.commands);
     }
 
-    int array_search(ToggleButton currbutton, ToggleButton[] array) {
-        int result = -1;
-        for (int i=0; i < array.length; i++) {
-            if(currbutton == array[i]) return i;
+    private void update_pressure () {
+        this.pressure = this.hc_settings.get_int("pressure");
+    }
+
+    private void read_setcommands () {
+        this.commands = this.hc_settings.get_strv("commands");
+    }
+
+    private void populate_dropdown () {
+        /* 
+        * reads the default dropdown commands/names and populates
+        * the dropdown menu
+        */
+        var parser = new Json.Parser ();
+        string[] dropdown_source = this.hc_settings.get_strv("dropdown");
+        foreach (string s in dropdown_source) {
+            read_json(parser, s);
         }
-        return result;
+    }
+
+    private void read_json(Json.Parser parser, string command) {
+        /* reads json data from gsettings name/command couples */
+        parser.load_from_data (command);
+        var root_object = parser.get_root ().get_object ();
+        string test = root_object.get_string_member ("name");
+        string test2 = root_object.get_string_member ("command");
+        this.dropdown_namelist += test;
+        this.dropdown_cmdlist += test2;
+    }
+
+    private void update_fromentry(Editable entry) {
+        /* reads the entry and edits the corner / commands list */
+        int buttonindex = SupportingFunctions.get_entryindex(
+            entry, this.entries
+        );
+        string new_cmd = entry.get_chars(0, 100);
+        this.commands[buttonindex] = new_cmd;
+        this.hc_settings.set_strv("commands", this.commands);
+    }
+
+    private void act_on_checkbuttontoggle(ToggleButton button) {
+        /*
+        * if custom checkbox is toggled, both GUI and command list changes
+        * need to take place
+        */
+        // add: command change!!
+        int b_index = SupportingFunctions.get_checkbuttonindex(
+            button, this.cbuttons
+        );
+        bool active = button.get_active();
+        if (active) { 
+            Entry new_source = this.entries[b_index];
+            this.maingrid.attach(new_source, 1, b_index + 1, 1, 1);
+            this.maingrid.remove(this.dropdowns[b_index]);
+            new_source.set_text("");
+        }
+        else { 
+            this.maingrid.remove(this.entries[b_index]);
+            ComboBox newsource = this.dropdowns[b_index];
+            newsource.set_active(0);
+            this.maingrid.attach(newsource, 1, b_index + 1, 1, 1);
+        }
+        //string new_cmd = "";
+
+        this.commands[b_index] = "";
+        this.hc_settings.set_strv("commands", this.commands);
+
+        // edit this.commands
+        this.show_all();
+    }
+
+    private void toggle_corner(ToggleButton button) {
+        /* updates GUI if button is toggled, updates commands accordingly */
+        bool active = button.get_active();
+        int buttonindex = SupportingFunctions.get_togglebuttonindex(
+            button, this.buttons
+        );
+        CheckButton currcheck = this.cbuttons[buttonindex];
+        bool custom_isset = currcheck.get_active();
+        Entry currentry = this.entries[buttonindex];
+        currentry.set_text("");
+        ComboBox currdrop = this.dropdowns[buttonindex];
+        currdrop.set_active(0);
+        if (active) {
+            if (custom_isset) {
+                currentry.set_sensitive(true);
+            }
+            else {
+                currdrop.set_sensitive(true);
+            }
+        }
+        else {
+            if (custom_isset) {
+                currentry.set_sensitive(false);
+            }
+            else {
+                currdrop.set_sensitive(false);
+            }
+        }
+        string new_cmd = "";
+        this.commands[buttonindex] = new_cmd;
+        this.hc_settings.set_strv("commands", this.commands);
+        currcheck.set_sensitive(active);
     }
 
     /* see what is the resolution on the primary monitor */
-    public int[] check_res() {
+    private int[] check_res() {
         var prim = Gdk.Display.get_default().get_primary_monitor();
         var geo = prim.get_geometry();
         int width = geo.width;
@@ -226,8 +337,8 @@ public class WatchCorners : Gtk.Window {
         return {width, height};
     }
 
-    /* the last <lastn> positions will be kept in mind, to decide on pressure */
-    public int[] keepsection(int[] arr_in, int lastn) {
+    /* the last <n> positions will be kept in mind, to decide on pressure */
+    private int[] keepsection(int[] arr_in, int lastn) {
         /* equivalent to list[index:] */
         int[] temparr = {};
         int currlen = arr_in.length;
@@ -240,7 +351,7 @@ public class WatchCorners : Gtk.Window {
     }
 
     /* see if we are in a corner, if so, which one */
-    public int check_corner(int xres, int yres, Seat seat) {
+    private int check_corner(int xres, int yres, Seat seat) {
         int x;
         int y;
         seat.get_pointer().get_position(null, out x, out y);
@@ -264,7 +375,6 @@ public class WatchCorners : Gtk.Window {
         }
         return -1;
     }
-
     /* decide if the pressure is enough */
     private bool decide_onpressure () {
         double x_travel = Math.pow(
@@ -283,10 +393,9 @@ public class WatchCorners : Gtk.Window {
     }
 
     /* execute the command */
-    public void run_command (int corner) {
+    private void run_command (int corner) {
         string cmd = this.commands[corner];
-        if (cmd != "false") {
-            // print("this is 2" + this.commands[corner]+ "\n");
+        if (cmd != "") {
             try {
                 Process.spawn_command_line_async(cmd);
             }
@@ -299,18 +408,12 @@ public class WatchCorners : Gtk.Window {
         }
     }
   
-    public int testmain(string[] ? args = null) {
-        print("running\n");
-
-        this.commands = SharedFunctions.getcommands();
-        /* print(found_commands + "\n"); */
+    private int watch_loop(string[] ? args = null) {
         Gdk.init(ref args);
         Gdk.Seat seat = Gdk.Display.get_default().get_default_seat();
         int[] res = check_res();
         /* here we set the size of the array (20 = 1 sec.) */
         this.action_area = 5;
-        /* here we set the min distance in last <time_steps> steps */
-        this.pressure = 150;
         /* here we set the time steps (size of array, 20 = last 1 second) */
         this.time_steps = 3;
         this.x_arr = {0};
@@ -320,7 +423,6 @@ public class WatchCorners : Gtk.Window {
         bool reported = false;
 
         GLib.Timeout.add (50, () => {
-            //stdout.printf(show + "\n");
             int corner = check_corner(xres, yres, seat);
             if (corner != -1 && reported == false) {
                 if (decide_onpressure() == true) {
@@ -331,7 +433,7 @@ public class WatchCorners : Gtk.Window {
             else if (corner == -1) {
                 reported = false;
             }
-            return this.runloop;
+            return true;
         });
         return 0;
     }
@@ -343,4 +445,3 @@ public static int main(string[] args) {
     instance.managewindow();
     return 0;
 }
-
