@@ -2,7 +2,7 @@
 Module=hotcorners.so
 Name=HotCorners
 Description=Set hotcorner actions
-Authors=Ubuntu Budgie Developers
-Copyright=Copyright © 2018-2019 Ubuntu Budgie Developers
-Website=https://ubuntubudgie.org/
+Authors=Jacob Vlijm
+Copyright=© 2017-2018 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org
 Icon=hello-world-smile-symbolic

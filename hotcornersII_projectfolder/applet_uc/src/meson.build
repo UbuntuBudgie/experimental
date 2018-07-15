@@ -9,13 +9,13 @@ HotCornersSources = [
 'HotCornersApplet.vala'
 ]
 
-
 HotCornersDependencies = [
 dependency('gtk+-3.0'), 
 dependency('budgie-1.0'),
 dependency('json-glib-1.0'),
 dependency('gio-2.0'),
-dependency('gdk-3.0')
+dependency('gdk-3.0'),
+meson.get_compiler('c').find_library('m', required: false),
 ]
 
 HotCornersValaArgs = [
@@ -26,7 +26,20 @@ HotCornersValaArgs = [
 
 HotCornersCArgs = [
 '-include', 
-'config.h'
+'config.h',
+'-lm'
 ]
 
-shared_library('hotcorners', HotCornersSources, dependencies: HotCornersDependencies, vala_args: HotCornersValaArgs, c_args: HotCornersCArgs, install: true, install_dir: LIB_INSTALL_DIR)
+shared_library(
+    'hotcorners', 
+    HotCornersSources, 
+    dependencies: HotCornersDependencies, 
+    vala_args: HotCornersValaArgs, 
+    c_args: HotCornersCArgs, 
+    install: true, 
+    install_dir: LIB_INSTALL_DIR
+)
+
+
+
+

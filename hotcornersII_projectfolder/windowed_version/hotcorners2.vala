@@ -107,7 +107,7 @@ public class WatchCorners : Gtk.Window {
         populate_dropdown ();
 
         /* window def */
-        this.title = "HotCorners Settings";
+        this.title = "HotCorners Settings"; //obsolete
         /* grid */
         this.maingrid = new Grid();
         this.maingrid.set_row_spacing(7);

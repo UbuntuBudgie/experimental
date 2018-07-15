@@ -6,7 +6,7 @@
             <summary>Hotcorners pressure</summary>
             <description>Hotcorners pressure, 0 = no pressure</description>
             <default>50</default>
-	    <range min="0" max="200"/>
+	    <range min="0" max="100"/>
         </key>
         <key type="as" name="commands">
             <summary>Command list</summary>
@@ -17,7 +17,6 @@
             <summary>Command list dropdown menu</summary>
             <description>The default list of commands/names in the dropdown menu</description>
             <default>[
-	    "{'command': '', 'name': ''}",
             "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc nokeys', 'name': 'Exposé all windows'}", 
             "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc current nokeys', 'name': 'Exposé current application'}",
             "{'command': 'budgie-desktop-settings', 'name':'Budgie Desktop Settings'}", 
