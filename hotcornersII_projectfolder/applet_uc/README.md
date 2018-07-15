@@ -3,7 +3,8 @@
 This is the new applet -under construction-
 
 #Install
-Run from the template's folder:
+-Install the gsettings schema
+- Run from the template's folder:
 
 `mkdir build && cd build`
 `meson --buildtype plain --prefix=/usr --libdir=/usr/lib`
