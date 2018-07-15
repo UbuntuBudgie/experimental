@@ -75,7 +75,7 @@ namespace HotCornersApplet {
         private GLib.Settings hc_settings;
 
         private void edit_pressure(Gtk.Range newpressure) {
-            int newval = (int)newpressure.get_value() * 2;
+            int newval = (int)newpressure.get_value();
             this.hc_settings.set_int("pressure", newval);
         }
 
@@ -86,7 +86,7 @@ namespace HotCornersApplet {
                 "org.ubuntubudgie.plugins.budgie-hotcorners"
             );
             Gtk.Label pressure_label = new Gtk.Label(
-                "Set pressure (0 = no pressure)\n"
+                (_("Set pressure (0 = no pressure)")) + "\n"
             );
             this.attach(pressure_label, 0, 0, 1, 1);
             Gtk.Scale pressure_slider = new Gtk.Scale.with_range(
@@ -147,7 +147,7 @@ namespace HotCornersApplet {
             populate_dropdown ();
             read_setcommands ();
             update_pressure ();
-            // this.hc_settings.changed["pressure"].connect(update_pressure);
+            this.hc_settings.changed["pressure"].connect(update_pressure);
             /* data */
             string css_data = """
             .label {
@@ -163,15 +163,15 @@ namespace HotCornersApplet {
             this.maingrid.set_column_spacing(7);
             this.add(this.maingrid);
             /* Corner label */
-            var cornerlabel = new Gtk.Label(" Corner");
+            var cornerlabel = new Gtk.Label(" " + (_("Corner")));
             cornerlabel.set_xalign(0);
             this.maingrid.attach(cornerlabel, 0, 0, 1, 1);
             /* Action label */
-            var actionlabel = new Gtk.Label(" Action");
+            var actionlabel = new Gtk.Label(" " + (_("Action")));
             actionlabel.set_xalign(0);
             this.maingrid.attach(actionlabel, 1, 0, 1, 1);
             /* Custom label */
-            var customlabel = new Gtk.Label(" Custom");
+            var customlabel = new Gtk.Label(" " + (_("Custom")));
             customlabel.set_xalign(0);
             this.maingrid.attach(customlabel, 2, 0, 2, 1);
             /* set styling of headers */
@@ -189,7 +189,7 @@ namespace HotCornersApplet {
             };
             /* toggle buttons -names*/
             string[] namelist = {
-                "Top-left", "Top-right", "Bottom-left", "Bottom-right"
+                (_("Top-left")), (_("Top-right")), (_("Bottom-left")), (_("Bottom-right"))
             };
 
             /* create rows */
@@ -452,7 +452,7 @@ namespace HotCornersApplet {
                 this.y_arr[0] - this.y_arr[this.time_steps - 1], 2
             );
             double travel = Math.pow(x_travel + y_travel, 0.5);
-            if (travel > this.pressure) {
+            if (travel > this.pressure * 3) {
                 return true;
             }
             else {

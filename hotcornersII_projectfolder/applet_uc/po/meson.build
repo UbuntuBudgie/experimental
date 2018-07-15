@@ -1,12 +1,11 @@
 i18n = import('i18n')
 
-langs = ['en_GB']
+langs = ['nl_NL']
 
 # Stolen from gnome-twitch
-i18n.gettext('org.ubuntubudgie.applet.hello-world', languages: langs, args: [
+i18n.gettext('budgie-hotcorners', languages: langs, args: [
     '--from-code=UTF-8',
     '--add-comments',
-
     '--keyword=_',
     '--keyword=N_',
     '--keyword=C_:1c,2',
