@@ -132,9 +132,9 @@ namespace HotCornersApplet {
 
 
     public class HotCornersPopover : Budgie.Popover {
+
         private Gtk.EventBox indicatorBox;
         private Gtk.Image indicatorIcon;
-
         /* process stuff */
         private int action_area;
         private int[] x_arr;
@@ -155,7 +155,6 @@ namespace HotCornersApplet {
         /* misc stuff */
         private string[] check_commands;
         private string[] check_applets;
-
 
         public HotCornersPopover(Gtk.EventBox indicatorBox) {
 
@@ -326,21 +325,23 @@ namespace HotCornersApplet {
             /* command index */
             int command_index = combo.get_active();
             string new_cmd = dropdown_cmdlist[command_index];
-            //print(new_cmd + "\n");
             int matches_index = SupportingFunctions.get_stringindex(
                 new_cmd, this.check_commands
             );
-
             if (matches_index != -1) {
-                sendwarning();
+                string checkname = this.check_applets[matches_index];
+                bool check = SupportingFunctions.check_onapplet(
+                    "/com/solus-project/budgie-panel/applets/",
+                    checkname
+                );
+                if (check == false) {
+                    sendwarning();
+                }
             }
-            
             this.commands[combo_index] = new_cmd;
-            print(new_cmd + "\n");
             this.hc_settings.set_strv("commands", this.commands);
         }
         
-
         private void act_on_checkbuttontoggle(ToggleButton button) {
             /*
             * if custom checkbox is toggled, both GUI and command list changes
@@ -549,18 +550,15 @@ namespace HotCornersApplet {
             int xres = res[0];
             int yres = res[1];
             bool reported = false;
-    
             int t = 0;
             GLib.Timeout.add (50, () => {
                 t += 1;
                 if (t == 30) {
                     t = 0;
-
                     bool check = SupportingFunctions.check_onapplet(
                         "/com/solus-project/budgie-panel/applets/",
                         "HotCorners"
                     );
-                    /* print(@"$check\n"); */
                     if (check == false) {
                         return false;
                     }
@@ -657,7 +655,6 @@ namespace HotCornersApplet {
     }
 }
 
-/* category: "ok, i believe you" */
 [ModuleInit]
 public void peas_register_types(TypeModule module){
     /* boilerplate - all modules need this */
