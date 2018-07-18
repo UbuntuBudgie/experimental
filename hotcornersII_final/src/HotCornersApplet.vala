@@ -124,7 +124,8 @@ namespace HotCornersApplet {
     }
 
 
-    public class Plugin : Budgie.Plugin, Peas.ExtensionBase { //D
+    public class Plugin : Budgie.Plugin, Peas.ExtensionBase {
+
         public Budgie.Applet get_panel_widget(string uuid) {
             return new Applet();
         }
@@ -157,7 +158,6 @@ namespace HotCornersApplet {
         private string[] check_applets;
 
         public HotCornersPopover(Gtk.EventBox indicatorBox) {
-
             GLib.Object(relative_to: indicatorBox);
             this.indicatorBox = indicatorBox;
             /* set icon */
@@ -183,7 +183,6 @@ namespace HotCornersApplet {
                 font-weight: bold;
             }
             """;
-
             /* grid */
             this.maingrid = new Gtk.Grid();
             this.maingrid.set_row_spacing(7);
@@ -218,10 +217,8 @@ namespace HotCornersApplet {
             string[] namelist = {
                 (_("Top-left")), (_("Top-right")), (_("Bottom-left")), (_("Bottom-right"))
             };
-
             /* create rows */
             int y_pos = 1;
-
             foreach (string name in namelist) {
                 /* create toggle buttons */
                 var latest_togglebutton = new ToggleButton.with_label(name);
@@ -255,7 +252,6 @@ namespace HotCornersApplet {
                     command_combo.set_sensitive(false);
                     latest_check.set_sensitive(false);
                 }
-
                 else {
                     latest_togglebutton.set_active(true);
                     bool test = SupportingFunctions.command_isdefault(
@@ -595,13 +591,13 @@ namespace HotCornersApplet {
         }
     }
 
-    public class Applet : Budgie.Applet { //A
+
+    public class Applet : Budgie.Applet {
 
         private Gtk.EventBox indicatorBox;
         private HotCornersPopover popover = null;
         private unowned Budgie.PopoverManager? manager = null;
         public string uuid { public set; public get; }
-
         /* specifically to the settings section */
         public override bool supports_settings()
         {
