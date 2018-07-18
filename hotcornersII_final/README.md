@@ -1,8 +1,8 @@
-#Budgie HotCornersII
+# Budgie HotCornersII
 
 This is the new applet
 
-#Install
+# Install
 -Install the gsettings schema
 - Run from the template's folder:
 
