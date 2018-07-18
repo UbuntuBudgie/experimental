@@ -1,6 +1,6 @@
 #Budgie HotCornersII
 
-This is the new applet -under construction-
+This is the new applet
 
 #Install
 -Install the gsettings schema
