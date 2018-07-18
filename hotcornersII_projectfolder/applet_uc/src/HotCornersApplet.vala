@@ -26,20 +26,39 @@ namespace SupportingFunctions {
     * keep the main code clean and readable
     */
 
+    private bool check_onapplet(string path, string applet_name) {
+        /* check if the applet still runs */
+        string cmd = "dconf dump " + path;
+        string output;
+    
+        try {
+            GLib.Process.spawn_command_line_sync(cmd, out output);
+        } 
+        /* on an occasional exception, don't break the loop */
+        catch (SpawnError e) {
+            return true;
+        }
+        bool check = output.contains(applet_name);
+        return check;
+    }
+
     private GLib.Settings get_settings(string path) {
         var settings = new GLib.Settings(path);
         return settings;
     }
+
     private bool command_isdefault(string cmd, string[] defaults) {
         for (int i=0; i < defaults.length; i++) {
             if(cmd == defaults[i]) return true;
         } return false;
     }
+
     private int get_stringindex (string s, string[] arr) {
         for (int i=0; i < arr.length; i++) {
             if(s == arr[i]) return i;
         } return -1;
     }
+
     private int get_togglebuttonindex (
         ToggleButton button, ToggleButton[] arr
         ) {
@@ -47,11 +66,13 @@ namespace SupportingFunctions {
             if(button == arr[i]) return i;
         } return -1;
     }
+
     private int get_cboxindex (ComboBox c, ComboBox[] arr) {
         for (int i=0; i < arr.length; i++) {
             if(c == arr[i]) return i;
         } return -1;
     }
+
     private int get_checkbuttonindex (
         ToggleButton button, CheckButton[] arr
         ) {
@@ -59,11 +80,13 @@ namespace SupportingFunctions {
             if(button == arr[i]) return i;
         } return -1;
     }
+
     private int get_entryindex (Editable entry, Entry[] arr) {
         for (int i=0; i < arr.length; i++) {
             if(entry == arr[i]) return i;
         } return -1;
     }
+
 }
 
 
@@ -129,7 +152,8 @@ namespace HotCornersApplet {
         private ComboBox[] dropdowns;
         private string[] dropdown_namelist;
         private string[] dropdown_cmdlist;
-    
+
+
         public HotCornersPopover(Gtk.EventBox indicatorBox) {
 
             GLib.Object(relative_to: indicatorBox);
@@ -304,24 +328,24 @@ namespace HotCornersApplet {
                 button, this.cbuttons
             );
             bool active = button.get_active();
+            string newcmd = "";
             if (active) { 
                 Entry new_source = this.entries[b_index];
                 this.maingrid.attach(new_source, 1, b_index + 1, 1, 1);
                 this.maingrid.remove(this.dropdowns[b_index]);
                 new_source.set_text("");
+                
+                
             }
             else { 
                 this.maingrid.remove(this.entries[b_index]);
                 ComboBox newsource = this.dropdowns[b_index];
                 newsource.set_active(0);
                 this.maingrid.attach(newsource, 1, b_index + 1, 1, 1);
-            }
-            //string new_cmd = "";
-    
-            this.commands[b_index] = "";
+                newcmd = this.dropdown_cmdlist[0];
+            }   
+            this.commands[b_index] = newcmd;
             this.hc_settings.set_strv("commands", this.commands);
-    
-            // edit this.commands
             this.show_all();
         }
 
@@ -336,13 +360,16 @@ namespace HotCornersApplet {
             Entry currentry = this.entries[buttonindex];
             currentry.set_text("");
             ComboBox currdrop = this.dropdowns[buttonindex];
-            currdrop.set_active(0);
+            // currdrop.set_active(0);
+            string newcmd = "";
             if (active) {
                 if (custom_isset) {
                     currentry.set_sensitive(true);
                 }
                 else {
                     currdrop.set_sensitive(true);
+                    newcmd = this.dropdown_cmdlist[0];
+                    currdrop.set_active(0);
                 }
             }
             else {
@@ -353,8 +380,8 @@ namespace HotCornersApplet {
                     currdrop.set_sensitive(false);
                 }
             }
-            string new_cmd = "";
-            this.commands[buttonindex] = new_cmd;
+            //string new_cmd = "";
+            this.commands[buttonindex] = newcmd;
             this.hc_settings.set_strv("commands", this.commands);
             currcheck.set_sensitive(active);
         }
@@ -474,7 +501,21 @@ namespace HotCornersApplet {
             int yres = res[1];
             bool reported = false;
     
+            int t = 0;
             GLib.Timeout.add (50, () => {
+                t += 1;
+                if (t == 30) {
+                    t = 0;
+
+                    bool check = SupportingFunctions.check_onapplet(
+                        "/com/solus-project/budgie-panel/applets/",
+                        "HotCorners"
+                    );
+                    /* print(@"$check\n"); */
+                    if (check == false) {
+                        return false;
+                    }
+                }
                 int corner = check_corner(xres, yres, seat);
                 if (corner != -1 && reported == false) {
                     if (check_onpressure() == true) {
@@ -557,8 +598,12 @@ namespace HotCornersApplet {
         public void initialiseLocaleLanguageSupport(){
             // Initialise gettext
             GLib.Intl.setlocale(GLib.LocaleCategory.ALL, "");
-            GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR);
-            GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
+            GLib.Intl.bindtextdomain(
+                Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR
+            );
+            GLib.Intl.bind_textdomain_codeset(
+                Config.GETTEXT_PACKAGE, "UTF-8"
+            );
             GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
         }
     }

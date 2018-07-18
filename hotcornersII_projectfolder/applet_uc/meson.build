@@ -17,7 +17,7 @@ am_cflags = [
     '-Wunused-variable',
     '-Wunreachable-code',
     '-Wall',
-    '-W'
+    '-W',
 ]
 
 add_global_arguments(am_cflags, language: 'c')
