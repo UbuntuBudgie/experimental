@@ -1,16 +1,14 @@
 # Budgie HotCornersII
-
 This is the new applet
 
 # Install
--Install the gsettings schema
-- Run from the template's folder:
+Run from the template's folder:
 
-`mkdir build && cd build`
+- `mkdir build && cd build`
 
-`meson --buildtype plain --prefix=/usr --libdir=/usr/lib`
+- `meson --buildtype plain --prefix=/usr --libdir=/usr/lib`
 
-`ninja`
+- `ninja`
 
-`sudo ninja install`
+- `sudo ninja install`
 
