@@ -445,7 +445,7 @@ namespace HotCornersApplet {
             */
             var parser = new Json.Parser ();
             string[] checkup_source = this.hc_settings.get_strv(
-                "applet-dependencies"
+                "appletdependencies"
             );
             foreach (string s in checkup_source) {
                 read_checkups(parser, s);
