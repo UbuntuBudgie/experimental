@@ -1,5 +1,5 @@
-# Budgie HotCornersII
-This is an emty applet template
+# Vala template applet
+This is an empty applet template.
 
 # Install
 Run from the repo's folder:
