@@ -13,13 +13,14 @@
             <description>The list of set commands, t-left, t-right, b-left, b-right</description>
             <default>["", "", "", ""]</default>
         </key>
-        <key type="as" name="applet-dependencies">
+        <key type="as" name="appletdependencies">
             <summary>Check if another applet runs if the command depends on it</summary>
             <description>Default commands possibly call another applet which needs to run
             These are command - corresponding applet combinations</description>
             <default>[
             "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc nokeys', 'name': 'Window Previews'}",
-            "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc current nokeys', 'name': 'Window Previews'}"
+            "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc current nokeys', 'name': 'Window Previews'}",
+            "{'command': '/blub', 'name': 'Window Previews'}"
             ]</default>
         </key>
         <key type="as" name="dropdown">
@@ -32,7 +33,8 @@
             "{'command': 'budgie-desktop-settings', 'name':'Budgie Desktop Settings'}", 
             "{'command': 'gnome-screensaver-command -l', 'name': 'Lock screen'}",
     	    "{'command': 'xdotool key super+n', 'name': 'Show Raven notifications'}", 
-            "{'command': 'xdotool key super+a', 'name': 'Toggle Raven'}"
+            "{'command': 'xdotool key super+a', 'name': 'Toggle Raven'}",
+	    "{'command': '/blub', 'name': 'Test123'}"
             ]</default>
         </key>
     </schema>

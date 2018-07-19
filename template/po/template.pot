@@ -1,4 +1,4 @@
-# Budgie HotCorners.
+# Template.
 # Copyright=© 2017-2018 Ubuntu Budgie Developers
 # This file is distributed under the same license as the budgie-hotcorners package.
 # FIRST AUTHOR: Jacob Vlijm, 2018.
@@ -18,5 +18,5 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #:
-msgid "HotCorners"
+msgid "Template"
 msgstr ""

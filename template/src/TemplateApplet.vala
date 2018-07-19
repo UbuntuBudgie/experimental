@@ -1,10 +1,10 @@
 using Gtk;
 using Gdk;
-using Math;
+using GLib.Math;
 using Json;
 
 /* 
-* HotCornersII
+* Template
 * Author: Jacob Vlijm
 * Copyright © 2017-2018 Ubuntu Budgie Developers
 * Website=https://ubuntubudgie.org
@@ -19,7 +19,6 @@ using Json;
 * <https://www.gnu.org/licenses/>.
 */
 
-
 namespace SupportingFunctions {
     /* 
     * Here we keep the (possibly) shared stuff, or general functions, to
@@ -28,56 +27,59 @@ namespace SupportingFunctions {
 }
 
 
-namespace HotCornersApplet { 
+namespace TemplateApplet { 
 
-    public class HotCornersSettings : Gtk.Grid { //B
+    public class TemplateSettings : Gtk.Grid {
+        /* Budgie Settings -section */
         GLib.Settings? settings = null;
-        public HotCornersSettings(GLib.Settings? settings)
-        {
-            this.settings = settings;
-            Gtk.Button button = new Gtk.Button.with_label("Monkey strikes");
-            this.attach(button, 0, 0, 1, 1);
-            this.show_all();
+
+        public TemplateSettings(GLib.Settings? settings) {
+            /*
+            * Gtk stuff, widgets etc. here 
+            */
         }
     }
 
 
-    public class Plugin : Budgie.Plugin, Peas.ExtensionBase { //D
+    public class Plugin : Budgie.Plugin, Peas.ExtensionBase {
         public Budgie.Applet get_panel_widget(string uuid) {
             return new Applet();
         }
     }
 
 
-    public class HotCornersPopover : Budgie.Popover { //E (function in python)
+    public class TemplatePopover : Budgie.Popover {
         private Gtk.EventBox indicatorBox;
         private Gtk.Image indicatorIcon;
-    
-        public HotCornersPopover(Gtk.EventBox indicatorBox) {
+        /* process stuff */
+        /* GUI stuff */
+        private Grid maingrid;
+        /* misc stuff */
+
+        public TemplatePopover(Gtk.EventBox indicatorBox) {
             GLib.Object(relative_to: indicatorBox);
             this.indicatorBox = indicatorBox;
             /* set icon */
-            indicatorIcon = new Gtk.Image.from_icon_name(
-                "hello-world-smile-symbolic", Gtk.IconSize.MENU
+            this.indicatorIcon = new Gtk.Image.from_icon_name(
+                "templateicon-symbolic", Gtk.IconSize.MENU
             );
-            indicatorBox.add(indicatorIcon);
-            /* just a test */
-            Gtk.Label HotCornersLabel = new Gtk.Label("Hello Prutser!");
-            /* Math test */
-            double x_travel = Math.pow(8, 2);
-            /* test math */
-            print(@"$x_travel\n\n");
-            this.add(HotCornersLabel);
+            indicatorBox.add(this.indicatorIcon);
+
+            /* gsettings stuff */
+
+            /* grid */
+            this.maingrid = new Gtk.Grid();
+            this.add(this.maingrid);
         }
     }
 
-    public class Applet : Budgie.Applet { //A
+
+    public class Applet : Budgie.Applet {
 
         private Gtk.EventBox indicatorBox;
-        private HotCornersPopover popover = null;
+        private TemplatePopover popover = null;
         private unowned Budgie.PopoverManager? manager = null;
         public string uuid { public set; public get; }
-
         /* specifically to the settings section */
         public override bool supports_settings()
         {
@@ -85,7 +87,7 @@ namespace HotCornersApplet {
         }
         public override Gtk.Widget? get_settings_ui()
         {
-            return new HotCornersSettings(this.get_applet_settings(uuid));
+            return new TemplateSettings(this.get_applet_settings(uuid));
         }
 
         public Applet() {
@@ -94,7 +96,7 @@ namespace HotCornersApplet {
             indicatorBox = new Gtk.EventBox();
             add(indicatorBox);
             /* Popover */
-            popover = new HotCornersPopover(indicatorBox);
+            popover = new TemplatePopover(indicatorBox);
             /* On Press indicatorBox */
             indicatorBox.button_press_event.connect((e)=> {
                 if (e.button != 1) {
@@ -111,7 +113,6 @@ namespace HotCornersApplet {
             show_all();
         }
 
-        /* Update popover */
         public override void update_popovers(Budgie.PopoverManager? manager)
         {
             this.manager = manager;
@@ -119,21 +120,25 @@ namespace HotCornersApplet {
         }
 
         public void initialiseLocaleLanguageSupport(){
-            // Initialise gettext
+            // Initialize gettext
             GLib.Intl.setlocale(GLib.LocaleCategory.ALL, "");
-            GLib.Intl.bindtextdomain(Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR);
-            GLib.Intl.bind_textdomain_codeset(Config.GETTEXT_PACKAGE, "UTF-8");
+            GLib.Intl.bindtextdomain(
+                Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR
+            );
+            GLib.Intl.bind_textdomain_codeset(
+                Config.GETTEXT_PACKAGE, "UTF-8"
+            );
             GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
         }
     }
 }
 
-/* category: "ok, i believe you" */
+
 [ModuleInit]
 public void peas_register_types(TypeModule module){
     /* boilerplate - all modules need this */
     var objmodule = module as Peas.ObjectModule;
     objmodule.register_extension_type(typeof(
-        Budgie.Plugin), typeof(HotCornersApplet.Plugin)
+        Budgie.Plugin), typeof(TemplateApplet.Plugin)
     );
 }
