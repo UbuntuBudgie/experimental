@@ -281,6 +281,11 @@ namespace HotCornersApplet {
             watch_loop();
         }
 
+        private string translate_gsettingsval (string fetched) {
+            string translated = (_(fetched));
+            return translated;
+        }
+
         private void update_pressure () {
             this.pressure = this.hc_settings.get_int("pressure");
             if (this.pressure > 0) {
@@ -429,7 +434,7 @@ namespace HotCornersApplet {
             var root_object = parser.get_root ().get_object ();
             string test = root_object.get_string_member ("name");
             string test2 = root_object.get_string_member ("command");
-            this.dropdown_namelist += test;
+            this.dropdown_namelist += translate_gsettingsval(test);
             this.dropdown_cmdlist += test2;
         }
 

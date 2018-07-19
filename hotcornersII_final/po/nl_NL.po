@@ -4,6 +4,9 @@
 # 
 # Translators:
 # Jacob Vlijm <vlijm@planet.nl>, 2018
+#
+# Translators for other distros need to be aware that "fetched_values(gsettings)" should 
+# match the actual dropdown item names, as set in gsettings.
 
 msgid ""
 msgstr ""
@@ -61,3 +64,30 @@ msgstr "'Applet ontbreekt'"
 msgid " 'This command depends on another applet.'"
 msgstr " 'Deze opdracht is afhankelijk van een ontbrekende applet'"
 
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Show Desktop"
+msgstr "Toon Bureaublad"
+
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Exposé all windows"
+msgstr "Vensteroverzicht"
+
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Exposé current application"
+msgstr "Vensteroverzicht programma"
+
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Show Raven notifications"
+msgstr "Toon Raven meldingen"
+
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Toggle Raven"
+msgstr "Toon/verberg Raven"
+
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Budgie Desktop Settings"
+msgstr "Budgie Desktop instellingen"
+
+#: src/HotCornersApplet.vala:fetched_values(gsettings)
+msgid "Lock screen"
+msgstr "Vergrendelen"
