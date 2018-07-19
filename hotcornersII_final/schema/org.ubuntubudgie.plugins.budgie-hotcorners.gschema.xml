@@ -19,8 +19,7 @@
             These are command - corresponding applet combinations</description>
             <default>[
             "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc nokeys', 'name': 'Window Previews'}",
-            "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc current nokeys', 'name': 'Window Previews'}",
-            "{'command': '/blub', 'name': 'Window Previews'}"
+            "{'command': '/usr/lib/budgie-desktop/plugins/budgie-wprviews/wprv_hc current nokeys', 'name': 'Window Previews'}"
             ]</default>
         </key>
         <key type="as" name="dropdown">
@@ -33,8 +32,7 @@
             "{'command': 'budgie-desktop-settings', 'name':'Budgie Desktop Settings'}", 
             "{'command': 'gnome-screensaver-command -l', 'name': 'Lock screen'}",
     	    "{'command': 'xdotool key super+n', 'name': 'Show Raven notifications'}", 
-            "{'command': 'xdotool key super+a', 'name': 'Toggle Raven'}",
-	    "{'command': '/blub', 'name': 'Test123'}"
+            "{'command': 'xdotool key super+a', 'name': 'Toggle Raven'}"
             ]</default>
         </key>
     </schema>
