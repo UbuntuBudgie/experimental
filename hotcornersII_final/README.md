@@ -1,8 +1,8 @@
 # Budgie HotCornersII
-This is the new applet
+This is the new Vala-based applet
 
 # Install
-Run from the template's folder:
+Run from the repo's folder:
 
 - `mkdir build && cd build`
 
