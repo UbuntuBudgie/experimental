@@ -30,7 +30,6 @@ namespace SupportingFunctions {
         /* check if the applet still runs */
         string cmd = "dconf dump " + path;
         string output;
-    
         try {
             GLib.Process.spawn_command_line_sync(cmd, out output);
         } 
@@ -348,7 +347,6 @@ namespace HotCornersApplet {
             * if custom checkbox is toggled, both GUI and command list changes
             * need to take place
             */
-            // add: command change!!
             int b_index = SupportingFunctions.get_checkbuttonindex(
                 button, this.cbuttons
             );
@@ -383,7 +381,6 @@ namespace HotCornersApplet {
             Entry currentry = this.entries[buttonindex];
             currentry.set_text("");
             ComboBox currdrop = this.dropdowns[buttonindex];
-            // currdrop.set_active(0);
             string newcmd = "";
             if (active) {
                 if (custom_isset) {
@@ -403,7 +400,6 @@ namespace HotCornersApplet {
                     currdrop.set_sensitive(false);
                 }
             }
-            //string new_cmd = "";
             this.commands[buttonindex] = newcmd;
             this.hc_settings.set_strv("commands", this.commands);
             currcheck.set_sensitive(active);
@@ -465,7 +461,10 @@ namespace HotCornersApplet {
         }
 
         private int[] keepsection(int[] arr_in, int lastn) {
-            /* the last <n> positions will be kept in mind, to decide on pressure */
+            /* 
+            * the last <n> positions will be kept in mind, 
+            * to decide on pressure
+            */
             int[] temparr = {};
             int currlen = arr_in.length;
             if (currlen > lastn) {
