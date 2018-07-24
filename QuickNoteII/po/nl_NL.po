@@ -1,0 +1,27 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the budgie-screenshot-applet package.
+# 
+# Translators:
+# Jacob Vlijm <vlijm@planet.nl>, 2018
+
+
+msgid ""
+msgstr ""
+"Project-Id-Version: budgie-quicknote\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2018-07-18 12:00+0100\n"
+"PO-Revision-Date: 22018-07-19 12:00+0100\n"
+"Last-Translator: Jacob-Vlijm <vlijm@planet.nl>\n"
+"Language-Team: Dutch (Netherlands)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: nl_NL\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/budgie-quicknote.vala:140
+msgid "Text area width"
+msgstr "Lettertjes rechthoek breedte."
+
+

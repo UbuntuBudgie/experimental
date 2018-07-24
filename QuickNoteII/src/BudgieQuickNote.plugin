@@ -1,0 +1,9 @@
+[Plugin]
+Module=budgie-quicknote.so
+Name=QuickNote
+Description=Quick & easy notes
+Description[nl_NL]=Maak snel en eenvoudig notities
+Authors=Jacob Vlijm
+Copyright=© 2017-2018 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org
+Icon=budgie-quicknote-symbolic
