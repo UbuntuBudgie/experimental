@@ -75,8 +75,8 @@ namespace BudgieQuickNoteApplet {
     private GLib.Settings qn_settings;
     private TextView view;
     private string[] steps;
-    string newtext;
-    bool update_steps;
+    private string newtext;
+    private bool update_steps;
 
     private string get_filepath(GLib.Settings settings, string key) {
         string filename = "quicknote_data.txt";
@@ -115,7 +115,7 @@ namespace BudgieQuickNoteApplet {
         private Button dir_button;
         private int maxlen;
 
-        private void trim_text (string text, int maxlen) {
+        private void trim_text (string text) {
             string newtext;
             int lenstring = text.length;
             if (lenstring > maxlen) {
@@ -178,7 +178,7 @@ namespace BudgieQuickNoteApplet {
             usecustom.set_active(custom_isset);
             if (custom_isset == true) {
                 //dir_entry.set_text(set_custompath);
-                trim_text(set_custompath, maxlen);
+                trim_text(set_custompath);
             }
             usecustom.toggled.connect(act_oncustomtoggle);
             dir_button.clicked.connect(get_directory);
@@ -197,7 +197,7 @@ namespace BudgieQuickNoteApplet {
                 GLib.Process.spawn_command_line_sync(cmd, out output);
                 string newpath = output.strip();
                 //this.dir_entry.set_text(newpath);
-                trim_text(newpath, maxlen);
+                trim_text(newpath);
                 qn_settings.set_string("custompath", newpath);
             } 
             catch (SpawnError e) {
