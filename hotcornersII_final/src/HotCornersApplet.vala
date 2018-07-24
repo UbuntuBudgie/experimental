@@ -115,7 +115,7 @@ namespace HotCornersApplet {
                 Gtk.Orientation.HORIZONTAL, 0, 100, 5
             );
             this.attach(pressure_slider, 0, 1, 1, 1);
-            double visible_pressure = (int)hc_settings.get_int("pressure") * 0.5;
+            double visible_pressure = (int)hc_settings.get_int("pressure");
             pressure_slider.set_value(visible_pressure);
             pressure_slider.value_changed.connect(edit_pressure);
             this.show_all();
