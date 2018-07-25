@@ -12,3 +12,6 @@ Run from the repo's folder:
 
 - `sudo ninja install`
 
+# Note
+Make sure to completely remove previous versions of Quicknote. The targeted folder name is the same as the python version!
+
