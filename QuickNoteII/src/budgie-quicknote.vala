@@ -177,7 +177,6 @@ namespace BudgieQuickNoteApplet {
             set_widgets(custom_isset);
             usecustom.set_active(custom_isset);
             if (custom_isset == true) {
-                //dir_entry.set_text(set_custompath);
                 trim_text(set_custompath);
             }
             usecustom.toggled.connect(act_oncustomtoggle);
@@ -196,9 +195,10 @@ namespace BudgieQuickNoteApplet {
             try {
                 GLib.Process.spawn_command_line_sync(cmd, out output);
                 string newpath = output.strip();
-                //this.dir_entry.set_text(newpath);
-                trim_text(newpath);
-                qn_settings.set_string("custompath", newpath);
+                if (newpath != "") {
+                    trim_text(newpath);
+                    qn_settings.set_string("custompath", newpath);
+                }
             } 
             catch (SpawnError e) {
                 /* on error, do nothing. user cancelled most likely */
