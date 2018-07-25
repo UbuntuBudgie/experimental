@@ -52,7 +52,7 @@ namespace SupportingFunctions {
             FileUtils.get_contents (path, out read);
             return read;
         } catch (FileError error) {
-            string welcome = (_("Welcome to QuickNote.".concat(
+            string welcome = (_("Welcome to QuickNote.")).concat(" ", (_(
                 "Text will be saved automatically while typing."
             )));
             return welcome;
@@ -138,12 +138,14 @@ namespace BudgieQuickNoteApplet {
             string set_custompath = qn_settings.get_string("custompath");
             /* Gtk stuff, widgets etc. here */
             var widthlabel = new Label((_("Text area width")));
+            widthlabel.set_xalign(0);
             this.attach (widthlabel, 0, 0, 2, 1);
             var widthscale = new Gtk.Scale.with_range(
                 Gtk.Orientation.HORIZONTAL, 250, 750, 5
             );
             this.attach(widthscale, 0, 1, 2, 1);
             var heightlabel = new Label((_("Text area height")));
+            heightlabel.set_xalign(0);
             this.attach (heightlabel, 0, 2, 2, 1);
             var heightscale = new Gtk.Scale.with_range(
                 Gtk.Orientation.HORIZONTAL, 150, 450, 5
@@ -160,17 +162,18 @@ namespace BudgieQuickNoteApplet {
             var customlabel = new Gtk.Label(
                 " " + (_("Set a custom directory"))
             );
+            customlabel.set_xalign(0);
             var spacelabel = new Gtk.Label("\n");
             this.attach(spacelabel, 0, 4, 1, 1);
             this.attach(usecustom, 0, 5, 1, 1);
             this.attach(customlabel, 1, 5, 1, 1);
             dir_entry = new Gtk.Entry();
             dir_entry.set_editable(false);
-            dir_entry.set_alignment(1);
+            dir_entry.set_alignment(0);
             this.attach(dir_entry, 0, 6, 2, 1);
             var spacelabel2 = new Gtk.Label("\n");
             this.attach(spacelabel2, 0, 7, 2, 1);
-            dir_button = new Gtk.Button.with_label("Choose directory");
+            dir_button = new Gtk.Button.with_label((_("Choose directory")));
             this.attach(dir_button, 0, 8, 2, 1);
             /* set initial state */
             bool custom_isset = (set_custompath != "");
