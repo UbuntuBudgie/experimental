@@ -193,19 +193,20 @@ namespace BudgieQuickNoteApplet {
         }
 
         private void get_directory (Button button) {
-            string cmd = "zenity --file-selection --directory";
-            string output;
-            try {
-                GLib.Process.spawn_command_line_sync(cmd, out output);
-                string newpath = output.strip();
-                if (newpath != "") {
-                    trim_text(newpath);
-                    qn_settings.set_string("custompath", newpath);
+            Gtk.FileChooserDialog chooser = new Gtk.FileChooserDialog (
+				"Select a directory", null, Gtk.FileChooserAction.SELECT_FOLDER,
+				(_("Cancel")),
+				Gtk.ResponseType.CANCEL,
+				(_("Use")),
+                Gtk.ResponseType.ACCEPT);
+                if (chooser.run () == Gtk.ResponseType.ACCEPT) {
+                    string newpath = chooser.get_uri ().replace("file://", "");
+                    if (newpath != "") {
+                        trim_text(newpath);
+                        qn_settings.set_string("custompath", newpath);
+                    }
                 }
-            } 
-            catch (SpawnError e) {
-                /* on error, do nothing. user cancelled most likely */
-            }           
+		    chooser.close ();
         }
 
         private void act_oncustomtoggle(ToggleButton check) {
