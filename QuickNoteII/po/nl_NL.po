@@ -44,3 +44,11 @@ msgstr "Aangepaste bestandslocatie"
 msgid "Choose directory"
 msgstr "Kies"
 
+#: src/budgie-quicknote.vala:198
+msgid "Cancel"
+msgstr "Annuleren"
+
+#: src/budgie-quicknote.vala:198
+msgid "Use"
+msgstr "Kies"
+
