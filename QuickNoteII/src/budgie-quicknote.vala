@@ -200,10 +200,8 @@ namespace BudgieQuickNoteApplet {
                 );
                 if (chooser.run () == Gtk.ResponseType.ACCEPT) {
                     string newpath = chooser.get_uri ().replace("file://", "");
-                    if (newpath != "") {
-                        trim_text(newpath);
-                        qn_settings.set_string("custompath", newpath);
-                    }
+                    trim_text(newpath);
+                    qn_settings.set_string("custompath", newpath);
                 }
 		    chooser.close ();
         }
