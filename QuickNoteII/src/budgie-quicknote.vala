@@ -194,7 +194,7 @@ namespace BudgieQuickNoteApplet {
 
         private void get_directory (Button button) {
             Gtk.FileChooserDialog chooser = new Gtk.FileChooserDialog (
-				"Select a directory", null, Gtk.FileChooserAction.SELECT_FOLDER,
+                "Select a directory", null, Gtk.FileChooserAction.SELECT_FOLDER,
                 (_("Cancel")), Gtk.ResponseType.CANCEL, (_("Use")),
                 Gtk.ResponseType.ACCEPT
                 );
