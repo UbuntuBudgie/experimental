@@ -19,62 +19,73 @@ using Math;
 * depends on libsoup2.4-dev!
 */
 
-namespace weathershow {
 
+namespace WeatherShowFunctions {
+
+    private GLib.Settings get_settings(string path) {
+        var settings = new GLib.Settings(path);
+        return settings;
+    }
+}
+
+
+namespace WeatherShow {
 
     /* make sure settings are defined on applet startup */
     private GLib.Settings ws_settings;
+    private string lang;
+    private string tempunit;
 
 
     /* fake applet, testing the function to get data */
     /* todo: set lang and units as args, move values to gsettings */
-    public static int main () {
-        
+    public static int main (string[] args) {
 
-        int start = 0;
+        /* get current settings */
+        ws_settings = WeatherShowFunctions.get_settings(
+            "org.ubuntubudgie.plugins.weathershow"
+        );
+        tempunit = ws_settings.get_string("tempunit");
+        print("tempunit is: " + tempunit);
+
+        ws_settings.changed["tempunit"].connect (() => {
+            tempunit = ws_settings.get_string("tempunit");
+            print("changed!\n" + tempunit + "\n");
+		}); 
+        /* 
+        * todo: fetch local language, see if it is in the list
+        * fallback to default (en) if not. make checkbutton in settings
+        */
+        string lang = ws_settings.get_string("language");
+        string key = ws_settings.get_string("key");
         var test = new get_weatherdata();
-        while (true) {
+        Gtk.init(ref args);
+        var win = new Gtk.Window();
+        win.destroy.connect(Gtk.main_quit);
+        win.show_all();
+        int start = 0;
+        GLib.Timeout.add (5000, () => {
             start += 1;
-            Thread.usleep(10000000);
-            string[] result = test.get_current("celsius");
+            string[] result = test.get_current(key);
             foreach (string s in result) {
                 print("%s\n", s);
             }
-            print(@"$start\n");
-        }
+            print(@"$start\n\n");
+            return true;
+        });
+        Gtk.main();
         return 0;
     }
 
 
-
-
-
-
-
-
-    public class get_settingsdata {
-    }
-
-
-
     public class get_weatherdata {
 
-
         private string fetch_fromsite (
-            string wtype, string city, string ? lang = null
+            string wtype, string city, string key
         ) {
             /* fetch data from OWM */
-            string website = "http://api.openweathermap.org/data/2.5/"; /* move to gsettings key */
-            /* please don't copy the string below for use outside this applet. */
-            string key = "cfd52641f834ca80ed94a28de864bb64";
-            /* see if lang is set */
-            string langstring;
-            if (lang != null) {
-                langstring = "&".concat("lang=", lang);
-            }
-            else {
-                langstring = "";
-            }
+            string website = "http://api.openweathermap.org/data/2.5/"; 
+            string langstring = "&".concat("lang=", lang);
             string url = website.concat(
                 wtype, "?id=", city, "&APPID=", key, "&", langstring
             );
@@ -101,7 +112,7 @@ namespace weathershow {
         }
 
         private float check_numvalue(Json.Object obj, string val) {
-            /* check if the value exists, create the int- output if so */
+            /* check if the value exists, create the num- output if so */
             if (obj.has_member(val)) {
                 float info = (float) obj.get_double_member(val);
                 return info;
@@ -112,37 +123,54 @@ namespace weathershow {
         private HashMap get_categories(Json.Object rootobj) {
             var map = new HashMap<string, Json.Object> ();
             /* get cons. weatherdata, wind data and general data */
-            map["weather"] = rootobj.get_array_member("weather").get_object_element(0);
+            map["weather"] = rootobj.get_array_member(
+                "weather"
+            ).get_object_element(0);
             map["wind"] = rootobj.get_object_member ("wind");
             map["main"] = rootobj.get_object_member ("main");
             return map;
         }
 
-        public string[] get_current (string temp_unit) {
-            /* get raw data and make a hasmap from the nodes */
-            string data = fetch_fromsite("weather", "2907911", "nl");
-            //print(data + "\n");
-            string[] directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
+        public string[] get_current (string key) {
+            /* get raw data and make a hashmap from the nodes */
+            string data = fetch_fromsite("weather", "2907911", key);
+            /* todo: move list below to constructor, define only once */
+            string[] directions = {
+                "↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"
+            };
+
+            /* 
+            * todo: move below to separate function for transparency of 
+            * coding (and the heavy indentation looks terrible)
+            */
 
             if (data != "no data") {
                 string tempdisplay;
                 var parser = new Json.Parser ();
                 parser.load_from_data (data);
                 var root_object = parser.get_root ().get_object ();
-                HashMap<string, Json.Object> map = get_categories(root_object);
+                HashMap<string, Json.Object> map = get_categories(
+                    root_object
+                );
                 /* get weatherline src = string*/
-                string skydisplay = check_stringvalue(map["weather"], "description");
+                string skydisplay = check_stringvalue(
+                    map["weather"], "description"
+                );
                 /* get temp src = float */
                 float temp = check_numvalue(map["main"], "temp");
                 if (temp != 1000) {
-                    if (temp_unit == "celsius") {
+                    string dsp_unit;
+                    if (tempunit == "Celsius") {
                         temp = temp - (float) 273.15;
-                        tempdisplay = temp.to_string().concat("℃");
+                        dsp_unit = "℃";
                     }
                     else {
                         temp = (temp * (float) 1.80) - (float) 459.67;
-                        tempdisplay = temp.to_string().concat("℉");
+                        dsp_unit = "℉";
                     }
+
+                    double rounded_temp = Math.round((double) temp);
+                    tempdisplay = rounded_temp.to_string().concat(dsp_unit);
                 }
                 else {
                     tempdisplay = "";
