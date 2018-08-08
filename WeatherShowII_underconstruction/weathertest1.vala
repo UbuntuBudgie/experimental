@@ -35,12 +35,13 @@ namespace WeatherShow {
     private GLib.Settings ws_settings;
     private string lang;
     private string tempunit;
-
-
+    private string[] directions;
     /* fake applet, testing the function to get data */
     /* todo: set lang and units as args, move values to gsettings */
+    /* no more! ^^^ make values namespace- wide, since they are used by multiple classes*/
     public static int main (string[] args) {
 
+        directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
         /* get current settings */
         ws_settings = WeatherShowFunctions.get_settings(
             "org.ubuntubudgie.plugins.weathershow"
@@ -131,83 +132,78 @@ namespace WeatherShow {
             return map;
         }
 
-        public string[] get_current (string key) {
-            /* get raw data and make a hashmap from the nodes */
-            string data = fetch_fromsite("weather", "2907911", key);
-            /* todo: move list below to constructor, define only once */
-            string[] directions = {
-                "↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"
+        private string[] getsnapshot (string data) {
+            var parser = new Json.Parser ();
+            parser.load_from_data (data);
+            var root_object = parser.get_root ().get_object ();
+            HashMap<string, Json.Object> map = get_categories(
+                root_object
+            );
+            /* get weatherline */
+            string skydisplay = check_stringvalue(
+                map["weather"], "description"
+            );
+            /* get temp */
+            string tempdisplay;
+            float temp = check_numvalue(map["main"], "temp");
+            if (temp != 1000) {
+                string dsp_unit;
+                if (tempunit == "Celsius") {
+                    temp = temp - (float) 273.15;
+                    dsp_unit = "℃";
+                }
+                else {
+                    temp = (temp * (float) 1.80) - (float) 459.67;
+                    dsp_unit = "℉";
+                }
+                double rounded_temp = Math.round((double) temp);
+                tempdisplay = rounded_temp.to_string().concat(dsp_unit);
+            }
+            else {
+                tempdisplay = "";
+            }
+            /* get wind speed */
+            float wspeed = check_numvalue(map["wind"], "speed");
+            string wspeeddisplay;
+            if (wspeed != 1000) {
+                wspeeddisplay = wspeed.to_string().concat(" m/sec");
+            }
+            else {
+                wspeeddisplay = "";
+            }
+            /* get wind direction */
+            float wdirection = check_numvalue(map["wind"], "deg");
+            string wdirectiondisplay;
+            if (wdirection != 1000) {
+                int iconindex = (int) Math.round(wdirection/45);
+                wdirectiondisplay = directions[iconindex];
+            }
+            else {
+                wdirectiondisplay = "";
+            }
+            /* get humidity */
+            string humiddisplay;
+            int humid = (int) check_numvalue(map["main"], "humidity");
+            if (humid != 1000) {
+                humiddisplay = humid.to_string().concat("%");
+            }
+            else {
+                humiddisplay = "";
+            }
+            return {
+                skydisplay, tempdisplay, 
+                wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
             };
+        }
 
+        public string[] get_current (string key) {
             /* 
-            * todo: move below to separate function for transparency of 
-            * coding (and the heavy indentation looks terrible)
+            * get "raw" data. if successful, create new data, else create
+            * empty lines in the output array.
             */
-
+            string data = fetch_fromsite("weather", "2907911", key);
             if (data != "no data") {
-                string tempdisplay;
-                var parser = new Json.Parser ();
-                parser.load_from_data (data);
-                var root_object = parser.get_root ().get_object ();
-                HashMap<string, Json.Object> map = get_categories(
-                    root_object
-                );
-                /* get weatherline src = string*/
-                string skydisplay = check_stringvalue(
-                    map["weather"], "description"
-                );
-                /* get temp src = float */
-                float temp = check_numvalue(map["main"], "temp");
-                if (temp != 1000) {
-                    string dsp_unit;
-                    if (tempunit == "Celsius") {
-                        temp = temp - (float) 273.15;
-                        dsp_unit = "℃";
-                    }
-                    else {
-                        temp = (temp * (float) 1.80) - (float) 459.67;
-                        dsp_unit = "℉";
-                    }
-
-                    double rounded_temp = Math.round((double) temp);
-                    tempdisplay = rounded_temp.to_string().concat(dsp_unit);
-                }
-                else {
-                    tempdisplay = "";
-                }
-                /* get wind speed src = float */
-                float wspeed = check_numvalue(map["wind"], "speed");
-                string wspeeddisplay;
-                if (wspeed != 1000) {
-                    wspeeddisplay = wspeed.to_string().concat(" m/sec");
-                }
-                else {
-                    wspeeddisplay = "";
-                }
-                /* get wind direction */
-                float wdirection = check_numvalue(map["wind"], "deg");
-                string wdirectiondisplay;
-                if (wdirection != 1000) {
-                    int iconindex = (int) Math.round(wdirection/45);
-                    wdirectiondisplay = directions[iconindex];
-                }
-                else {
-                    wdirectiondisplay = "";
-                }
-                /* get humidity */
-                string humiddisplay;
-                int humid = (int) check_numvalue(map["main"], "humidity");
-                if (humid != 1000) {
-                    humiddisplay = humid.to_string().concat("%");
-                }
-                else {
-                    humiddisplay = "";
-                }
-                /* so, to conclude: */
-                return {
-                    skydisplay, tempdisplay, 
-                    wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
-                };
+                return getsnapshot(data);
             }
             else {
                 return {};
