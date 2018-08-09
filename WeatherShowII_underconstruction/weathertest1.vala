@@ -39,24 +39,22 @@ namespace WeatherShow {
     /* fake applet, testing the function to get data */
     /* todo: set lang and units as args, move values to gsettings */
     /* no more! ^^^ make values namespace- wide, since they are used by multiple classes*/
+
+
     public static int main (string[] args) {
 
         directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
-        /* get current settings */
+        // get current settings
         ws_settings = WeatherShowFunctions.get_settings(
             "org.ubuntubudgie.plugins.weathershow"
         );
         tempunit = ws_settings.get_string("tempunit");
-        print("tempunit is: " + tempunit);
-
         ws_settings.changed["tempunit"].connect (() => {
             tempunit = ws_settings.get_string("tempunit");
             print("changed!\n" + tempunit + "\n");
-		}); 
-        /* 
-        * todo: fetch local language, see if it is in the list
-        * fallback to default (en) if not. make checkbutton in settings
-        */
+		});  
+        // todo: fetch local language, see if it is in the list
+        // fallback to default (en) if not. make checkbutton in settings
         string lang = ws_settings.get_string("language");
         string key = ws_settings.get_string("key");
         var test = new get_weatherdata();
@@ -67,11 +65,19 @@ namespace WeatherShow {
         int start = 0;
         GLib.Timeout.add (5000, () => {
             start += 1;
+
+            //HashMap result = test.get_forecast(key);
+
+
+
+            
             string[] result = test.get_current(key);
             foreach (string s in result) {
                 print("%s\n", s);
             }
             print(@"$start\n\n");
+            
+
             return true;
         });
         Gtk.main();
@@ -129,7 +135,14 @@ namespace WeatherShow {
             ).get_object_element(0);
             map["wind"] = rootobj.get_object_member ("wind");
             map["main"] = rootobj.get_object_member ("main");
+            map["sys"] = rootobj.get_object_member ("sys");
             return map;
+
+            /* string[] object_names = {"city", "country", "wind", "main"};
+            foreach (string s in object_names) {
+                map[s] = rootobj.get_object_member (s);
+            }
+            return map; */
         }
 
         private string[] getsnapshot (string data) {
@@ -139,6 +152,17 @@ namespace WeatherShow {
             HashMap<string, Json.Object> map = get_categories(
                 root_object
             );
+            /* get cityname */
+            string city = check_stringvalue(root_object, "name");
+            /* get country */
+            string country = check_stringvalue(map["sys"], "country");
+            string citydisplay = city.concat(", ", country);
+
+
+
+
+
+
             /* get weatherline */
             string skydisplay = check_stringvalue(
                 map["weather"], "description"
@@ -191,7 +215,7 @@ namespace WeatherShow {
                 humiddisplay = "";
             }
             return {
-                skydisplay, tempdisplay, 
+                citydisplay, skydisplay, tempdisplay, 
                 wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
             };
         }
@@ -209,6 +233,44 @@ namespace WeatherShow {
                 return {};
             }
         }
+
+
+        private HashMap getspan(string data) {
+            var map = new HashMap<int, string> ();
+            var parser = new Json.Parser ();
+            parser.load_from_data (data);
+            /* master array */
+            /* include the has member test blah, blah */
+            var root_object = parser.get_root ().get_object ();
+            /* get city data, also in current!! */
+            var citydata = root_object.get_object_member("city");
+            string city = citydata.get_string_member("name");
+            print("%s\n", city);
+            Json.Object masterlist = root_object.get_array_member("list").get_object_element(0);
+            int test = (int) masterlist.get_int_member("dt");
+            print(@"$test\n");
+            // series- section = main
+            return map;
+        }
+
+
+        /*  */
+        public HashMap get_forecast(string key) {
+            /* here we create a hashmap<time, string> */
+            string data = fetch_fromsite("forecast", "2907911", key);
+            var map = new HashMap<int, string> ();
+
+            if (data != "no data") {
+                print("succes!\n");
+                getspan(data);
+                // print(data + "\n");
+                // get nodes
+            }
+            return map;
+        }
+        /* */
+
+        
     }
 }
 
