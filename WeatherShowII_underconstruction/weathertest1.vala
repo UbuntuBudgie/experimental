@@ -65,19 +65,21 @@ namespace WeatherShow {
         int start = 0;
         GLib.Timeout.add (5000, () => {
             start += 1;
-
-            //HashMap result = test.get_forecast(key);
-
-
+            /* 1.
+            * for current weather, fetch results as a string, write to a temp file
+            * for updating the window. In the window, monitor for file change.
+            *  2.
+            * for forecast series, create a hashmap<timestamp(localized),
+            * text_block>. populate the forecast with it on popup, so the
+            * datafile always exists, and the applet's thread is not bothered.
+            */
 
             
-            string[] result = test.get_current(key);
-            foreach (string s in result) {
-                print("%s\n", s);
-            }
-            print(@"$start\n\n");
-            
+            //*HashMap result = test.get_forecast(key);
 
+            string result = test.get_current(key);
+            print("read_current:\n\n" + result);
+            /* still to write to file */     
             return true;
         });
         Gtk.main();
@@ -137,39 +139,76 @@ namespace WeatherShow {
             map["main"] = rootobj.get_object_member ("main");
             map["sys"] = rootobj.get_object_member ("sys");
             return map;
-
-            /* string[] object_names = {"city", "country", "wind", "main"};
-            foreach (string s in object_names) {
-                map[s] = rootobj.get_object_member (s);
-            }
-            return map; */
         }
 
-        private string[] getsnapshot (string data) {
+        private string getsnapshot (string data) {
             var parser = new Json.Parser ();
             parser.load_from_data (data);
             var root_object = parser.get_root ().get_object ();
             HashMap<string, Json.Object> map = get_categories(
                 root_object
             );
-            /* get cityname */
+            /* get cityline (exists anyway) */
             string city = check_stringvalue(root_object, "name");
-            /* get country */
             string country = check_stringvalue(map["sys"], "country");
             string citydisplay = city.concat(", ", country);
-
-
-
-
-
-
             /* get weatherline */
             string skydisplay = check_stringvalue(
                 map["weather"], "description"
             );
             /* get temp */
+            string tempdisplay = get_temperature(map);
+            /* get wind speed */
+            string wspeeddisplay = get_windspeed(map);
+            /* get wind direction */
+            string wdirectiondisplay = get_winddirection(map);
+            /* get humidity */
+            string humiddisplay = get_humidity(map);
+            /* combined */
+            string[] collected = {
+                citydisplay, skydisplay, tempdisplay, 
+                wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
+            };
+            string output = string.joinv("\n", collected);
+            return output;
+        }
+
+        public string get_current (string key) {
+            /* 
+            * get "raw" data. if successful, create new data, else create
+            * empty lines in the output array.
+            */
+            string data = fetch_fromsite("weather", "2907911", key);
+            if (data != "no data") {
+                return getsnapshot(data);
+            }
+            else {
+                return "";
+            }
+        }
+
+        /////////////////////////////////////////////////////////////////////////
+        private string get_windspeed (
+            HashMap<string, Json.Object> categories
+            ) {
+                /* get wind speed */
+                float wspeed = check_numvalue(categories["wind"], "speed");
+                string wspeeddisplay;
+                if (wspeed != 1000) {
+                    wspeeddisplay = wspeed.to_string().concat(" m/sec");
+                }
+                else {
+                    wspeeddisplay = "";
+                }
+                return wspeeddisplay;
+            }
+
+        private string get_temperature(
+            HashMap<string, Json.Object> categories
+        ) {
+            /* get temp */
             string tempdisplay;
-            float temp = check_numvalue(map["main"], "temp");
+            float temp = check_numvalue(categories["main"], "temp");
             if (temp != 1000) {
                 string dsp_unit;
                 if (tempunit == "Celsius") {
@@ -186,17 +225,14 @@ namespace WeatherShow {
             else {
                 tempdisplay = "";
             }
-            /* get wind speed */
-            float wspeed = check_numvalue(map["wind"], "speed");
-            string wspeeddisplay;
-            if (wspeed != 1000) {
-                wspeeddisplay = wspeed.to_string().concat(" m/sec");
-            }
-            else {
-                wspeeddisplay = "";
-            }
+            return tempdisplay;
+        }
+
+        private string get_winddirection (
+            HashMap<string, Json.Object> categories
+        ) {
             /* get wind direction */
-            float wdirection = check_numvalue(map["wind"], "deg");
+            float wdirection = check_numvalue(categories["wind"], "deg");
             string wdirectiondisplay;
             if (wdirection != 1000) {
                 int iconindex = (int) Math.round(wdirection/45);
@@ -205,56 +241,68 @@ namespace WeatherShow {
             else {
                 wdirectiondisplay = "";
             }
+            return wdirectiondisplay;
+        }
+
+        private string get_humidity (
+            HashMap<string, Json.Object> categories
+        ) {
             /* get humidity */
             string humiddisplay;
-            int humid = (int) check_numvalue(map["main"], "humidity");
+            int humid = (int) check_numvalue(categories["main"], "humidity");
             if (humid != 1000) {
                 humiddisplay = humid.to_string().concat("%");
             }
             else {
                 humiddisplay = "";
             }
-            return {
-                citydisplay, skydisplay, tempdisplay, 
-                wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
-            };
+            return humiddisplay;
         }
-
-        public string[] get_current (string key) {
-            /* 
-            * get "raw" data. if successful, create new data, else create
-            * empty lines in the output array.
-            */
-            string data = fetch_fromsite("weather", "2907911", key);
-            if (data != "no data") {
-                return getsnapshot(data);
-            }
-            else {
-                return {};
-            }
-        }
-
+        /////////////////////////////////////////////////////////////////////////
 
         private HashMap getspan(string data) {
+            print(data);
             var map = new HashMap<int, string> ();
             var parser = new Json.Parser ();
             parser.load_from_data (data);
             /* master array */
             /* include the has member test blah, blah */
             var root_object = parser.get_root ().get_object ();
-            /* get city data, also in current!! */
+            /* get city data, not nedded here, but in current!! */
             var citydata = root_object.get_object_member("city");
             string city = citydata.get_string_member("name");
             print("%s\n", city);
-            Json.Object masterlist = root_object.get_array_member("list").get_object_element(0);
-            int test = (int) masterlist.get_int_member("dt");
-            print(@"$test\n");
-            // series- section = main
+
+            /* now we need to parse each datasection from <list> */
+            Json.Array newroot = root_object.get_array_member("list");
+            /* get nodes */
+            var sub = newroot.get_elements();
+            foreach (Json.Node n in sub) {
+                var obj = n.get_object();
+                HashMap<string, Json.Object> submap_cats = get_categories(obj);
+                /* get timestamp */
+                int timestamp = (int) obj.get_int_member("dt");
+                print(@"$timestamp\n");
+                /* get skystate */
+                string skydisplay = check_stringvalue(
+                    submap_cats["weather"], "description"
+                );
+                print(skydisplay + "\n");
+                /* get temp */
+                string temp = get_temperature(submap_cats);
+                print(temp + "\n");
+                /* get wind speed/direction */
+                string wspeed = get_windspeed(submap_cats);
+                string wind = get_winddirection(submap_cats).concat(wspeed);
+                print(wind + "\n");
+                /* get humidity */
+                string humidity = get_humidity(submap_cats);
+                print(humidity + "\n\n");
+                /* now combine the first 16 into a HashMap timestamp (int) /snapshot (str) */
+            }
             return map;
         }
 
-
-        /*  */
         public HashMap get_forecast(string key) {
             /* here we create a hashmap<time, string> */
             string data = fetch_fromsite("forecast", "2907911", key);
@@ -268,9 +316,6 @@ namespace WeatherShow {
             }
             return map;
         }
-        /* */
-
-        
     }
 }
 
