@@ -44,6 +44,25 @@ namespace WeatherShow {
     public static int main (string[] args) {
 
         directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
+        /* 
+        * OWM's icon codes are a bit oversimplified; different weather 
+        * types are pushed into one icon. the data however offers a much 
+        * more detailed set of weather types/codes, which can be used to
+        * set an improved icon mapping. below my own (again) simplification 
+        * of the extended set of weather codes, which is kind of the middle
+        * between the two.
+        */
+        string[,] mapped = {
+            {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
+            {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
+            {"502", "501"}, {"503", "501"}, {"504", "501"}, {"522", "521"}, 
+            {"531", "521"}, {"622", "621"}, {"711", "701"}, {"721", "701"}, 
+            {"731", "701"}, {"741", "701"}, {"751", "701"}, {"761", "701"}, 
+            {"762", "701"}
+        };
+
+        print(mapped[1, 0]);
+
         // get current settings
         ws_settings = WeatherShowFunctions.get_settings(
             "org.ubuntubudgie.plugins.weathershow"
@@ -75,7 +94,7 @@ namespace WeatherShow {
             */
 
             
-            //*HashMap result = test.get_forecast(key);
+            //HashMap result = test.get_forecast(key);
 
             string result = test.get_current(key);
             print("read_current:\n\n" + result);
@@ -142,12 +161,16 @@ namespace WeatherShow {
         }
 
         private string getsnapshot (string data) {
+            print(data);
             var parser = new Json.Parser ();
             parser.load_from_data (data);
             var root_object = parser.get_root ().get_object ();
             HashMap<string, Json.Object> map = get_categories(
                 root_object
             );
+            /* get icon id */
+            string id = check_numvalue(map["weather"], "id").to_string();
+
             /* get cityline (exists anyway) */
             string city = check_stringvalue(root_object, "name");
             string country = check_stringvalue(map["sys"], "country");
@@ -265,40 +288,42 @@ namespace WeatherShow {
             var map = new HashMap<int, string> ();
             var parser = new Json.Parser ();
             parser.load_from_data (data);
-            /* master array */
-            /* include the has member test blah, blah */
             var root_object = parser.get_root ().get_object ();
-            /* get city data, not nedded here, but in current!! */
-            var citydata = root_object.get_object_member("city");
-            string city = citydata.get_string_member("name");
-            print("%s\n", city);
-
-            /* now we need to parse each datasection from <list> */
+            /* we need to parse each datasection from <list> */
             Json.Array newroot = root_object.get_array_member("list");
             /* get nodes */
-            var sub = newroot.get_elements();
-            foreach (Json.Node n in sub) {
+            var nodes = newroot.get_elements();
+            int n_snapshots = 0;
+            foreach (Json.Node n in nodes) {
                 var obj = n.get_object();
-                HashMap<string, Json.Object> submap_cats = get_categories(obj);
+                HashMap<string, Json.Object> categories = get_categories(obj);
+                /* get icon id */
+                string id = check_numvalue(categories["weather"], "id").to_string();
+                print("%s\n", id);
                 /* get timestamp */
                 int timestamp = (int) obj.get_int_member("dt");
                 print(@"$timestamp\n");
                 /* get skystate */
+                /* why no function? Ah, no numvalue, no editing, no unit*/
                 string skydisplay = check_stringvalue(
-                    submap_cats["weather"], "description"
+                    categories["weather"], "description"
                 );
                 print(skydisplay + "\n");
                 /* get temp */
-                string temp = get_temperature(submap_cats);
+                string temp = get_temperature(categories);
                 print(temp + "\n");
                 /* get wind speed/direction */
-                string wspeed = get_windspeed(submap_cats);
-                string wind = get_winddirection(submap_cats).concat(wspeed);
+                string wspeed = get_windspeed(categories);
+                string wind = get_winddirection(categories).concat(" ", wspeed);
                 print(wind + "\n");
                 /* get humidity */
-                string humidity = get_humidity(submap_cats);
+                string humidity = get_humidity(categories);
                 print(humidity + "\n\n");
                 /* now combine the first 16 into a HashMap timestamp (int) /snapshot (str) */
+                n_snapshots += 1;
+                if (n_snapshots == 16) {
+                    break;
+                }
             }
             return map;
         }
