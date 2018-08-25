@@ -1,5 +1,5 @@
 # CenterAll
-Script to be used under a schortcut key, centering all valid windows on current monitor, on current workspace. The script is directly derived from Shuffler, on user request.
+Script to be used under a schortcut key, centering all valid windows on current monitor (centered on the working area), on current workspace. The script is directly derived from Shuffler, on user request.
 
 ## Set up
 - Copy the script somewhere, call it `center_all.py`
