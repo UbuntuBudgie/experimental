@@ -181,20 +181,27 @@ def get_relevantwins():
     data = get_windows_oncurrent()
     wins = data["windows"]
     wa = data["wa"]
+    offset = data["offset"]
     xcenter = wa[0] + wa[2]/2
     ycenter = wa[1] + wa[3]/2
+    to_raise = None
     for w in wins:
+        if w.is_active():
+            to_raise = w
         yshift = get_yshift(w)
         size = w.get_geometry()
         xsize = size.widthp
         ysize = size.heightp
         xleft = xsize/2
         yabove = ysize/2
-        # print(size.widthp, size.heightp)
         shuffle(
-            w, xcenter - xleft, ycenter - yabove + yshift, xsize, ysize
+            w, xcenter - xleft + offset[0],
+            ycenter - yabove + yshift + offset[1],
+            xsize, ysize,
         )
-    # print(wins)
+    if to_raise:
+        w.activate(0)
+        
 
 def shuffle(win, x, y, w, h):
     win.unmaximize()
