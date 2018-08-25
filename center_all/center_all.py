@@ -21,6 +21,7 @@ should have received a copy of the GNU General Public License along with this
 program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+
 def get(cmd):
     try:
         return subprocess.check_output(cmd).decode("utf-8".strip())
@@ -178,13 +179,14 @@ def get_windows_oncurrent(scr=None):
     offset = mpos[0], mpos[1]
     return {"wa": wa, "windows": windows, "offset": offset}
 
+
 def get_relevantwins():
     data = get_windows_oncurrent()
     wins = data["windows"]
     wa = data["wa"]
     offset = data["offset"]
-    xcenter = wa[0] + wa[2]/2
-    ycenter = wa[1] + wa[3]/2
+    xcenter = wa[0] + wa[2] / 2
+    ycenter = wa[1] + wa[3] / 2
     to_raise = None
     for w in wins:
         if w.is_active():
@@ -193,8 +195,8 @@ def get_relevantwins():
         size = w.get_geometry()
         xsize = size.widthp
         ysize = size.heightp
-        xleft = xsize/2
-        yabove = ysize/2
+        xleft = xsize / 2
+        yabove = ysize / 2
         shuffle(
             w, xcenter - xleft + offset[0],
             ycenter - yabove + yshift + offset[1],
@@ -204,7 +206,7 @@ def get_relevantwins():
         subprocess.Popen(
             ["wmctrl", "-ia", str(to_raise.get_xid())]
         )
-        
+
 
 def shuffle(win, x, y, w, h):
     win.unmaximize()
