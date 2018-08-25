@@ -3,6 +3,7 @@ import subprocess
 import gi
 gi.require_version("Wnck", "3.0")
 from gi.repository import Wnck, Gdk
+import subprocess
 
 
 """
@@ -200,7 +201,9 @@ def get_relevantwins():
             xsize, ysize,
         )
     if to_raise:
-        w.activate(0)
+        subprocess.Popen(
+            ["wmctrl", "-ia", str(to_raise.get_xid())]
+        )
         
 
 def shuffle(win, x, y, w, h):
