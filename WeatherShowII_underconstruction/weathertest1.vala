@@ -2,6 +2,7 @@ using Soup;
 using Json;
 using Gee;
 using Math;
+using Gtk;
 
 /* 
 * we need this function to get the current data on the weather. either
@@ -50,7 +51,7 @@ namespace WeatherShow {
         * more detailed set of weather types/codes, which can be used to
         * set an improved icon mapping. below my own (again) simplification 
         * of the extended set of weather codes, which is kind of the middle
-        * between the two.
+        * between the two.result_forecast
         */
         string[,] mapped = {
             {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
@@ -61,7 +62,7 @@ namespace WeatherShow {
             {"762", "701"}
         };
 
-        print(mapped[1, 0]);
+        //print(mapped[1, 0]);
 
         // get current settings
         ws_settings = WeatherShowFunctions.get_settings(
@@ -94,10 +95,9 @@ namespace WeatherShow {
             */
 
             
-            //HashMap result = test.get_forecast(key);
-
-            string result = test.get_current(key);
-            print("read_current:\n\n" + result);
+            HashMap result_forecast = test.get_forecast(key);
+            string result_current = test.get_current(key);
+            print("read_current:\n\n" + result_current);
             /* still to write to file */     
             return true;
         });
@@ -284,7 +284,8 @@ namespace WeatherShow {
         /////////////////////////////////////////////////////////////////////////
 
         private HashMap getspan(string data) {
-            print(data);
+            // get the forecast
+            //print(data);
             var map = new HashMap<int, string> ();
             var parser = new Json.Parser ();
             parser.load_from_data (data);

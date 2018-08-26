@@ -4,4 +4,4 @@ Compile:
 
 Install the gschema, then:
 
-`valac --pkg gee-0.8 --pkg json-glib-1.0 --pkg libsoup-2.4 --pkg glib-2.0 -X -lm <file.vala>`
+`valac --pkg gtk+-3.0 --pkg gee-0.8 --pkg json-glib-1.0 --pkg libsoup-2.4 --pkg glib-2.0 -X -lm <file.vala>`
