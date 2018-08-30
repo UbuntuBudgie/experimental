@@ -32,9 +32,16 @@ public class DesktopWeather : Gtk.Window {
         string css_data = """
             .biglabel {
                 font-size: 20px;
+                color: white;
+                padding-bottom: 15px;
+                padding-right: 15px;
+                padding-top: 15px;
             }
             .label {
+                padding-bottom: 15px;
+                padding-right: 15px;
                 font-size: 17px;
+                color: white;
             }
             """;
 
@@ -91,7 +98,7 @@ public class DesktopWeather : Gtk.Window {
         }
         int n_lines = weatherlines.length;
         string weathersection = string.joinv("\n", weatherlines[1:n_lines-1]);
-        locationlabel.set_label(weatherlines[0]);
+        locationlabel.set_label(weatherlines[1]);
         weatherlabel.set_label(weathersection);
     }
 

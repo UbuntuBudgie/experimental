@@ -37,6 +37,8 @@ namespace WeatherShow {
     private string lang;
     private string tempunit;
     private string[] directions;
+    
+    
     /* fake applet, testing the function to get data */
     /* todo: set lang and units as args, move values to gsettings */
     /* no more! ^^^ make values namespace- wide, since they are used by multiple classes*/
@@ -98,6 +100,18 @@ namespace WeatherShow {
             HashMap result_forecast = test.get_forecast(key);
             string result_current = test.get_current(key);
             print("read_current:\n\n" + result_current);
+
+            // monitored datafile -> todo: move to function!
+            string username = Environment.get_user_name();
+            string src = "/tmp/".concat(username, "_weatherdata");
+            File datasrc = File.new_for_path(src);
+            if (datasrc.query_exists ()) {
+                datasrc.delete ();
+            }
+            var file_stream = datasrc.create (FileCreateFlags.NONE);
+            var data_stream = new DataOutputStream (file_stream);
+            data_stream.put_string (result_current);
+
             /* still to write to file */     
             return true;
         });
@@ -189,7 +203,7 @@ namespace WeatherShow {
             string humiddisplay = get_humidity(map);
             /* combined */
             string[] collected = {
-                citydisplay, skydisplay, tempdisplay, 
+                id, citydisplay, skydisplay, tempdisplay, 
                 wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
             };
             string output = string.joinv("\n", collected);
