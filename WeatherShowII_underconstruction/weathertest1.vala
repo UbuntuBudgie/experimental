@@ -43,6 +43,28 @@ namespace WeatherShow {
     /* todo: set lang and units as args, move values to gsettings */
     /* no more! ^^^ make values namespace- wide, since they are used by multiple classes*/
 
+    private void get_weather (WeatherShow.get_weatherdata test, string key) {
+        /*
+        * fetch data, write current weather to file. still need to handle
+        * forcast, but that is for the applet's popover.
+        */
+
+        // conditional; connect to settings
+        HashMap result_forecast = test.get_forecast(key);
+        string result_current = test.get_current(key);
+        print("read_current:\n\n" + result_current);
+        // monitored datafile -> todo: move to function!
+        string username = Environment.get_user_name();
+        string src = "/tmp/".concat(username, "_weatherdata");
+        File datasrc = File.new_for_path(src);
+        if (datasrc.query_exists ()) {
+            datasrc.delete ();
+        }
+        var file_stream = datasrc.create (FileCreateFlags.NONE);
+        var data_stream = new DataOutputStream (file_stream);
+        data_stream.put_string (result_current);
+    }
+
 
     public static int main (string[] args) {
 
@@ -84,35 +106,9 @@ namespace WeatherShow {
         var win = new Gtk.Window();
         win.destroy.connect(Gtk.main_quit);
         win.show_all();
-        int start = 0;
-        GLib.Timeout.add (5000, () => {
-            start += 1;
-            /* 1.
-            * for current weather, fetch results as a string, write to a temp file
-            * for updating the window. In the window, monitor for file change.
-            *  2.
-            * for forecast series, create a hashmap<timestamp(localized),
-            * text_block>. populate the forecast with it on popup, so the
-            * datafile always exists, and the applet's thread is not bothered.
-            */
-
-            
-            HashMap result_forecast = test.get_forecast(key);
-            string result_current = test.get_current(key);
-            print("read_current:\n\n" + result_current);
-
-            // monitored datafile -> todo: move to function!
-            string username = Environment.get_user_name();
-            string src = "/tmp/".concat(username, "_weatherdata");
-            File datasrc = File.new_for_path(src);
-            if (datasrc.query_exists ()) {
-                datasrc.delete ();
-            }
-            var file_stream = datasrc.create (FileCreateFlags.NONE);
-            var data_stream = new DataOutputStream (file_stream);
-            data_stream.put_string (result_current);
-
-            /* still to write to file */     
+        get_weather(test, key);
+        GLib.Timeout.add (60000, () => {
+            get_weather(test, key);   
             return true;
         });
         Gtk.main();
@@ -358,4 +354,3 @@ namespace WeatherShow {
         }
     }
 }
-

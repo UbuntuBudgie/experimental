@@ -89,17 +89,25 @@ public class DesktopWeather : Gtk.Window {
 
     private void update_win() {
         // update the window if weather (file/datasrc) changes
-        var dis = new DataInputStream (datasrc.read ());
-        string line;
-        string[] weatherlines = {};
-        while ((line = dis.read_line (null)) != null) {
-            // work to do; image change
-            weatherlines += line;
+        try {
+            var dis = new DataInputStream (datasrc.read ());
+            string line;
+            string[] weatherlines = {};
+            while ((line = dis.read_line (null)) != null) {
+                // work to do; image change
+                weatherlines += line;
+            }
+            int n_lines = weatherlines.length;
+            string weathersection = string.joinv("\n", weatherlines[2:n_lines]);
+            locationlabel.set_label(weatherlines[1]);
+            weatherlabel.set_label(weathersection);
         }
-        int n_lines = weatherlines.length;
-        string weathersection = string.joinv("\n", weatherlines[1:n_lines-1]);
-        locationlabel.set_label(weatherlines[1]);
-        weatherlabel.set_label(weathersection);
+        catch (Error e) {
+            /* 
+            * on each refresh, the file is deleted by the applet
+            * just wait for next signal. 
+            */
+        }
     }
 
     public static void main(string[] ? args = null) {
