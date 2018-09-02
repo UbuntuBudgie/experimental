@@ -40,37 +40,37 @@ namespace TemplateApplet {
 
     /* make sure settings are defined on applet startup */
     private GLib.Settings ws_settings;
+    private bool show_ondesktop;
     private string lang;
     private string tempunit;
     private string[] directions;
+    private string key;
 
-    private void get_weather (GetWeatherdata test, string key) {
-        /*
-        * fetch data, write current weather to file. still need to handle
-        * forcast, but that is for the applet's popover.
-        */
+    private void get_weather (GetWeatherdata test) {
 
-        // conditional; connect to settings
-        HashMap result_forecast = test.get_forecast(key);
-        string result_current = test.get_current(key);
+        // get forecast; conditional
+        HashMap result_forecast = test.get_forecast();
+        // get current; run anyway. writing to file is optiional for desktop
+        string result_current = test.get_current();
         print("read_current:\n\n" + result_current);
-        // monitored datafile -> todo: move to function!
-        string username = Environment.get_user_name();
-        string src = "/tmp/".concat(username, "_weatherdata");
-        File datasrc = File.new_for_path(src);
-        if (datasrc.query_exists ()) {
-            datasrc.delete ();
+        // write current to file; conditional, only for desktop
+        if (show_ondesktop == true) {
+            string username = Environment.get_user_name();
+            string src = "/tmp/".concat(username, "_weatherdata");
+            File datasrc = File.new_for_path(src);
+            if (datasrc.query_exists ()) {
+                datasrc.delete ();
+            }
+            var file_stream = datasrc.create (FileCreateFlags.NONE);
+            var data_stream = new DataOutputStream (file_stream);
+            data_stream.put_string (result_current);
         }
-        var file_stream = datasrc.create (FileCreateFlags.NONE);
-        var data_stream = new DataOutputStream (file_stream);
-        data_stream.put_string (result_current);
     }
+
 
     public class GetWeatherdata {
 
-        private string fetch_fromsite (
-            string wtype, string city, string key
-        ) {
+        private string fetch_fromsite (string wtype, string city) {
             /* fetch data from OWM */
             string website = "http://api.openweathermap.org/data/2.5/"; 
             string langstring = "&".concat("lang=", lang);
@@ -156,12 +156,12 @@ namespace TemplateApplet {
             return output;
         }
 
-        public string get_current (string key) {
+        public string get_current () {
             /* 
             * get "raw" data. if successful, create new data, else create
             * empty lines in the output array.
             */
-            string data = fetch_fromsite("weather", "2907911", key);
+            string data = fetch_fromsite("weather", "2907911");
             if (data != "no data") {
                 return getsnapshot(data);
             }
@@ -287,9 +287,9 @@ namespace TemplateApplet {
             return map;
         }
 
-        public HashMap get_forecast(string key) {
+        public HashMap get_forecast() {
             /* here we create a hashmap<time, string> */
-            string data = fetch_fromsite("forecast", "2907911", key);
+            string data = fetch_fromsite("forecast", "2907911");
             var map = new HashMap<int, string> ();
 
             if (data != "no data") {
@@ -312,6 +312,7 @@ namespace TemplateApplet {
             /*
             * Gtk stuff, widgets etc. here 
             */
+            
         }
     }
 
@@ -396,26 +397,31 @@ namespace TemplateApplet {
             tempunit = ws_settings.get_string("tempunit");
             ws_settings.changed["tempunit"].connect (() => {
                 tempunit = ws_settings.get_string("tempunit");
-                print("changed!\n" + tempunit + "\n");
 		    });  
             // todo: fetch local language, see if it is in the list
             // fallback to default (en) if not. make checkbutton in settings
-            string lang = ws_settings.get_string("language");
-            string key = ws_settings.get_string("key");
+            // settings, used across classes!!
+            lang = ws_settings.get_string("language");
+            key = ws_settings.get_string("key");
+            show_ondesktop = ws_settings.get_boolean("desktopweather");
+            ws_settings.changed["desktopweather"].connect (() => {
+                show_ondesktop = ws_settings.get_boolean("desktopweather");
+		    }); 
+            print(@"show on desktop: $show_ondesktop\n");
+
+
+
+
+
             var test = new GetWeatherdata();
             print("applet ok\n");
-            get_weather(test, key);
+            get_weather(test);
             GLib.Timeout.add (60000, () => {
                 print("loop ok\n");
-                get_weather(test, key);   
+                get_weather(test);   
                 return true;
             });
             /* end inserted section -------------------- */
-
-
-
-
-
 
 
             initialiseLocaleLanguageSupport();
