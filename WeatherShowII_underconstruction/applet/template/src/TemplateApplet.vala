@@ -41,6 +41,8 @@ namespace TemplateApplet {
     /* make sure settings are defined on applet startup */
     private GLib.Settings ws_settings;
     private bool show_ondesktop;
+    private bool dynamic_icon;
+    private bool show_forecast;
     private string lang;
     private string tempunit;
     private string[] directions;
@@ -307,12 +309,49 @@ namespace TemplateApplet {
     public class TemplateSettings : Gtk.Grid {
         /* Budgie Settings -section */
         GLib.Settings? settings = null;
+        private CheckButton ondesktop_checkbox;
+        private CheckButton dynamicicon_checkbox;
+        private CheckButton forecast_checkbox;
+
+        //public signal void toggled.connect(string testarg); ///////////////////////////
 
         public TemplateSettings(GLib.Settings? settings) {
             /*
             * Gtk stuff, widgets etc. here 
             */
-            
+            ondesktop_checkbox = new CheckButton.with_label((_("Show on desktop")));
+            this.attach(ondesktop_checkbox, 0, 0, 1, 1);
+            ondesktop_checkbox.set_active(show_ondesktop);
+            ondesktop_checkbox.toggled.connect(toggle_ondesktop);
+
+            dynamicicon_checkbox = new CheckButton.with_label((_("Show dynamic panel icon")));
+            this.attach(dynamicicon_checkbox, 0, 1, 1, 1);
+            dynamicicon_checkbox.set_active(dynamic_icon);
+            dynamicicon_checkbox.toggled.connect(toggle_dynamicicon);
+
+            forecast_checkbox = new CheckButton.with_label((_("Show forecast in popover")));
+            this.attach(forecast_checkbox, 0, 2, 1, 1);
+            forecast_checkbox.set_active(show_forecast);
+            forecast_checkbox.toggled.connect(toggle_forecast);
+            this.show_all();
+        }
+
+        private void toggle_ondesktop(ToggleButton button) {
+            bool newsetting = ondesktop_checkbox.get_active();
+            ws_settings.set_boolean("desktopweather", newsetting);
+            print(@"show on desktop: $newsetting\n");
+        }
+
+        private void toggle_dynamicicon(ToggleButton button) {
+            bool newsetting = dynamicicon_checkbox.get_active();
+            ws_settings.set_boolean("dynamicicon", newsetting);
+            print(@"dynamic icon: $newsetting\n");
+        }
+
+        private void toggle_forecast(ToggleButton button) {
+            bool newsetting = forecast_checkbox.get_active();
+            ws_settings.set_boolean("forecast", newsetting);
+            print(@"forecast: $newsetting\n");
         }
     }
 
@@ -369,8 +408,6 @@ namespace TemplateApplet {
         public Applet() {
 
 
-
-
             /* inserted section -------------------- */
             directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
             /* 
@@ -403,11 +440,22 @@ namespace TemplateApplet {
             // settings, used across classes!!
             lang = ws_settings.get_string("language");
             key = ws_settings.get_string("key");
+
             show_ondesktop = ws_settings.get_boolean("desktopweather");
             ws_settings.changed["desktopweather"].connect (() => {
                 show_ondesktop = ws_settings.get_boolean("desktopweather");
-		    }); 
-            print(@"show on desktop: $show_ondesktop\n");
+            }); 
+
+            dynamic_icon = ws_settings.get_boolean("dynamicicon");
+            ws_settings.changed["dynamicicon"].connect (() => {
+                dynamic_icon = ws_settings.get_boolean("dynamicicon");
+            }); 
+
+            show_forecast = ws_settings.get_boolean("forecast");
+            ws_settings.changed["forecast"].connect (() => {
+                show_forecast = ws_settings.get_boolean("forecast");
+            });
+            
 
 
 
