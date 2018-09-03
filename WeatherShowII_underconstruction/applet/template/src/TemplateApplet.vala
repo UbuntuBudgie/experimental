@@ -321,26 +321,34 @@ namespace TemplateApplet {
             /*
             * Gtk stuff, widgets etc. here 
             */
-            ondesktop_checkbox = new CheckButton.with_label((_("Show on desktop")));
-            cbuttons += ondesktop_checkbox;
-            add_args += "desktopweather";
+            ondesktop_checkbox = new CheckButton.with_label(
+                (_("Show on desktop"))
+            );
             this.attach(ondesktop_checkbox, 0, 0, 1, 1);
             ondesktop_checkbox.set_active(show_ondesktop);
             ondesktop_checkbox.toggled.connect(toggle_value);
 
-            dynamicicon_checkbox = new CheckButton.with_label((_("Show dynamic panel icon")));
-            cbuttons += dynamicicon_checkbox;
-            add_args += "dynamicicon";
+            dynamicicon_checkbox = new CheckButton.with_label(
+                (_("Show dynamic panel icon"))
+            );
             this.attach(dynamicicon_checkbox, 0, 1, 1, 1);
             dynamicicon_checkbox.set_active(dynamic_icon);
             dynamicicon_checkbox.toggled.connect(toggle_value);
-
-            forecast_checkbox = new CheckButton.with_label((_("Show forecast in popover")));
-            cbuttons += forecast_checkbox;
-            add_args += "forecast";
+            
+            forecast_checkbox = new CheckButton.with_label(
+                (_("Show forecast in popover"))
+            );
             this.attach(forecast_checkbox, 0, 2, 1, 1);
             forecast_checkbox.set_active(show_forecast);
             forecast_checkbox.toggled.connect(toggle_value);
+
+            cbuttons = {
+                ondesktop_checkbox, dynamicicon_checkbox, forecast_checkbox
+            };
+            add_args = {
+                "desktopweather", "dynamicicon", "forecast"
+            };
+
             this.show_all();
         }
 
