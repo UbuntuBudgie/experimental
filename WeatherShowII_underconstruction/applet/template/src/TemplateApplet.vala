@@ -312,6 +312,8 @@ namespace TemplateApplet {
         private CheckButton ondesktop_checkbox;
         private CheckButton dynamicicon_checkbox;
         private CheckButton forecast_checkbox;
+        private CheckButton[] cbuttons; ////////////////////////////
+        private string[] add_args;
 
         //public signal void toggled.connect(string testarg); ///////////////////////////
 
@@ -320,38 +322,40 @@ namespace TemplateApplet {
             * Gtk stuff, widgets etc. here 
             */
             ondesktop_checkbox = new CheckButton.with_label((_("Show on desktop")));
+            cbuttons += ondesktop_checkbox;
+            add_args += "desktopweather";
             this.attach(ondesktop_checkbox, 0, 0, 1, 1);
             ondesktop_checkbox.set_active(show_ondesktop);
-            ondesktop_checkbox.toggled.connect(toggle_ondesktop);
+            ondesktop_checkbox.toggled.connect(toggle_value);
 
             dynamicicon_checkbox = new CheckButton.with_label((_("Show dynamic panel icon")));
+            cbuttons += dynamicicon_checkbox;
+            add_args += "dynamicicon";
             this.attach(dynamicicon_checkbox, 0, 1, 1, 1);
             dynamicicon_checkbox.set_active(dynamic_icon);
-            dynamicicon_checkbox.toggled.connect(toggle_dynamicicon);
+            dynamicicon_checkbox.toggled.connect(toggle_value);
 
             forecast_checkbox = new CheckButton.with_label((_("Show forecast in popover")));
+            cbuttons += forecast_checkbox;
+            add_args += "forecast";
             this.attach(forecast_checkbox, 0, 2, 1, 1);
             forecast_checkbox.set_active(show_forecast);
-            forecast_checkbox.toggled.connect(toggle_forecast);
+            forecast_checkbox.toggled.connect(toggle_value);
             this.show_all();
         }
 
-        private void toggle_ondesktop(ToggleButton button) {
-            bool newsetting = ondesktop_checkbox.get_active();
-            ws_settings.set_boolean("desktopweather", newsetting);
-            print(@"show on desktop: $newsetting\n");
+        private int get_buttonarg (ToggleButton button) {
+            for (int i = 0; i < cbuttons.length; i++) {
+                if (cbuttons[i] == button) {
+                    return i;
+                }
+            } return -1; 
         }
 
-        private void toggle_dynamicicon(ToggleButton button) {
-            bool newsetting = dynamicicon_checkbox.get_active();
-            ws_settings.set_boolean("dynamicicon", newsetting);
-            print(@"dynamic icon: $newsetting\n");
-        }
-
-        private void toggle_forecast(ToggleButton button) {
-            bool newsetting = forecast_checkbox.get_active();
-            ws_settings.set_boolean("forecast", newsetting);
-            print(@"forecast: $newsetting\n");
+        private void toggle_value(ToggleButton button) {
+            bool newsetting = button.get_active();
+            string currsetting = add_args[get_buttonarg(button)];
+            ws_settings.set_boolean(currsetting, newsetting);
         }
     }
 
