@@ -321,24 +321,52 @@ namespace TemplateApplet {
             /*
             * Gtk stuff, widgets etc. here 
             */
+
+            // set city section
+            var citylabel = new Label((_("City")));
+            citylabel.set_xalign(0);
+            this.attach(citylabel, 0, 0, 1, 1);
+            var citybox = new Box(Gtk.Orientation.HORIZONTAL, 0);
+            this.attach(citybox, 0, 1, 1, 1);
+            var cityentry = new Entry();
+            citybox.pack_start(cityentry, false, false, 0);
+            var search_button = new Button.from_icon_name(
+                "system-search-symbolic"
+            );
+            citybox.pack_end(search_button, false, false, 0);
+            var spacelabel1 = new Gtk.Label("");
+            this.attach(spacelabel1, 0, 2, 1, 1);
+            // set language 
+            var langlabel = new Gtk.Label((_("Language")));
+            langlabel.set_xalign(0);
+            this.attach(langlabel, 0, 3, 1, 1);
+            var langentry = new Gtk.Entry();
+            this.attach(langentry, 0, 4, 1, 1);
+            /*langentry.set_text(
+            langlist[langcodes.index(wt.get_currlang())]
+            )*/
+            var spacelabel2 = new Gtk.Label("");
+            this.attach(spacelabel2, 0, 5, 1, 1);
+
             ondesktop_checkbox = new CheckButton.with_label(
                 (_("Show on desktop"))
             );
-            this.attach(ondesktop_checkbox, 0, 0, 1, 1);
+            this.attach(ondesktop_checkbox, 0, 10, 1, 1);
             ondesktop_checkbox.set_active(show_ondesktop);
             ondesktop_checkbox.toggled.connect(toggle_value);
+            /* the language section is inserted here* */
 
             dynamicicon_checkbox = new CheckButton.with_label(
                 (_("Show dynamic panel icon"))
             );
-            this.attach(dynamicicon_checkbox, 0, 1, 1, 1);
+            this.attach(dynamicicon_checkbox, 0, 11, 1, 1);
             dynamicicon_checkbox.set_active(dynamic_icon);
             dynamicicon_checkbox.toggled.connect(toggle_value);
             
             forecast_checkbox = new CheckButton.with_label(
                 (_("Show forecast in popover"))
             );
-            this.attach(forecast_checkbox, 0, 2, 1, 1);
+            this.attach(forecast_checkbox, 0, 12, 1, 1);
             forecast_checkbox.set_active(show_forecast);
             forecast_checkbox.toggled.connect(toggle_value);
 
@@ -468,11 +496,6 @@ namespace TemplateApplet {
                 show_forecast = ws_settings.get_boolean("forecast");
             });
             
-
-
-
-
-
             var test = new GetWeatherdata();
             print("applet ok\n");
             get_weather(test);
@@ -531,7 +554,11 @@ namespace TemplateApplet {
 public void peas_register_types(TypeModule module){
     /* boilerplate - all modules need this */
     var objmodule = module as Peas.ObjectModule;
-    objmodule.register_extension_type(typeof(
-        Budgie.Plugin), typeof(TemplateApplet.Plugin)
+    objmodule.register_extension_type(
+        typeof(
+        Budgie.Plugin
+        ), typeof(
+            TemplateApplet.Plugin
+            )
     );
 }
