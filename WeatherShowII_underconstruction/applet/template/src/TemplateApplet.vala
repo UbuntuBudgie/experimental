@@ -312,7 +312,7 @@ namespace TemplateApplet {
         private CheckButton ondesktop_checkbox;
         private CheckButton dynamicicon_checkbox;
         private CheckButton forecast_checkbox;
-        private CheckButton[] cbuttons; ////////////////////////////
+        private CheckButton[] cbuttons; 
         private string[] add_args;
         private string css_data;
         private int buttoncolor;
@@ -327,13 +327,41 @@ namespace TemplateApplet {
         private Gtk.Button apply;
         private Gtk.Label transparency_label;
         private Gtk.Label desktop_category;
+        private Stack stack;
+        private Gtk.Button button_desktop;
 
-        //public signal void toggled.connect(string testarg); ///////////////////////////
 
         public TemplateSettings(GLib.Settings? settings) {
             /*
             * Gtk stuff, widgets etc. here 
             */
+
+            ///////////////////////////////////////////////////////////////////
+            // stack, container for subgrids
+
+            stack = new Stack();
+            stack.set_transition_type(
+                Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
+            );
+            stack.set_vexpand(true);
+            stack.set_hexpand(true);
+            this.attach(stack, 0, 2, 2, 1);
+            var header_space = new Gtk.Label("\n");
+            this.attach(header_space, 0, 1, 1, 1);
+
+            var button_general = new Button.with_label((_("General")));
+            button_general.clicked.connect(on_button_general_clicked);
+            button_general.set_size_request(100, 20);
+            this.attach(button_general, 0, 0, 1, 1);
+            button_desktop = new Button.with_label((_("Desktop")));
+            button_desktop.clicked.connect(on_button_desktop_clicked);
+            button_desktop.set_size_request(100, 20);
+            this.attach(button_desktop, 1, 0, 1, 1);
+
+            var subgrid_general = new Grid();
+            stack.add_named(subgrid_general, "Page1");
+            var subgrid_desktop = new Grid();
+            stack.add_named(subgrid_desktop, "Page2");
 
             css_data = """
             .colorbutton {
@@ -358,9 +386,9 @@ namespace TemplateApplet {
             // set city section
             var citylabel = new Label((_("City")));
             citylabel.set_xalign(0);
-            this.attach(citylabel, 0, 0, 1, 1);
+            subgrid_general.attach(citylabel, 0, 0, 1, 1);
             var citybox = new Box(Gtk.Orientation.HORIZONTAL, 0);
-            this.attach(citybox, 0, 1, 1, 1);
+            subgrid_general.attach(citybox, 0, 1, 1, 1);
             var cityentry = new Entry();
             citybox.pack_start(cityentry, false, false, 0);
             var search_button = new Button.from_icon_name(
@@ -368,23 +396,23 @@ namespace TemplateApplet {
             );
             citybox.pack_end(search_button, false, false, 0);
             var spacelabel1 = new Gtk.Label("");
-            this.attach(spacelabel1, 0, 2, 1, 1);
+            subgrid_general.attach(spacelabel1, 0, 2, 1, 1);
             // set language 
             var langlabel = new Gtk.Label((_("Interface language")));
             langlabel.set_xalign(0);
-            this.attach(langlabel, 0, 3, 1, 1);
+            subgrid_general.attach(langlabel, 0, 3, 1, 1);
             var langentry = new Gtk.Entry();
-            this.attach(langentry, 0, 4, 1, 1);
+            subgrid_general.attach(langentry, 0, 4, 1, 1);
             /*langentry.set_text(
             langlist[langcodes.index(wt.get_currlang())]
             )*/
             var spacelabel2 = new Gtk.Label("");
-            this.attach(spacelabel2, 0, 5, 1, 1);
+            subgrid_general.attach(spacelabel2, 0, 5, 1, 1);
             // show on desktop
             var ondesktop_checkbox = new CheckButton.with_label(
                 (_("Show on desktop"))
             );
-            this.attach(ondesktop_checkbox, 0, 10, 1, 1);
+            subgrid_general.attach(ondesktop_checkbox, 0, 10, 1, 1);
             ondesktop_checkbox.set_active(show_ondesktop);
             ondesktop_checkbox.toggled.connect(toggle_value);
 
@@ -392,54 +420,54 @@ namespace TemplateApplet {
             var dynamicicon_checkbox = new CheckButton.with_label(
                 (_("Show dynamic panel icon"))
             );
-            this.attach(dynamicicon_checkbox, 0, 11, 1, 1);
+            subgrid_general.attach(dynamicicon_checkbox, 0, 11, 1, 1);
             dynamicicon_checkbox.set_active(dynamic_icon);
             dynamicicon_checkbox.toggled.connect(toggle_value);
             // forecast
             var forecast_checkbox = new CheckButton.with_label(
                 (_("Show forecast in popover"))
             );
-            this.attach(forecast_checkbox, 0, 12, 1, 1);
+            subgrid_general.attach(forecast_checkbox, 0, 12, 1, 1);
             forecast_checkbox.set_active(show_forecast);
             forecast_checkbox.toggled.connect(toggle_value);
             var spacelabel3 = new Gtk.Label("");
-            this.attach(spacelabel3, 0, 13, 1, 1);
+            subgrid_general.attach(spacelabel3, 0, 13, 1, 1);
             // temp unit
             var tempunit_checkbox = new CheckButton.with_label(
                 (_("Use Fahrenheit"))
             );
-            this.attach(tempunit_checkbox, 0, 14, 1, 1);
+            subgrid_general.attach(tempunit_checkbox, 0, 14, 1, 1);
             // tempunit_checkbox.set_active(show_forecast);
-            //tempunit_checkbox.toggled.connect(toggle_value);
+            tempunit_checkbox.toggled.connect(toggle_value);
             var spacelabel4 = new Gtk.Label("");
-            this.attach(spacelabel4, 0, 15, 1, 1);
+            subgrid_general.attach(spacelabel4, 0, 15, 1, 1);
             // optional settings: show on desktop
-            desktop_category = new Label((_("Show on desktop settings:")));
-            desktop_category.get_style_context().add_class("category");
-            this.attach(desktop_category, 0, 20, 1, 1);
-            desktop_category.set_xalign(0);
-            var spacelabel5 = new Gtk.Label("");
-            this.attach(spacelabel5, 0, 21, 1, 1);
+            //desktop_category = new Label((_("Show on desktop settings:")));
+            //desktop_category.get_style_context().add_class("category");
+            //this.attach(desktop_category, 0, 20, 1, 1);
+            //desktop_category.set_xalign(0);
+            //var spacelabel5 = new Gtk.Label("");
+            //this.attach(spacelabel5, 0, 21, 1, 1);
             transparency_label = new Gtk.Label(
                 (_("Transparency"))
             );
             transparency_label.set_xalign(0);
-            this.attach(transparency_label, 0, 22, 1, 1);
+            subgrid_desktop.attach(transparency_label, 0, 22, 1, 1);
 
             transparency_slider = new Gtk.Scale.with_range(
                 Gtk.Orientation.HORIZONTAL, 0, 100, 5
             );
-            this.attach(transparency_slider, 0, 23, 1, 1);
+            subgrid_desktop.attach(transparency_slider, 0, 23, 1, 1);
             //double visible_pressure = (int)hc_settings.get_int("pressure");
             //transparency_slider.set_value(visible_pressure);
             //transparency_slider.value_changed.connect(edit_pressure);
             ///
             ///
             var spacelabel6 = new Gtk.Label("\n");
-            this.attach(spacelabel6, 0, 24, 1, 1);
+            subgrid_desktop.attach(spacelabel6, 0, 24, 1, 1);
             // text color
             var colorbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            this.attach(colorbox, 0, 30, 1, 1);
+            subgrid_desktop.attach(colorbox, 0, 30, 1, 1);
             colorbutton = new Gtk.Button();
             //self.text_color.connect("clicked", self.pick_color, self.tcolorfile);
             colorbutton.set_size_request(10, 10);
@@ -453,22 +481,21 @@ namespace TemplateApplet {
             colorbox.pack_start(colorlabel, false, false, 0);
 
             cbuttons = {
-                ondesktop_checkbox, dynamicicon_checkbox, forecast_checkbox
+                ondesktop_checkbox, dynamicicon_checkbox, forecast_checkbox,
+                tempunit_checkbox
             };
             add_args = {
-                "desktopweather", "dynamicicon", "forecast"
+                "desktopweather", "dynamicicon", "forecast", "tempunit"
             };
 
             var spacelabel7 = new Gtk.Label("\n");
-            this.attach(spacelabel7, 0, 31, 1, 1);
+            subgrid_desktop.attach(spacelabel7, 0, 31, 1, 1);
 
             // checkbox custom position
             setposbutton = new Gtk.CheckButton.with_label(
                 (_("Set custom position (px)"))
             );
-            this.attach(setposbutton, 0, 50, 1, 1);
-
-
+            subgrid_desktop.attach(setposbutton, 0, 50, 1, 1);
 
             var posholder = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             xpos = new Gtk.Entry();
@@ -485,25 +512,19 @@ namespace TemplateApplet {
             apply = new Gtk.Button.with_label("OK");
             //self.apply.connect("pressed", self.get_xy)
             posholder.pack_end(apply, false, false, 0);
-            this.attach(posholder, 0, 51, 1, 1);
-            toggle_widgets (show_ondesktop);
+            subgrid_desktop.attach(posholder, 0, 51, 1, 1);
+
+            button_desktop.set_sensitive(show_ondesktop);
 
             this.show_all();
         }
 
-        private void toggle_widgets (bool curr_active) {
-            Entry[] entries = {xpos, ypos};
-            Label[] labels = {
-                transparency_label, colorlabel, xpos_label, 
-                ypos_label, desktop_category
-            };
-            foreach (Entry en in entries) {en.set_sensitive(curr_active);}
-            foreach (Label l in labels) {l.set_sensitive(curr_active);}
-            transparency_slider.set_sensitive(curr_active);
-            colorbutton.set_sensitive(curr_active);
-            setposbutton.set_sensitive(curr_active);
-            apply.set_sensitive(curr_active);
-            transparency_slider.set_sensitive(curr_active);
+        private void on_button_general_clicked (Button button) {
+            stack.set_visible_child_name("Page1");
+        }
+
+        private void on_button_desktop_clicked(Button button) {
+            stack.set_visible_child_name("Page2");
         }
 
         private int get_buttonarg (ToggleButton button) {
@@ -521,11 +542,10 @@ namespace TemplateApplet {
             ws_settings.set_boolean(currsetting, newsetting);
             // possible additional actions, depending on the togglebutton
             if (val_index == 0) {
-                toggle_widgets(newsetting);
+                button_desktop.set_sensitive(newsetting);
             }
         }
     }
-
 
     public class Plugin : Budgie.Plugin, Peas.ExtensionBase {
         public Budgie.Applet get_panel_widget(string uuid) {
