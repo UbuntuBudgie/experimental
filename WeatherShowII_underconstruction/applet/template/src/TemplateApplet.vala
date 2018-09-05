@@ -314,6 +314,19 @@ namespace TemplateApplet {
         private CheckButton forecast_checkbox;
         private CheckButton[] cbuttons; ////////////////////////////
         private string[] add_args;
+        private string css_data;
+        private int buttoncolor;
+        private Gtk.Scale transparency_slider;
+        private Gtk.Button colorbutton;
+        private Gtk.Label colorlabel;
+        private Gtk.CheckButton setposbutton;
+        private Gtk.Entry xpos;
+        private Gtk.Entry ypos;
+        private Gtk.Label xpos_label;
+        private Gtk.Label ypos_label;
+        private Gtk.Button apply;
+        private Gtk.Label transparency_label;
+        private Gtk.Label desktop_category;
 
         //public signal void toggled.connect(string testarg); ///////////////////////////
 
@@ -322,6 +335,26 @@ namespace TemplateApplet {
             * Gtk stuff, widgets etc. here 
             */
 
+            css_data = """
+            .colorbutton {
+              border-color: transparent;
+              background-color: #AFC826;
+              padding: 0px;
+              border-width: 1px;
+              border-radius: 4px;
+            }
+            .category {
+              font-weight: bold;
+            }
+            """;
+
+            // css
+            var screen = this.get_screen();
+            var css_provider = new Gtk.CssProvider();
+            css_provider.load_from_data(css_data);
+            Gtk.StyleContext.add_provider_for_screen(
+                screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+            );
             // set city section
             var citylabel = new Label((_("City")));
             citylabel.set_xalign(0);
@@ -337,7 +370,7 @@ namespace TemplateApplet {
             var spacelabel1 = new Gtk.Label("");
             this.attach(spacelabel1, 0, 2, 1, 1);
             // set language 
-            var langlabel = new Gtk.Label((_("Language")));
+            var langlabel = new Gtk.Label((_("Interface language")));
             langlabel.set_xalign(0);
             this.attach(langlabel, 0, 3, 1, 1);
             var langentry = new Gtk.Entry();
@@ -347,28 +380,77 @@ namespace TemplateApplet {
             )*/
             var spacelabel2 = new Gtk.Label("");
             this.attach(spacelabel2, 0, 5, 1, 1);
-
-            ondesktop_checkbox = new CheckButton.with_label(
+            // show on desktop
+            var ondesktop_checkbox = new CheckButton.with_label(
                 (_("Show on desktop"))
             );
             this.attach(ondesktop_checkbox, 0, 10, 1, 1);
             ondesktop_checkbox.set_active(show_ondesktop);
             ondesktop_checkbox.toggled.connect(toggle_value);
-            /* the language section is inserted here* */
 
-            dynamicicon_checkbox = new CheckButton.with_label(
+            // dynamic icon
+            var dynamicicon_checkbox = new CheckButton.with_label(
                 (_("Show dynamic panel icon"))
             );
             this.attach(dynamicicon_checkbox, 0, 11, 1, 1);
             dynamicicon_checkbox.set_active(dynamic_icon);
             dynamicicon_checkbox.toggled.connect(toggle_value);
-            
-            forecast_checkbox = new CheckButton.with_label(
+            // forecast
+            var forecast_checkbox = new CheckButton.with_label(
                 (_("Show forecast in popover"))
             );
             this.attach(forecast_checkbox, 0, 12, 1, 1);
             forecast_checkbox.set_active(show_forecast);
             forecast_checkbox.toggled.connect(toggle_value);
+            var spacelabel3 = new Gtk.Label("");
+            this.attach(spacelabel3, 0, 13, 1, 1);
+            // temp unit
+            var tempunit_checkbox = new CheckButton.with_label(
+                (_("Use Fahrenheit"))
+            );
+            this.attach(tempunit_checkbox, 0, 14, 1, 1);
+            // tempunit_checkbox.set_active(show_forecast);
+            //tempunit_checkbox.toggled.connect(toggle_value);
+            var spacelabel4 = new Gtk.Label("");
+            this.attach(spacelabel4, 0, 15, 1, 1);
+            // optional settings: show on desktop
+            desktop_category = new Label((_("Show on desktop settings:")));
+            desktop_category.get_style_context().add_class("category");
+            this.attach(desktop_category, 0, 20, 1, 1);
+            desktop_category.set_xalign(0);
+            var spacelabel5 = new Gtk.Label("");
+            this.attach(spacelabel5, 0, 21, 1, 1);
+            transparency_label = new Gtk.Label(
+                (_("Transparency"))
+            );
+            transparency_label.set_xalign(0);
+            this.attach(transparency_label, 0, 22, 1, 1);
+
+            transparency_slider = new Gtk.Scale.with_range(
+                Gtk.Orientation.HORIZONTAL, 0, 100, 5
+            );
+            this.attach(transparency_slider, 0, 23, 1, 1);
+            //double visible_pressure = (int)hc_settings.get_int("pressure");
+            //transparency_slider.set_value(visible_pressure);
+            //transparency_slider.value_changed.connect(edit_pressure);
+            ///
+            ///
+            var spacelabel6 = new Gtk.Label("\n");
+            this.attach(spacelabel6, 0, 24, 1, 1);
+            // text color
+            var colorbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            this.attach(colorbox, 0, 30, 1, 1);
+            colorbutton = new Gtk.Button();
+            //self.text_color.connect("clicked", self.pick_color, self.tcolorfile);
+            colorbutton.set_size_request(10, 10);
+            colorbutton.get_style_context().add_class("colorbutton");
+            //locationlabel.get_style_context().add_class("biglabel");
+
+
+            colorbox.pack_start(colorbutton, false, false, 0);
+            colorlabel = new Gtk.Label("\t" + (_("Set text color")));
+            colorlabel.set_xalign(0);
+            colorbox.pack_start(colorlabel, false, false, 0);
 
             cbuttons = {
                 ondesktop_checkbox, dynamicicon_checkbox, forecast_checkbox
@@ -377,7 +459,51 @@ namespace TemplateApplet {
                 "desktopweather", "dynamicicon", "forecast"
             };
 
+            var spacelabel7 = new Gtk.Label("\n");
+            this.attach(spacelabel7, 0, 31, 1, 1);
+
+            // checkbox custom position
+            setposbutton = new Gtk.CheckButton.with_label(
+                (_("Set custom position (px)"))
+            );
+            this.attach(setposbutton, 0, 50, 1, 1);
+
+
+
+            var posholder = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            xpos = new Gtk.Entry();
+            xpos.set_width_chars(4);
+            xpos_label = new Gtk.Label("x: ");
+            ypos = new Gtk.Entry();
+            ypos.set_width_chars(4);
+            ypos_label = new Gtk.Label(" y: ");
+            posholder.pack_start(xpos_label, false, false, 0);
+            posholder.pack_start(xpos, false, false, 0);
+            posholder.pack_start(ypos_label, false, false, 0);
+            posholder.pack_start(ypos, false, false, 0);
+
+            apply = new Gtk.Button.with_label("OK");
+            //self.apply.connect("pressed", self.get_xy)
+            posholder.pack_end(apply, false, false, 0);
+            this.attach(posholder, 0, 51, 1, 1);
+            toggle_widgets (show_ondesktop);
+
             this.show_all();
+        }
+
+        private void toggle_widgets (bool curr_active) {
+            Entry[] entries = {xpos, ypos};
+            Label[] labels = {
+                transparency_label, colorlabel, xpos_label, 
+                ypos_label, desktop_category
+            };
+            foreach (Entry en in entries) {en.set_sensitive(curr_active);}
+            foreach (Label l in labels) {l.set_sensitive(curr_active);}
+            transparency_slider.set_sensitive(curr_active);
+            colorbutton.set_sensitive(curr_active);
+            setposbutton.set_sensitive(curr_active);
+            apply.set_sensitive(curr_active);
+            transparency_slider.set_sensitive(curr_active);
         }
 
         private int get_buttonarg (ToggleButton button) {
@@ -390,8 +516,13 @@ namespace TemplateApplet {
 
         private void toggle_value(ToggleButton button) {
             bool newsetting = button.get_active();
-            string currsetting = add_args[get_buttonarg(button)];
+            int val_index = get_buttonarg(button);
+            string currsetting = add_args[val_index];
             ws_settings.set_boolean(currsetting, newsetting);
+            // possible additional actions, depending on the togglebutton
+            if (val_index == 0) {
+                toggle_widgets(newsetting);
+            }
         }
     }
 
