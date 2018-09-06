@@ -47,6 +47,7 @@ namespace TemplateApplet {
     private string tempunit;
     private string[] directions;
     private string key;
+    private bool customposition;
 
     private void get_weather (GetWeatherdata test) {
 
@@ -329,6 +330,9 @@ namespace TemplateApplet {
         private Gtk.Label desktop_category;
         private Stack stack;
         private Gtk.Button button_desktop;
+        private Gtk.Button button_general;
+        private Label currmarker_label1;
+        private Label currmarker_label2;
 
 
         public TemplateSettings(GLib.Settings? settings) {
@@ -338,31 +342,6 @@ namespace TemplateApplet {
 
             ///////////////////////////////////////////////////////////////////
             // stack, container for subgrids
-
-            stack = new Stack();
-            stack.set_transition_type(
-                Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
-            );
-            stack.set_vexpand(true);
-            stack.set_hexpand(true);
-            this.attach(stack, 0, 2, 2, 1);
-            var header_space = new Gtk.Label("\n");
-            this.attach(header_space, 0, 1, 1, 1);
-
-            var button_general = new Button.with_label((_("General")));
-            button_general.clicked.connect(on_button_general_clicked);
-            button_general.set_size_request(100, 20);
-            this.attach(button_general, 0, 0, 1, 1);
-            button_desktop = new Button.with_label((_("Desktop")));
-            button_desktop.clicked.connect(on_button_desktop_clicked);
-            button_desktop.set_size_request(100, 20);
-            this.attach(button_desktop, 1, 0, 1, 1);
-
-            var subgrid_general = new Grid();
-            stack.add_named(subgrid_general, "Page1");
-            var subgrid_desktop = new Grid();
-            stack.add_named(subgrid_desktop, "Page2");
-
             css_data = """
             .colorbutton {
               border-color: transparent;
@@ -371,8 +350,7 @@ namespace TemplateApplet {
               border-width: 1px;
               border-radius: 4px;
             }
-            .category {
-              font-weight: bold;
+            .activebutton {
             }
             """;
 
@@ -383,6 +361,40 @@ namespace TemplateApplet {
             Gtk.StyleContext.add_provider_for_screen(
                 screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
             );
+
+
+            stack = new Stack();
+            stack.set_transition_type(
+                Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
+            );
+            stack.set_vexpand(true);
+            stack.set_hexpand(true);
+            this.attach(stack, 0, 10, 2, 1);
+            var header_space = new Gtk.Label("\n");
+            this.attach(header_space, 0, 2, 1, 1);
+
+
+            button_general = new Button.with_label((_("General")));
+            button_general.clicked.connect(on_button_general_clicked);
+            //button_general.get_style_context().add_class("activebutton");
+            button_general.set_size_request(100, 20);
+            this.attach(button_general, 0, 0, 1, 1);
+            currmarker_label1 = new Gtk.Label("⸻");
+            this.attach(currmarker_label1, 0, 1, 1, 1);
+
+            button_desktop = new Button.with_label((_("Desktop")));
+            button_desktop.clicked.connect(on_button_desktop_clicked);
+            button_desktop.set_size_request(100, 20);
+            this.attach(button_desktop, 1, 0, 1, 1);
+            currmarker_label2 = new Gtk.Label("");
+            this.attach(currmarker_label2, 1, 1, 1, 1);
+
+            var subgrid_general = new Grid();
+            stack.add_named(subgrid_general, "Page1");
+            var subgrid_desktop = new Grid();
+            stack.add_named(subgrid_desktop, "Page2");
+
+            
             // set city section
             var citylabel = new Label((_("City")));
             citylabel.set_xalign(0);
@@ -438,16 +450,11 @@ namespace TemplateApplet {
             );
             subgrid_general.attach(tempunit_checkbox, 0, 14, 1, 1);
             // tempunit_checkbox.set_active(show_forecast);
-            tempunit_checkbox.toggled.connect(toggle_value);
+            tempunit_checkbox.set_active(get_tempstate());
+            tempunit_checkbox.toggled.connect(set_tempunit);
             var spacelabel4 = new Gtk.Label("");
             subgrid_general.attach(spacelabel4, 0, 15, 1, 1);
             // optional settings: show on desktop
-            //desktop_category = new Label((_("Show on desktop settings:")));
-            //desktop_category.get_style_context().add_class("category");
-            //this.attach(desktop_category, 0, 20, 1, 1);
-            //desktop_category.set_xalign(0);
-            //var spacelabel5 = new Gtk.Label("");
-            //this.attach(spacelabel5, 0, 21, 1, 1);
             transparency_label = new Gtk.Label(
                 (_("Transparency"))
             );
@@ -458,11 +465,8 @@ namespace TemplateApplet {
                 Gtk.Orientation.HORIZONTAL, 0, 100, 5
             );
             subgrid_desktop.attach(transparency_slider, 0, 23, 1, 1);
-            //double visible_pressure = (int)hc_settings.get_int("pressure");
             //transparency_slider.set_value(visible_pressure);
             //transparency_slider.value_changed.connect(edit_pressure);
-            ///
-            ///
             var spacelabel6 = new Gtk.Label("\n");
             subgrid_desktop.attach(spacelabel6, 0, 24, 1, 1);
             // text color
@@ -473,20 +477,12 @@ namespace TemplateApplet {
             colorbutton.set_size_request(10, 10);
             colorbutton.get_style_context().add_class("colorbutton");
             //locationlabel.get_style_context().add_class("biglabel");
-
-
             colorbox.pack_start(colorbutton, false, false, 0);
             colorlabel = new Gtk.Label("\t" + (_("Set text color")));
             colorlabel.set_xalign(0);
             colorbox.pack_start(colorlabel, false, false, 0);
 
-            cbuttons = {
-                ondesktop_checkbox, dynamicicon_checkbox, forecast_checkbox,
-                tempunit_checkbox
-            };
-            add_args = {
-                "desktopweather", "dynamicicon", "forecast", "tempunit"
-            };
+
 
             var spacelabel7 = new Gtk.Label("\n");
             subgrid_desktop.attach(spacelabel7, 0, 31, 1, 1);
@@ -496,35 +492,56 @@ namespace TemplateApplet {
                 (_("Set custom position (px)"))
             );
             subgrid_desktop.attach(setposbutton, 0, 50, 1, 1);
+            setposbutton.set_active(customposition);
+            setposbutton.toggled.connect(toggle_value);
+
 
             var posholder = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             xpos = new Gtk.Entry();
             xpos.set_width_chars(4);
+            xpos.set_sensitive(customposition);
             xpos_label = new Gtk.Label("x: ");
+            xpos_label.set_sensitive(customposition);
             ypos = new Gtk.Entry();
             ypos.set_width_chars(4);
+            ypos.set_sensitive(customposition);
             ypos_label = new Gtk.Label(" y: ");
+            ypos_label.set_sensitive(customposition);
             posholder.pack_start(xpos_label, false, false, 0);
             posholder.pack_start(xpos, false, false, 0);
             posholder.pack_start(ypos_label, false, false, 0);
             posholder.pack_start(ypos, false, false, 0);
 
             apply = new Gtk.Button.with_label("OK");
+            apply.set_sensitive(customposition);
             //self.apply.connect("pressed", self.get_xy)
             posholder.pack_end(apply, false, false, 0);
             subgrid_desktop.attach(posholder, 0, 51, 1, 1);
-
             button_desktop.set_sensitive(show_ondesktop);
+
+            cbuttons = {
+                ondesktop_checkbox, dynamicicon_checkbox, 
+                forecast_checkbox, setposbutton
+            };
+            add_args = {
+                "desktopweather", "dynamicicon", "forecast", 
+                "customposition"
+            };
 
             this.show_all();
         }
 
         private void on_button_general_clicked (Button button) {
             stack.set_visible_child_name("Page1");
+            currmarker_label1.set_text("⸻");
+            currmarker_label2.set_text("");
         }
+        
 
         private void on_button_desktop_clicked(Button button) {
             stack.set_visible_child_name("Page2");
+            currmarker_label2.set_text("⸻");
+            currmarker_label1.set_text("");
         }
 
         private int get_buttonarg (ToggleButton button) {
@@ -535,6 +552,23 @@ namespace TemplateApplet {
             } return -1; 
         }
 
+        private bool get_tempstate () {
+            return (
+                tempunit == "Fahrenheit"
+            );
+        }
+
+        private void set_tempunit (ToggleButton button) {
+            bool newsetting = button.get_active();
+            if (newsetting == true) {
+                tempunit = "Fahrenheit";
+            }
+            else {
+                tempunit = "Celsius";
+            }
+            ws_settings.set_string("tempunit", tempunit);
+        }
+
         private void toggle_value(ToggleButton button) {
             bool newsetting = button.get_active();
             int val_index = get_buttonarg(button);
@@ -543,6 +577,14 @@ namespace TemplateApplet {
             // possible additional actions, depending on the togglebutton
             if (val_index == 0) {
                 button_desktop.set_sensitive(newsetting);
+            }
+            else if (val_index == 3) {
+                // ugly sumnation, but the alternative is more verbose
+                xpos_label.set_sensitive(newsetting);
+                ypos_label.set_sensitive(newsetting);
+                xpos.set_sensitive(newsetting);
+                ypos.set_sensitive(newsetting);
+                apply.set_sensitive(newsetting);
             }
         }
     }
@@ -646,6 +688,11 @@ namespace TemplateApplet {
             ws_settings.changed["forecast"].connect (() => {
                 show_forecast = ws_settings.get_boolean("forecast");
             });
+
+            customposition = ws_settings.get_boolean("customposition");
+            ws_settings.changed["customposition"].connect (() => {
+                customposition = ws_settings.get_boolean("customposition");
+            }); 
             
             var test = new GetWeatherdata();
             print("applet ok\n");
