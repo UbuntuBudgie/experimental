@@ -22,10 +22,10 @@
             <description>Set one of the supported languages</description>
 	    <default>"en"</default>
         </key>
-        <key type="i" name="textcolor">
+        <key type="as" name="textcolor">
             <summary>Desktop text color</summary>
             <description>Text color of the applet's desktop representation</description>
-            <default>65535</default>
+            <default>["255", "255", "255"]</default>
         </key>
         <key type="i" name="transparency">
             <summary>Desktop show transparency</summary>

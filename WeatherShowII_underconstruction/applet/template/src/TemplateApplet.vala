@@ -33,11 +33,7 @@ namespace WeatherShowFunctions {
 
 namespace TemplateApplet { 
     /* ^ watch out for name, was weird (used as classname) in draft applet */
-
-
-
     /* inserted section -------------------- */
-
     /* make sure settings are defined on applet startup */
     private GLib.Settings ws_settings;
     private bool show_ondesktop;
@@ -308,6 +304,7 @@ namespace TemplateApplet {
     /* end inserted section -------------------- */
 
     public class TemplateSettings : Gtk.Grid {
+
         /* Budgie Settings -section */
         GLib.Settings? settings = null;
         private CheckButton ondesktop_checkbox;
@@ -339,8 +336,6 @@ namespace TemplateApplet {
             /*
             * Gtk stuff, widgets etc. here 
             */
-
-            ///////////////////////////////////////////////////////////////////
             // stack, container for subgrids
             css_data = """
             .colorbutton {
@@ -361,8 +356,6 @@ namespace TemplateApplet {
             Gtk.StyleContext.add_provider_for_screen(
                 screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
             );
-
-
             stack = new Stack();
             stack.set_transition_type(
                 Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
@@ -372,8 +365,6 @@ namespace TemplateApplet {
             this.attach(stack, 0, 10, 2, 1);
             var header_space = new Gtk.Label("\n");
             this.attach(header_space, 0, 2, 1, 1);
-
-
             button_general = new Button.with_label((_("General")));
             button_general.clicked.connect(on_button_general_clicked);
             //button_general.get_style_context().add_class("activebutton");
@@ -381,20 +372,16 @@ namespace TemplateApplet {
             this.attach(button_general, 0, 0, 1, 1);
             currmarker_label1 = new Gtk.Label("⸻");
             this.attach(currmarker_label1, 0, 1, 1, 1);
-
             button_desktop = new Button.with_label((_("Desktop")));
             button_desktop.clicked.connect(on_button_desktop_clicked);
             button_desktop.set_size_request(100, 20);
             this.attach(button_desktop, 1, 0, 1, 1);
             currmarker_label2 = new Gtk.Label("");
             this.attach(currmarker_label2, 1, 1, 1, 1);
-
             var subgrid_general = new Grid();
             stack.add_named(subgrid_general, "Page1");
             var subgrid_desktop = new Grid();
             stack.add_named(subgrid_desktop, "Page2");
-
-            
             // set city section
             var citylabel = new Label((_("City")));
             citylabel.set_xalign(0);
@@ -481,12 +468,8 @@ namespace TemplateApplet {
             colorlabel = new Gtk.Label("\t" + (_("Set text color")));
             colorlabel.set_xalign(0);
             colorbox.pack_start(colorlabel, false, false, 0);
-
-
-
             var spacelabel7 = new Gtk.Label("\n");
             subgrid_desktop.attach(spacelabel7, 0, 31, 1, 1);
-
             // checkbox custom position
             setposbutton = new Gtk.CheckButton.with_label(
                 (_("Set custom position (px)"))
@@ -494,8 +477,6 @@ namespace TemplateApplet {
             subgrid_desktop.attach(setposbutton, 0, 50, 1, 1);
             setposbutton.set_active(customposition);
             setposbutton.toggled.connect(toggle_value);
-
-
             var posholder = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             xpos = new Gtk.Entry();
             xpos.set_width_chars(4);
@@ -537,7 +518,6 @@ namespace TemplateApplet {
             currmarker_label2.set_text("");
         }
         
-
         private void on_button_desktop_clicked(Button button) {
             stack.set_visible_child_name("Page2");
             currmarker_label2.set_text("⸻");
