@@ -20,20 +20,18 @@ using Gee;
 * <https://www.gnu.org/licenses/>.
 */
 
-/* inserted section -------------------- */
-namespace WeatherShowFunctions {
 
+namespace WeatherShowFunctions {
+    // move away from here, it feels quite lonely
     private GLib.Settings get_settings(string path) {
         var settings = new GLib.Settings(path);
         return settings;
     }
 }
-/* end inserted section -------------------- */
 
 
 namespace TemplateApplet { 
     /* ^ watch out for name, was weird (used as classname) in draft applet */
-    /* inserted section -------------------- */
     /* make sure settings are defined on applet startup */
     private GLib.Settings ws_settings;
     private bool show_ondesktop;
@@ -256,7 +254,9 @@ namespace TemplateApplet {
                 var obj = n.get_object();
                 HashMap<string, Json.Object> categories = get_categories(obj);
                 /* get icon id */
-                string id = check_numvalue(categories["weather"], "id").to_string();
+                string id = check_numvalue(
+                    categories["weather"], "id"
+                ).to_string();
                 print("%s\n", id);
                 /* get timestamp */
                 int timestamp = (int) obj.get_int_member("dt");
@@ -301,7 +301,6 @@ namespace TemplateApplet {
         }
     }
 
-    /* end inserted section -------------------- */
 
     public class TemplateSettings : Gtk.Grid {
 
@@ -312,6 +311,7 @@ namespace TemplateApplet {
         private CheckButton forecast_checkbox;
         private CheckButton[] cbuttons; 
         private string[] add_args;
+        private string css_template;
         private string css_data;
         private int buttoncolor;
         private Gtk.Scale transparency_slider;
@@ -330,6 +330,8 @@ namespace TemplateApplet {
         private Gtk.Button button_general;
         private Label currmarker_label1;
         private Label currmarker_label2;
+        Gtk.CssProvider css_provider;
+        Gdk.Screen screen;
 
 
         public TemplateSettings(GLib.Settings? settings) {
@@ -337,10 +339,10 @@ namespace TemplateApplet {
             * Gtk stuff, widgets etc. here 
             */
             // stack, container for subgrids
-            css_data = """
+            css_template = """
             .colorbutton {
               border-color: transparent;
-              background-color: #AFC826;
+              background-color: rgb(xxx, xxx, xxx);
               padding: 0px;
               border-width: 1px;
               border-radius: 4px;
@@ -349,9 +351,16 @@ namespace TemplateApplet {
             }
             """;
 
+            // update button color on gsettings change
+            ws_settings.changed["textcolor"].connect (() => {
+                set_buttoncolor();
+            }); 
+
+            
+
             // css
-            var screen = this.get_screen();
-            var css_provider = new Gtk.CssProvider();
+            screen = this.get_screen();
+            css_provider = new Gtk.CssProvider();
             css_provider.load_from_data(css_data);
             Gtk.StyleContext.add_provider_for_screen(
                 screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
@@ -460,10 +469,10 @@ namespace TemplateApplet {
             var colorbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             subgrid_desktop.attach(colorbox, 0, 30, 1, 1);
             colorbutton = new Gtk.Button();
-            //self.text_color.connect("clicked", self.pick_color, self.tcolorfile);
+            set_buttoncolor();
             colorbutton.set_size_request(10, 10);
-            colorbutton.get_style_context().add_class("colorbutton");
-            //locationlabel.get_style_context().add_class("biglabel");
+            // call set-color window
+            colorbutton.clicked.connect(set_color);
             colorbox.pack_start(colorbutton, false, false, 0);
             colorlabel = new Gtk.Label("\t" + (_("Set text color")));
             colorlabel.set_xalign(0);
@@ -492,7 +501,7 @@ namespace TemplateApplet {
             posholder.pack_start(xpos, false, false, 0);
             posholder.pack_start(ypos_label, false, false, 0);
             posholder.pack_start(ypos, false, false, 0);
-
+            // wrap it up
             apply = new Gtk.Button.with_label("OK");
             apply.set_sensitive(customposition);
             //self.apply.connect("pressed", self.get_xy)
@@ -512,19 +521,51 @@ namespace TemplateApplet {
             this.show_all();
         }
 
+        private void set_color(Button button){
+            // call the set-color window
+            string colorwin = "/home/jacob/Desktop/experimental_september2/WeatherShowII_underconstruction/applet/template/src/get_color";
+            string cmd_check = "pgrep -f " + colorwin;
+            string output;
+            try {
+                GLib.Process.spawn_command_line_sync(cmd_check, out output);
+                if (output == "") {
+                    Process.spawn_command_line_async(colorwin);
+                }
+            }
+            catch (SpawnError e) {
+            }
+        }
+
+        private void set_buttoncolor() {
+            // set / update color button color
+            string[] readcolor = ws_settings.get_strv("textcolor");
+            string newcsscolor = string.joinv(", ", readcolor);
+            css_data = css_template.replace("xxx, xxx, xxx", newcsscolor);
+            colorbutton.get_style_context().remove_class("colorbutton");
+            css_provider.load_from_data(css_data);
+            Gtk.StyleContext.add_provider_for_screen(
+                screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+            );
+            colorbutton.get_style_context().add_class("colorbutton");
+            this.show_all();
+        }
+
         private void on_button_general_clicked (Button button) {
+            // update page underline
             stack.set_visible_child_name("Page1");
             currmarker_label1.set_text("⸻");
             currmarker_label2.set_text("");
         }
         
         private void on_button_desktop_clicked(Button button) {
+            // update page underline
             stack.set_visible_child_name("Page2");
             currmarker_label2.set_text("⸻");
             currmarker_label1.set_text("");
         }
 
         private int get_buttonarg (ToggleButton button) {
+            // fetch the additional arg from button / args arrays
             for (int i = 0; i < cbuttons.length; i++) {
                 if (cbuttons[i] == button) {
                     return i;
@@ -539,6 +580,7 @@ namespace TemplateApplet {
         }
 
         private void set_tempunit (ToggleButton button) {
+            // update gsettings
             bool newsetting = button.get_active();
             if (newsetting == true) {
                 tempunit = "Fahrenheit";
@@ -550,6 +592,7 @@ namespace TemplateApplet {
         }
 
         private void toggle_value(ToggleButton button) {
+            // generic toggle actions function
             bool newsetting = button.get_active();
             int val_index = get_buttonarg(button);
             string currsetting = add_args[val_index];
@@ -620,8 +663,6 @@ namespace TemplateApplet {
 
         public Applet() {
 
-
-            /* inserted section -------------------- */
             directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
             /* 
             * OWM's icon codes are a bit oversimplified; different weather 
@@ -672,18 +713,14 @@ namespace TemplateApplet {
             customposition = ws_settings.get_boolean("customposition");
             ws_settings.changed["customposition"].connect (() => {
                 customposition = ws_settings.get_boolean("customposition");
-            }); 
-            
+            });
+           
             var test = new GetWeatherdata();
-            print("applet ok\n");
             get_weather(test);
             GLib.Timeout.add (60000, () => {
-                print("loop ok\n");
                 get_weather(test);   
                 return true;
             });
-            /* end inserted section -------------------- */
-
 
             initialiseLocaleLanguageSupport();
             /* box */
