@@ -23,9 +23,16 @@ using Gee;
 
 namespace WeatherShowFunctions {
     // move away from here, it feels quite lonely
+    // on second thought, the other way around? Main code could use a little slimming down...
     private GLib.Settings get_settings(string path) {
         var settings = new GLib.Settings(path);
         return settings;
+    }
+
+    private int get_stringindex (string s, string[] arr) {
+        for (int i=0; i < arr.length; i++) {
+            if(s == arr[i]) return i;
+        } return -1;
     }
 }
 
@@ -120,7 +127,7 @@ namespace TemplateApplet {
         private string getsnapshot (string data) {
             print(data);
             var parser = new Json.Parser ();
-            parser.load_from_data (data);
+            parser.load_from_data(data);
             var root_object = parser.get_root ().get_object ();
             HashMap<string, Json.Object> map = get_categories(
                 root_object
@@ -330,15 +337,40 @@ namespace TemplateApplet {
         private Gtk.Button button_general;
         private Label currmarker_label1;
         private Label currmarker_label2;
-        Gtk.CssProvider css_provider;
-        Gdk.Screen screen;
+        private Gtk.CssProvider css_provider;
+        private Gtk.Entry cityentry;
+        private Gtk.Menu citymenu;
+        private Gdk.Screen screen;
+        private Entry langentry;
+        /////////////////////////////////////////////// needs to be here?
+        string[] langlist; // < yes
+        Gtk.ListStore lang_liststore; // < yes
+        string[] langcodes; // < yes
+        ///////////////////////////////////////////////
+
 
 
         public TemplateSettings(GLib.Settings? settings) {
             /*
             * Gtk stuff, widgets etc. here 
             */
-            // stack, container for subgrids
+ 
+            // data section
+            langlist = {
+                "Arabic", "Bulgarian", "Catalan", "Czech", "German", "Greek", "English",
+                "Persian (Farsi)", "Finnish", "French", "Galician", "Croatian",
+                "Hungarian", "Italian", "Japanese", "Korean", "Latvian", "Lithuanian",
+                "Macedonian", "Dutch", "Polish", "Portuguese", "Romanian", "Russian",
+                "Swedish", "Slovak", "Slovenian", "Spanish", "Turkish", "Ukrainian",
+                "Vietnamese", "Chinese Simplified", "Chinese Traditional"
+            };
+
+            langcodes = {
+                "ar", "bg", "ca", "cz", "de", "el", "en", "fa", "fi", "fr", "gl", "hr",
+                "hu", "it", "ja", "kr", "la", "lt", "mk", "nl", "pl", "pt", "ro", "ru",
+                "se", "sk", "sl", "es", "tr", "ua", "vi", "zh_cn", "zh_tw"
+            };
+
             css_template = """
             .colorbutton {
               border-color: transparent;
@@ -351,20 +383,9 @@ namespace TemplateApplet {
             }
             """;
 
-            // update button color on gsettings change
-            ws_settings.changed["textcolor"].connect (() => {
-                set_buttoncolor();
-            }); 
-
-            
-
             // css
             screen = this.get_screen();
             css_provider = new Gtk.CssProvider();
-            css_provider.load_from_data(css_data);
-            Gtk.StyleContext.add_provider_for_screen(
-                screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
-            );
             stack = new Stack();
             stack.set_transition_type(
                 Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
@@ -397,23 +418,36 @@ namespace TemplateApplet {
             subgrid_general.attach(citylabel, 0, 0, 1, 1);
             var citybox = new Box(Gtk.Orientation.HORIZONTAL, 0);
             subgrid_general.attach(citybox, 0, 1, 1, 1);
-            var cityentry = new Entry();
+            cityentry = new Entry();
+            cityentry.changed.connect(update_citylist);
             citybox.pack_start(cityentry, false, false, 0);
-            var search_button = new Button.from_icon_name(
-                "system-search-symbolic"
-            );
+            var search_button = new MenuButton();
+            var searchicon = new Gtk.Image.from_icon_name(
+                "system-search-symbolic", Gtk.IconSize.DND);
+            search_button.set_image(searchicon);
             citybox.pack_end(search_button, false, false, 0);
+            citymenu = new Gtk.Menu();
+            search_button.set_popup(citymenu);
             var spacelabel1 = new Gtk.Label("");
             subgrid_general.attach(spacelabel1, 0, 2, 1, 1);
             // set language 
             var langlabel = new Gtk.Label((_("Interface language")));
             langlabel.set_xalign(0);
             subgrid_general.attach(langlabel, 0, 3, 1, 1);
-            var langentry = new Gtk.Entry();
+            langentry = new Gtk.Entry();
+            set_langentry();
             subgrid_general.attach(langentry, 0, 4, 1, 1);
-            /*langentry.set_text(
-            langlist[langcodes.index(wt.get_currlang())]
-            )*/
+            Gtk.EntryCompletion completion = new Gtk.EntryCompletion();
+            langentry.set_completion(completion);
+            lang_liststore = new Gtk.ListStore(1, typeof (string));
+            completion.set_model(lang_liststore);
+            completion.set_text_column(0);
+            Gtk.TreeIter iter;
+            foreach (string lang in langlist) {
+                lang_liststore.append (out iter);
+                lang_liststore.set (iter, 0, lang);
+            }
+            completion.match_selected.connect(apply_lang);
             var spacelabel2 = new Gtk.Label("");
             subgrid_general.attach(spacelabel2, 0, 5, 1, 1);
             // show on desktop
@@ -508,7 +542,6 @@ namespace TemplateApplet {
             posholder.pack_end(apply, false, false, 0);
             subgrid_desktop.attach(posholder, 0, 51, 1, 1);
             button_desktop.set_sensitive(show_ondesktop);
-
             cbuttons = {
                 ondesktop_checkbox, dynamicicon_checkbox, 
                 forecast_checkbox, setposbutton
@@ -517,8 +550,40 @@ namespace TemplateApplet {
                 "desktopweather", "dynamicicon", "forecast", 
                 "customposition"
             };
-
+            // update button color on gsettings change
+            set_buttoncolor();
+            ws_settings.changed["textcolor"].connect (() => {
+                set_buttoncolor();
+            });
             this.show_all();
+        }
+
+        private void set_langentry () {
+            string initial_lang = ws_settings.get_string("language");
+            int index = WeatherShowFunctions.get_stringindex(
+                initial_lang, langcodes
+            );
+            langentry.set_text(langlist[index]);
+        }
+
+        private bool apply_lang(
+            Gtk.EntryCompletion e, Gtk.TreeModel t, Gtk.TreeIter i
+        ) {
+            string match;
+            t.get(i, 0 ,out match);
+            int index = WeatherShowFunctions.get_stringindex(
+                match, langlist
+            );
+            langentry.set_text(match);
+            string newset_lang = langcodes[index];
+
+            ws_settings.set_string("language", newset_lang);
+            return true;
+        }
+
+        private void update_citylist(Gtk.Editable entry) {
+            string currentry = cityentry.get_text();
+            print(currentry + "\n");
         }
 
         private void set_color(Button button){
