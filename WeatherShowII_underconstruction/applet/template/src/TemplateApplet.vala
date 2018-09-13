@@ -430,7 +430,6 @@ namespace TemplateApplet {
             this.attach(header_space, 0, 2, 1, 1);
             button_general = new Button.with_label((_("General")));
             button_general.clicked.connect(on_button_general_clicked);
-            //button_general.get_style_context().add_class("activebutton");
             button_general.set_size_request(100, 20);
             this.attach(button_general, 0, 0, 1, 1);
             currmarker_label1 = new Gtk.Label("⸻");
@@ -453,7 +452,7 @@ namespace TemplateApplet {
             var citybox = new Box(Gtk.Orientation.HORIZONTAL, 0);
             subgrid_general.attach(citybox, 0, 1, 1, 1);
             cityentry = new Entry();
-            string initialcity = get_initcity();
+            string initialcity = set_initialcity();
             cityentry.set_text(initialcity);
             cityentry.changed.connect(update_citylist);
             citybox.pack_start(cityentry, false, false, 0);
@@ -472,7 +471,7 @@ namespace TemplateApplet {
             langlabel.set_xalign(0);
             subgrid_general.attach(langlabel, 0, 3, 1, 1);
             langentry = new Gtk.Entry();
-            set_langentry();
+            set_initiallang();
             subgrid_general.attach(langentry, 0, 4, 1, 1);
             Gtk.EntryCompletion completion = new Gtk.EntryCompletion();
             langentry.set_completion(completion);
@@ -484,7 +483,7 @@ namespace TemplateApplet {
                 lang_liststore.append (out iter);
                 lang_liststore.set (iter, 0, lang);
             }
-            completion.match_selected.connect(apply_lang);
+            completion.match_selected.connect(update_langsetting);
             var spacelabel2 = new Gtk.Label("");
             subgrid_general.attach(spacelabel2, 0, 5, 1, 1);
             // show on desktop
@@ -598,7 +597,8 @@ namespace TemplateApplet {
             this.show_all();
         }
 
-        private string get_initcity() {
+        private string set_initialcity() {
+            // on opening settings, set the gui to the current value
             string initial_citycode = ws_settings.get_string("citycode");
             string[] initline = WeatherShowFunctions.get_matches(
                 initial_citycode
@@ -606,7 +606,8 @@ namespace TemplateApplet {
             return initline[0].split(" ", 2)[1];
         }
 
-        private void set_langentry () {
+        private void set_initiallang () {
+            // on opening settings, set the gui to the current value
             string initial_lang = ws_settings.get_string("language");
             int index = WeatherShowFunctions.get_stringindex(
                 initial_lang, langcodes
@@ -614,7 +615,7 @@ namespace TemplateApplet {
             langentry.set_text(langlist[index]);
         }
 
-        private bool apply_lang(
+        private bool update_langsetting(
             Gtk.EntryCompletion e, Gtk.TreeModel t, Gtk.TreeIter i
         ) {
             string match;
@@ -647,19 +648,26 @@ namespace TemplateApplet {
         }
 
         public void set_initialtransparency() {
+            // on opening settings, set the gui to the current value
             int intialsetting = ws_settings.get_int("transparency");
             transparency_slider.set_value(intialsetting);
         }
 
         private void update_citylist(Gtk.Editable entry) {
+            // on user edit of the lang entry, update the matches & menu
             city_menurefs = {};
             city_menucodes = {};
             string currentry = cityentry.get_text();
             citymenu.destroy();
             citymenu = new Gtk.Menu();
             if (
-                currentry.char_count() > 2 && edit_citymenu == true && entry != null) {
-                string[] matches = WeatherShowFunctions.get_matches(currentry);
+                currentry.char_count() > 2 && 
+                edit_citymenu == true 
+                && entry != null
+                ) {
+                string[] matches = WeatherShowFunctions.get_matches(
+                    currentry
+                );
                 int n_matches = matches.length;
                 if (n_matches > 0) {
                     foreach (string s in matches) {
