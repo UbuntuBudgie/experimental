@@ -34,6 +34,37 @@ namespace WeatherShowFunctions {
             if(s == arr[i]) return i;
         } return -1;
     }
+
+    private string[] get_matches(string lookfor) {
+        // find matching cities
+        // fix possibly messed up title- case
+        File datasrc = File.new_for_path(
+            "/usr/lib/budgie-desktop/plugins/budgie-weathershow/cities"
+        );
+        int len_lookfor = lookfor.char_count();
+        string fixed = lookfor.substring(0, 1).up().concat(
+            lookfor.substring(1, len_lookfor - 1).down());
+        try {
+            var dis = new DataInputStream (datasrc.read ());
+            string line;
+            string[] matches = {};
+            while ((line = dis.read_line (null)) != null) {
+                // work to do; image change
+                if (line.contains(fixed)) {
+                    matches += line;
+                }
+            }
+            return matches;
+        }
+        catch (Error e) {
+            /* 
+            * on each refresh, the file is deleted by the applet
+            * just wait for next signal. 
+            */
+            return {};
+        }
+        return {};
+    }
 }
 
 
@@ -346,8 +377,11 @@ namespace TemplateApplet {
         string[] langlist; // < yes
         Gtk.ListStore lang_liststore; // < yes
         string[] langcodes; // < yes
+        MenuButton search_button; // <- yes
+        string[] city_menurefs;  // <- yes
+        string[] city_menucodes;  // <- yes
+        bool edit_citymenu; // <- yes
         ///////////////////////////////////////////////
-
 
 
         public TemplateSettings(GLib.Settings? settings) {
@@ -413,21 +447,25 @@ namespace TemplateApplet {
             var subgrid_desktop = new Grid();
             stack.add_named(subgrid_desktop, "Page2");
             // set city section
+            edit_citymenu = true;
             var citylabel = new Label((_("City")));
             citylabel.set_xalign(0);
             subgrid_general.attach(citylabel, 0, 0, 1, 1);
             var citybox = new Box(Gtk.Orientation.HORIZONTAL, 0);
             subgrid_general.attach(citybox, 0, 1, 1, 1);
             cityentry = new Entry();
+            string initialcity = get_initcity();
+            cityentry.set_text(initialcity);
             cityentry.changed.connect(update_citylist);
             citybox.pack_start(cityentry, false, false, 0);
-            var search_button = new MenuButton();
+            search_button = new MenuButton();
             var searchicon = new Gtk.Image.from_icon_name(
                 "system-search-symbolic", Gtk.IconSize.DND);
             search_button.set_image(searchicon);
             citybox.pack_end(search_button, false, false, 0);
             citymenu = new Gtk.Menu();
-            search_button.set_popup(citymenu);
+            //search_button.set_popup(citymenu);
+            //update_citylist();
             var spacelabel1 = new Gtk.Label("");
             subgrid_general.attach(spacelabel1, 0, 2, 1, 1);
             // set language 
@@ -558,6 +596,14 @@ namespace TemplateApplet {
             this.show_all();
         }
 
+        private string get_initcity() {
+            string initial_citycode = ws_settings.get_string("citycode");
+            string[] initline = WeatherShowFunctions.get_matches(
+                initial_citycode
+            );
+            return initline[0].split(" ", 2)[1];
+        }
+
         private void set_langentry () {
             string initial_lang = ws_settings.get_string("language");
             int index = WeatherShowFunctions.get_stringindex(
@@ -576,14 +622,61 @@ namespace TemplateApplet {
             );
             langentry.set_text(match);
             string newset_lang = langcodes[index];
-
             ws_settings.set_string("language", newset_lang);
             return true;
         }
 
+        private void update_citysettings (Gtk.MenuItem m) {
+            string newselect = m.get_label();
+            int index = WeatherShowFunctions.get_stringindex(
+                newselect, city_menurefs
+            );
+            string newcode = city_menucodes[index];
+            ws_settings.set_string("citycode", newcode);
+            edit_citymenu = false;
+            cityentry.set_text(newselect);
+            edit_citymenu = true;
+            print(newcode + "\n");
+        }
+
         private void update_citylist(Gtk.Editable entry) {
+            city_menurefs = {};
+            city_menucodes = {};
             string currentry = cityentry.get_text();
-            print(currentry + "\n");
+            citymenu.destroy();
+            citymenu = new Gtk.Menu();
+            if (
+                currentry.char_count() > 2 && edit_citymenu == true && entry != null) {
+                string[] matches = WeatherShowFunctions.get_matches(currentry);
+                int n_matches = matches.length;
+                if (n_matches > 0) {
+                    foreach (string s in matches) {
+                        print(s + "\n");
+                        string[] new_ref = s.split(" ", 2);
+                        string newref = new_ref[1];
+                        var newitem = new Gtk.MenuItem.with_label(newref);
+                        city_menurefs += newref;
+                        city_menucodes += new_ref[0];
+                        newitem.activate.connect(update_citysettings);
+                        citymenu.add(newitem);
+                    }
+                }
+                else {
+                    var newitem = new Gtk.MenuItem.with_label(
+                        "No matches found"
+                    );
+                    citymenu.add(newitem);
+                }
+                print(currentry + "\n");
+            }
+            else {
+                var newitem = new Gtk.MenuItem.with_label(
+                    "Please enter at least 3 characters"
+                );
+                citymenu.add(newitem);
+            }
+            citymenu.show_all();
+            search_button.set_popup(citymenu);
         }
 
         private void set_color(Button button){
@@ -700,7 +793,6 @@ namespace TemplateApplet {
                 "templateicon-symbolic", Gtk.IconSize.MENU
             );
             indicatorBox.add(this.indicatorIcon);
-
             /* gsettings stuff */
 
             /* grid */
