@@ -31,6 +31,7 @@
             <summary>Desktop show transparency</summary>
             <description>Transparency of the applet's desktop representation</description>
             <default>100</default>
+	    <range min="0" max="100"/>
         </key>
         <key type="i" name="xposition">
             <summary>X- position of the desktop window</summary>

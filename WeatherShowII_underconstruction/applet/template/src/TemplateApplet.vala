@@ -165,7 +165,6 @@ namespace TemplateApplet {
             );
             /* get icon id */
             string id = check_numvalue(map["weather"], "id").to_string();
-
             /* get cityline (exists anyway) */
             string city = check_stringvalue(root_object, "name");
             string country = check_stringvalue(map["sys"], "country");
@@ -532,9 +531,12 @@ namespace TemplateApplet {
             transparency_slider = new Gtk.Scale.with_range(
                 Gtk.Orientation.HORIZONTAL, 0, 100, 5
             );
+            set_initialtransparency();
             subgrid_desktop.attach(transparency_slider, 0, 23, 1, 1);
             //transparency_slider.set_value(visible_pressure);
-            //transparency_slider.value_changed.connect(edit_pressure);
+            transparency_slider.value_changed.connect(
+                update_transparencysettings
+            );
             var spacelabel6 = new Gtk.Label("\n");
             subgrid_desktop.attach(spacelabel6, 0, 24, 1, 1);
             // text color
@@ -637,6 +639,16 @@ namespace TemplateApplet {
             cityentry.set_text(newselect);
             edit_citymenu = true;
             print(newcode + "\n");
+        }
+
+        public void update_transparencysettings(Gtk.Range slider) {
+            int newval = (int) slider.get_value();
+            ws_settings.set_int("transparency", newval);
+        }
+
+        public void set_initialtransparency() {
+            int intialsetting = ws_settings.get_int("transparency");
+            transparency_slider.set_value(intialsetting);
         }
 
         private void update_citylist(Gtk.Editable entry) {
