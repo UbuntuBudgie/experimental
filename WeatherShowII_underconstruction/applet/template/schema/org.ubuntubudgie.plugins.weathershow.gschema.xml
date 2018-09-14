@@ -58,11 +58,6 @@
             <description>Show a dynamically updated forecast in the applet's popover</description>
             <default>true</default>
         </key>
-        <key type="b" name="customposition">
-            <summary>Custom position is set</summary>
-            <description>Set the desktop presence on a custom position</description>
-            <default>false</default>
-        </key>
     </schema>
 </schemalist>
 
