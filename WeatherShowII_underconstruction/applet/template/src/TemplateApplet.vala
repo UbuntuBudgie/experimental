@@ -79,7 +79,7 @@ namespace TemplateApplet {
     private string tempunit;
     private string[] directions;
     private string key;
-    private bool customposition;
+    
 
     private void get_weather (GetWeatherdata test) {
 
@@ -380,6 +380,7 @@ namespace TemplateApplet {
         string[] city_menurefs;  // <- yes
         string[] city_menucodes;  // <- yes
         bool edit_citymenu; // <- yes
+        //private bool customposition; // <- yes no! not needed at all
         ///////////////////////////////////////////////
 
 
@@ -557,27 +558,27 @@ namespace TemplateApplet {
                 (_("Set custom position (px)"))
             );
             subgrid_desktop.attach(setposbutton, 0, 50, 1, 1);
-            setposbutton.set_active(customposition);
+            //setposbutton.set_active(customposition);
             setposbutton.toggled.connect(toggle_value);
             var posholder = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             xpos = new Gtk.Entry();
             xpos.set_width_chars(4);
-            xpos.set_sensitive(customposition);
+            //xpos.set_sensitive(customposition);
             xpos_label = new Gtk.Label("x: ");
-            xpos_label.set_sensitive(customposition);
+            //xpos_label.set_sensitive(customposition);
             ypos = new Gtk.Entry();
             ypos.set_width_chars(4);
-            ypos.set_sensitive(customposition);
+            //ypos.set_sensitive(customposition);
             ypos_label = new Gtk.Label(" y: ");
-            ypos_label.set_sensitive(customposition);
+            //ypos_label.set_sensitive(customposition);
             posholder.pack_start(xpos_label, false, false, 0);
             posholder.pack_start(xpos, false, false, 0);
             posholder.pack_start(ypos_label, false, false, 0);
             posholder.pack_start(ypos, false, false, 0);
             // wrap it up
             apply = new Gtk.Button.with_label("OK");
-            apply.set_sensitive(customposition);
-            //self.apply.connect("pressed", self.get_xy)
+            
+            apply.pressed.connect(update_xysetting); //////////////////////////////
             posholder.pack_end(apply, false, false, 0);
             subgrid_desktop.attach(posholder, 0, 51, 1, 1);
             button_desktop.set_sensitive(show_ondesktop);
@@ -587,8 +588,9 @@ namespace TemplateApplet {
             };
             add_args = {
                 "desktopweather", "dynamicicon", "forecast", 
-                "customposition"
+                ""
             };
+            set_initialpos();
             // update button color on gsettings change
             set_buttoncolor();
             ws_settings.changed["textcolor"].connect (() => {
@@ -606,6 +608,30 @@ namespace TemplateApplet {
             return initline[0].split(" ", 2)[1];
         }
 
+        private void set_initialpos () {
+            int set_xpos = ws_settings.get_int("xposition");
+            int set_ypos = ws_settings.get_int("yposition");
+            //needed?
+            //customposition = ws_settings.get_boolean("customposition");
+            bool currcustom;
+            if (set_xpos != 200 || set_ypos != 200){
+                currcustom = true;
+                xpos.set_text(set_xpos.to_string());
+                ypos.set_text(set_ypos.to_string());
+            }
+            else {
+                currcustom = false;
+            }
+            print(@"$currcustom\n");
+            //setposbutton.set_sensitive(currcustom);
+            setposbutton.set_active(currcustom);
+            xpos.set_sensitive(currcustom);
+            ypos.set_sensitive(currcustom);
+            apply.set_sensitive(currcustom);
+            xpos_label.set_sensitive(currcustom);
+            ypos_label.set_sensitive(currcustom);
+        }
+
         private void set_initiallang () {
             // on opening settings, set the gui to the current value
             string initial_lang = ws_settings.get_string("language");
@@ -613,6 +639,22 @@ namespace TemplateApplet {
                 initial_lang, langcodes
             );
             langentry.set_text(langlist[index]);
+        }
+
+        private void update_xysetting (Button button) {
+            string newxpos_str = xpos.get_text();
+            int newx = int.parse(newxpos_str);
+            string newypos_str = ypos.get_text();
+            int newy = int.parse(newypos_str);
+            print(@"$newx\n");
+            print(@"$newy\n");
+            if (newx != 0 && newy != 0) {
+                ws_settings.set_int("xposition", newx);
+                ws_settings.set_int("yposition", newy);
+            }
+            else {
+                print("incorrect input: no integer");
+            }
         }
 
         private bool update_langsetting(
@@ -661,9 +703,9 @@ namespace TemplateApplet {
             citymenu.destroy();
             citymenu = new Gtk.Menu();
             if (
-                currentry.char_count() > 2 && 
-                edit_citymenu == true 
-                && entry != null
+                currentry.char_count() > 2 &&
+                edit_citymenu == true &&
+                entry != null
                 ) {
                 string[] matches = WeatherShowFunctions.get_matches(
                     currentry
@@ -774,7 +816,13 @@ namespace TemplateApplet {
             bool newsetting = button.get_active();
             int val_index = get_buttonarg(button);
             string currsetting = add_args[val_index];
-            ws_settings.set_boolean(currsetting, newsetting);
+            /* 
+            * ok, not a beauty-queen, but a patch to prevent an extra
+            * function:
+            */
+            if (val_index != 3) {
+                ws_settings.set_boolean(currsetting, newsetting);
+            }
             // possible additional actions, depending on the togglebutton
             if (val_index == 0) {
                 button_desktop.set_sensitive(newsetting);
@@ -786,6 +834,12 @@ namespace TemplateApplet {
                 xpos.set_sensitive(newsetting);
                 ypos.set_sensitive(newsetting);
                 apply.set_sensitive(newsetting);
+                if (newsetting == false) {
+                    xpos.set_text("");
+                    ypos.set_text("");
+                    ws_settings.set_int("xposition", 200);
+                    ws_settings.set_int("yposition", 200);
+                }
             }
         }
     }
@@ -887,10 +941,11 @@ namespace TemplateApplet {
                 show_forecast = ws_settings.get_boolean("forecast");
             });
 
-            customposition = ws_settings.get_boolean("customposition");
-            ws_settings.changed["customposition"].connect (() => {
+            // not in applet, should move to settings
+            
+            /*ws_settings.changed["customposition"].connect (() => {
                 customposition = ws_settings.get_boolean("customposition");
-            });
+            });*/
            
             var test = new GetWeatherdata();
             get_weather(test);
