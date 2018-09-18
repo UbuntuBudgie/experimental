@@ -29,6 +29,36 @@ namespace WeatherShowFunctions {
         return settings;
     }
 
+    private string find_mappedid (string icon_id) {
+        string[,] replacements = {
+            {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
+            {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
+            {"502", "501"}, {"503", "501"}, {"504", "501"}, {"522", "521"}, 
+            {"531", "521"}, {"622", "621"}, {"711", "701"}, {"721", "701"}, 
+            {"731", "701"}, {"741", "701"}, {"751", "701"}, {"761", "701"}, 
+            {"762", "701"}
+        };
+        int lenrep = replacements.length[0];
+        for (int i=0; i < lenrep; i++) {
+            if (icon_id == replacements[i, 0]) {
+                print("found one: " + replacements[i, 1] + "\n");
+                return replacements[i, 1];
+
+            }
+        }
+        return icon_id;
+    }
+
+    private ArrayList<int> sort_timespan(HashMap<int, string> span) {
+        // create a sorted key list
+        var sortlist = new ArrayList<int>();
+        foreach (var entry in span.entries) {
+            sortlist.add(entry.key);
+        }
+        sortlist.sort();
+        return sortlist;
+    }
+
     private int get_stringindex (string s, string[] arr) {
         for (int i=0; i < arr.length; i++) {
             if(s == arr[i]) return i;
@@ -68,6 +98,8 @@ namespace WeatherShowFunctions {
 }
 
 
+
+
 namespace TemplateApplet { 
     /* ^ watch out for name, was weird (used as classname) in draft applet */
     /* make sure settings are defined on applet startup */
@@ -79,26 +111,76 @@ namespace TemplateApplet {
     private string tempunit;
     private string[] directions;
     private string key;
+    ///////////////////////////////////////////////
+    private Gtk.Image indicatorIcon;
+    private Gdk.Pixbuf[] iconpixbufs;
+    private string[] iconnames;
+    private string citycode;
+    private Gtk.Box container;
+    private Gtk.Label templabel;
+    GetWeatherdata test;
+    ///////////////////////////////////////////////
     
 
     private void get_weather (GetWeatherdata test) {
+        /* 
+        * this is the comprehensive function to get the current weather
+        * called sub sections are the forecast, which only runs if the popover
+        * is set to show, and the current situation, only called if desktop 
+        * show is set.
+        */
 
         // get forecast; conditional
-        HashMap result_forecast = test.get_forecast();
-        // get current; run anyway. writing to file is optiional for desktop
-        string result_current = test.get_current();
-        print("read_current:\n\n" + result_current);
-        // write current to file; conditional, only for desktop
-        if (show_ondesktop == true) {
-            string username = Environment.get_user_name();
-            string src = "/tmp/".concat(username, "_weatherdata");
-            File datasrc = File.new_for_path(src);
-            if (datasrc.query_exists ()) {
-                datasrc.delete ();
+        if (show_forecast) {
+            print("forcast = true\n");
+            HashMap<int, string> result_forecast = test.get_forecast();
+            // produce a sorted ArrayList to get sorted timestamps
+            ArrayList<int> sorted_keys = WeatherShowFunctions.sort_timespan(
+                result_forecast
+            );
+
+            foreach (int stamp in sorted_keys) {
+                // produces localtime
+                var time = new DateTime.from_unix_local(stamp);
+                string hour = time.get_hour().to_string();
+                string day = time.get_day_of_year().to_string();
+
+                print(@"hour: $hour\n");
+                print(@"day: $day\n");
+                print(result_forecast[stamp]);
+                print("\n\n");
             }
-            var file_stream = datasrc.create (FileCreateFlags.NONE);
-            var data_stream = new DataOutputStream (file_stream);
-            data_stream.put_string (result_current);
+
+
+            
+            /*foreach (var entry in result_forecast.entries) {
+                print("\n\n");
+                var time = new DateTime.from_unix_utc (entry.key);
+                string hour = time.get_hour().to_string();
+                print(@"hour: $hour\n");
+
+                //int hours = (int) Math.remainder(snapshot_time, 86400);
+
+                //print(@"$hours\n");
+                print(entry.key.to_string() + " valuex: " + entry.value + "\n");
+            }*/
+        }
+
+        // get current weather; conditional
+        if (show_ondesktop == true || dynamic_icon == true) {
+            string result_current = test.get_current();
+            // write to file only for desktop show
+            if (show_ondesktop == true) {
+                string username = Environment.get_user_name();
+                string src = "/tmp/".concat(username, "_weatherdata");
+                File datasrc = File.new_for_path(src);
+                if (datasrc.query_exists ()) {
+                    datasrc.delete ();
+                }
+                var file_stream = datasrc.create (FileCreateFlags.NONE);
+                var data_stream = new DataOutputStream (file_stream);
+                data_stream.put_string (result_current);
+            }
         }
     }
 
@@ -156,6 +238,12 @@ namespace TemplateApplet {
         }
 
         private string getsnapshot (string data) {
+            /*
+            *  single record; current situation. panel icon is updated
+            *  directly from within this function.
+            *  output is optionally written to textfile in /temp from 
+            *  get_weather, called by the loop in Applet().
+            */
             print(data);
             var parser = new Json.Parser ();
             parser.load_from_data(data);
@@ -165,6 +253,14 @@ namespace TemplateApplet {
             );
             /* get icon id */
             string id = check_numvalue(map["weather"], "id").to_string();
+            string daynight = check_stringvalue(map["weather"], "icon").to_string();
+            string add_daytime = get_dayornight(daynight);
+
+            /*
+            * if (unlikely) the icon field does not exist, but the id does: 
+            * fallback to day version to prevent breaking
+            */
+
             /* get cityline (exists anyway) */
             string city = check_stringvalue(root_object, "name");
             string country = check_stringvalue(map["sys"], "country");
@@ -186,6 +282,23 @@ namespace TemplateApplet {
                 id, citydisplay, skydisplay, tempdisplay, 
                 wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
             };
+            /* optional dynamic panel icon is set from here directly */
+            if (dynamic_icon == true && id != "") {
+                string mapped_id = WeatherShowFunctions.find_mappedid(id);
+                int icon_index = WeatherShowFunctions.get_stringindex(
+                    mapped_id.concat(add_daytime) , iconnames
+                );
+
+                Idle.add ( () => {
+                    Pixbuf pbuf = iconpixbufs[icon_index];
+                    indicatorIcon.set_from_pixbuf(pbuf);
+                    templabel.set_text(tempdisplay);
+                    return false;
+                  });
+            }
+            else {
+                print("\nno icon\n");
+            }
             string output = string.joinv("\n", collected);
             return output;
         }
@@ -195,7 +308,7 @@ namespace TemplateApplet {
             * get "raw" data. if successful, create new data, else create
             * empty lines in the output array.
             */
-            string data = fetch_fromsite("weather", "2907911");
+            string data = fetch_fromsite("weather", citycode);
             if (data != "no data") {
                 return getsnapshot(data);
             }
@@ -290,13 +403,21 @@ namespace TemplateApplet {
             foreach (Json.Node n in nodes) {
                 var obj = n.get_object();
                 HashMap<string, Json.Object> categories = get_categories(obj);
+
                 /* get icon id */
                 string id = check_numvalue(
                     categories["weather"], "id"
                 ).to_string();
                 print("%s\n", id);
+
+                string add_dn = check_stringvalue(
+                    categories["weather"], "icon"
+                );
+                string dayornight = get_dayornight(add_dn);
+
                 /* get timestamp */
                 int timestamp = (int) obj.get_int_member("dt");
+                //map["timestamp"] = timestamp.to_string();
                 print(@"$timestamp\n");
                 /* get skystate */
                 /* why no function? Ah, no numvalue, no editing, no unit*/
@@ -315,6 +436,9 @@ namespace TemplateApplet {
                 string humidity = get_humidity(categories);
                 print(humidity + "\n\n");
                 /* now combine the first 16 into a HashMap timestamp (int) /snapshot (str) */
+                map[timestamp] = string.joinv(
+                    "\n", {id, dayornight, skydisplay, temp, wind, humidity}
+                );
                 n_snapshots += 1;
                 if (n_snapshots == 16) {
                     break;
@@ -325,16 +449,23 @@ namespace TemplateApplet {
 
         public HashMap get_forecast() {
             /* here we create a hashmap<time, string> */
-            string data = fetch_fromsite("forecast", "2907911");
+            string data = fetch_fromsite("forecast", citycode);
             var map = new HashMap<int, string> ();
 
             if (data != "no data") {
                 print("succes!\n");
-                getspan(data);
-                // print(data + "\n");
-                // get nodes
+                map = getspan(data);
             }
             return map;
+        }
+
+        private string get_dayornight (string dn) {
+            /* get the last char of the icon id, to set day/night icon*/
+            if (dn != "") {
+                int len = dn.length;
+                return dn[len - 1 : len];
+            }
+            return "d";
         }
     }
 
@@ -380,7 +511,6 @@ namespace TemplateApplet {
         string[] city_menurefs;  // <- yes
         string[] city_menucodes;  // <- yes
         bool edit_citymenu; // <- yes
-        //private bool customposition; // <- yes no! not needed at all
         ///////////////////////////////////////////////
 
 
@@ -577,8 +707,7 @@ namespace TemplateApplet {
             posholder.pack_start(ypos, false, false, 0);
             // wrap it up
             apply = new Gtk.Button.with_label("OK");
-            
-            apply.pressed.connect(update_xysetting); //////////////////////////////
+            apply.clicked.connect(update_xysetting);
             posholder.pack_end(apply, false, false, 0);
             subgrid_desktop.attach(posholder, 0, 51, 1, 1);
             button_desktop.set_sensitive(show_ondesktop);
@@ -601,7 +730,7 @@ namespace TemplateApplet {
 
         private string set_initialcity() {
             // on opening settings, set the gui to the current value
-            string initial_citycode = ws_settings.get_string("citycode");
+            string initial_citycode = citycode;
             string[] initline = WeatherShowFunctions.get_matches(
                 initial_citycode
             );
@@ -646,8 +775,6 @@ namespace TemplateApplet {
             int newx = int.parse(newxpos_str);
             string newypos_str = ypos.get_text();
             int newy = int.parse(newypos_str);
-            print(@"$newx\n");
-            print(@"$newy\n");
             if (newx != 0 && newy != 0) {
                 ws_settings.set_int("xposition", newx);
                 ws_settings.set_int("yposition", newy);
@@ -668,19 +795,24 @@ namespace TemplateApplet {
             langentry.set_text(match);
             string newset_lang = langcodes[index];
             ws_settings.set_string("language", newset_lang);
+            lang = newset_lang;
+            TemplateApplet.get_weather(test);
             return true;
         }
 
         private void update_citysettings (Gtk.MenuItem m) {
             string newselect = m.get_label();
+            print("Hello: "+ newselect + "\n");
             int index = WeatherShowFunctions.get_stringindex(
                 newselect, city_menurefs
             );
             string newcode = city_menucodes[index];
+            print("Hello: "+ newcode + "\n");
             ws_settings.set_string("citycode", newcode);
             edit_citymenu = false;
             cityentry.set_text(newselect);
             edit_citymenu = true;
+            TemplateApplet.get_weather(test);
             print(newcode + "\n");
         }
 
@@ -720,6 +852,7 @@ namespace TemplateApplet {
                         city_menurefs += newref;
                         city_menucodes += new_ref[0];
                         newitem.activate.connect(update_citysettings);
+                        print("Works?\n");
                         citymenu.add(newitem);
                     }
                 }
@@ -808,6 +941,7 @@ namespace TemplateApplet {
             else {
                 tempunit = "Celsius";
             }
+            TemplateApplet.get_weather(test);
             ws_settings.set_string("tempunit", tempunit);
         }
 
@@ -853,7 +987,7 @@ namespace TemplateApplet {
 
     public class TemplatePopover : Budgie.Popover {
         private Gtk.EventBox indicatorBox;
-        private Gtk.Image indicatorIcon;
+        // private Gtk.Image indicatorIcon;
         /* process stuff */
         /* GUI stuff */
         private Grid maingrid;
@@ -862,11 +996,16 @@ namespace TemplateApplet {
         public TemplatePopover(Gtk.EventBox indicatorBox) {
             GLib.Object(relative_to: indicatorBox);
             this.indicatorBox = indicatorBox;
-            /* set icon */
-            this.indicatorIcon = new Gtk.Image.from_icon_name(
+            /* set default (initial) icon */
+            indicatorIcon = new Gtk.Image.from_icon_name(
                 "templateicon-symbolic", Gtk.IconSize.MENU
             );
-            indicatorBox.add(this.indicatorIcon);
+            templabel = new Label("");
+            container.pack_start(indicatorIcon, false, false, 0);
+            container.pack_end(templabel, false, false, 0);
+            // create pixbuf (do it here or in applet construct?)
+            //create_iconbuf();
+
             /* gsettings stuff */
 
             /* grid */
@@ -903,32 +1042,41 @@ namespace TemplateApplet {
             * of the extended set of weather codes, which is kind of the middle
             * between the two.result_forecast
             */
-            string[,] mapped = {
-                {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
-                {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
-                {"502", "501"}, {"503", "501"}, {"504", "501"}, {"522", "521"}, 
-                {"531", "521"}, {"622", "621"}, {"711", "701"}, {"721", "701"}, 
-                {"731", "701"}, {"741", "701"}, {"751", "701"}, {"761", "701"}, 
-                {"762", "701"}
-            };
+
+            /* 
+            * icons are listed & loaded from the icon directory. the output of
+            * the API call is then mapped according to the list above, sub-
+            * sequently a "d" or "n" version is applyed according to the API's
+            * icon-id. the matching index is then looked up in iconlist, and
+            * the matching pixbuf from iconlist
+            */
+
+            get_icondata();
 
             // get current settings
             ws_settings = WeatherShowFunctions.get_settings(
                 "org.ubuntubudgie.plugins.weathershow"
             );
+
             tempunit = ws_settings.get_string("tempunit");
             ws_settings.changed["tempunit"].connect (() => {
                 tempunit = ws_settings.get_string("tempunit");
-		    });  
-            // todo: fetch local language, see if it is in the list
-            // fallback to default (en) if not. make checkbutton in settings
-            // settings, used across classes!!
+            });  
+
+            // settings, used across classes
+
             lang = ws_settings.get_string("language");
             key = ws_settings.get_string("key");
 
             show_ondesktop = ws_settings.get_boolean("desktopweather");
             ws_settings.changed["desktopweather"].connect (() => {
                 show_ondesktop = ws_settings.get_boolean("desktopweather");
+            }); 
+
+
+            citycode = ws_settings.get_string("citycode");
+            ws_settings.changed["citycode"].connect (() => {
+                citycode = ws_settings.get_string("citycode");
             }); 
 
             dynamic_icon = ws_settings.get_boolean("dynamicicon");
@@ -941,39 +1089,73 @@ namespace TemplateApplet {
                 show_forecast = ws_settings.get_boolean("forecast");
             });
 
-            // not in applet, should move to settings
-            
-            /*ws_settings.changed["customposition"].connect (() => {
-                customposition = ws_settings.get_boolean("customposition");
-            });*/
-           
-            var test = new GetWeatherdata();
+            /////////////////////////////////////////////////
+            // run the loop
+            test = new GetWeatherdata();
             get_weather(test);
+
             GLib.Timeout.add (60000, () => {
                 get_weather(test);   
                 return true;
             });
+            /////////////////////////////////////////////////
 
             initialiseLocaleLanguageSupport();
             /* box */
             indicatorBox = new Gtk.EventBox();
+            container = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            indicatorBox.add(container);
             add(indicatorBox);
             /* Popover */
             popover = new TemplatePopover(indicatorBox);
             /* On Press indicatorBox */
             indicatorBox.button_press_event.connect((e)=> {
-                if (e.button != 1) {
-                    return Gdk.EVENT_PROPAGATE;
+
+
+                if (show_forecast == true) {
+                    if (e.button != 1) {
+                        return Gdk.EVENT_PROPAGATE;
+                    }
+                    if (popover.get_visible()) {
+                        popover.hide();
+                    } else {
+                        this.manager.show_popover(indicatorBox);
+                    }
+                    return Gdk.EVENT_STOP;
                 }
-                if (popover.get_visible()) {
-                    popover.hide();
-                } else {
-                    this.manager.show_popover(indicatorBox);
-                }
-                return Gdk.EVENT_STOP;
+                return false;
             });
             popover.get_child().show_all();
             show_all();
+        }
+
+        private void get_icondata () {
+            // fetch the icon list
+            string icondir = "/".concat(
+                "usr/lib/budgie-desktop/plugins",
+                "/budgie-weathershow/weather_icons"
+            );
+            iconnames = {}; iconpixbufs = {};
+            try {
+                var dr = Dir.open(icondir);
+                string ? filename = null;
+                while ((filename = dr.read_name()) != null) {
+                    // add to icon names
+                    iconnames += filename[0:4];
+                    print(filename[0:4] + "\n"); 
+                    // add to pixbufs
+                    string iconpath = GLib.Path.build_filename(
+                        icondir, filename
+                    );
+                    Pixbuf newicon = new Pixbuf.from_file_at_size (
+                        iconpath, 22, 22
+                    );
+                    iconpixbufs += newicon;
+                }
+            } catch (FileError err) {
+                    // unlikely to occur, but:
+                    print("Something went wrong loading the icons");
+            }
         }
 
         public override void update_popovers(Budgie.PopoverManager? manager)
