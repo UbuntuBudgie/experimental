@@ -22,14 +22,23 @@ using Gee;
 
 
 namespace WeatherShowFunctions {
-    // move away from here, it feels quite lonely
-    // on second thought, the other way around? Main code could use a little slimming down...
+
     private GLib.Settings get_settings(string path) {
         var settings = new GLib.Settings(path);
         return settings;
     }
 
     private string find_mappedid (string icon_id) {
+
+        /* 
+        * OWM's icon codes are a bit oversimplified; different weather 
+        * types are pushed into one icon. the data ("id") however offers a 
+        * much more detailed set of weather types/codes, which can be used to
+        * set an improved icon mapping. below my own (again) simplification 
+        * of the extended set of weather codes, which is kind of the middle
+        * between the two.
+        */
+
         string[,] replacements = {
             {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
             {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
@@ -41,12 +50,20 @@ namespace WeatherShowFunctions {
         int lenrep = replacements.length[0];
         for (int i=0; i < lenrep; i++) {
             if (icon_id == replacements[i, 0]) {
-                print("found one: " + replacements[i, 1] + "\n");
                 return replacements[i, 1];
 
             }
         }
         return icon_id;
+    }
+
+    private string weekday (int day) {
+        // get weekday by index
+        string[] days = {
+            "Monday", "Tuesday", "Wednesday", "Thursday", 
+            "Friday", "Saturday", "Sunday"
+        };
+        return days[day - 1];
     }
 
     private ArrayList<int> sort_timespan(HashMap<int, string> span) {
@@ -60,6 +77,7 @@ namespace WeatherShowFunctions {
     }
 
     private int get_stringindex (string s, string[] arr) {
+        // get index of a string in an array
         for (int i=0; i < arr.length; i++) {
             if(s == arr[i]) return i;
         } return -1;
@@ -67,7 +85,6 @@ namespace WeatherShowFunctions {
 
     private string[] get_matches(string lookfor) {
         // find matching cities
-        // fix possibly messed up title- case
         File datasrc = File.new_for_path(
             "/usr/lib/budgie-desktop/plugins/budgie-weathershow/cities"
         );
@@ -79,7 +96,6 @@ namespace WeatherShowFunctions {
             string line;
             string[] matches = {};
             while ((line = dis.read_line (null)) != null) {
-                // work to do; image change
                 if (line.contains(fixed)) {
                     matches += line;
                 }
@@ -93,16 +109,11 @@ namespace WeatherShowFunctions {
             */
             return {};
         }
-        return {};
     }
 }
 
 
-
-
 namespace TemplateApplet { 
-    /* ^ watch out for name, was weird (used as classname) in draft applet */
-    /* make sure settings are defined on applet startup */
     private GLib.Settings ws_settings;
     private bool show_ondesktop;
     private bool dynamic_icon;
@@ -111,17 +122,27 @@ namespace TemplateApplet {
     private string tempunit;
     private string[] directions;
     private string key;
-    ///////////////////////////////////////////////
     private Gtk.Image indicatorIcon;
     private Gdk.Pixbuf[] iconpixbufs;
+    private Gdk.Pixbuf[] iconpixbufs_large;
     private string[] iconnames;
     private string citycode;
     private Gtk.Box container;
     private Gtk.Label templabel;
-    GetWeatherdata test;
-    ///////////////////////////////////////////////
-    
+    private GetWeatherdata test;
+    private Stack popoverstack;
+    private int fc_stackindex;
+    private string[] fc_stacknames;
+    private Gtk.Grid[] popover_subgrids; // pages
+    private Gtk.Grid popover_mastergrid; // real master
 
+    private string to_hrs (int t) {
+        if (t < 10) {
+            return "0" + t.to_string() + ":00";
+        }
+        return t.to_string() + ":00";
+    }
+    
     private void get_weather (GetWeatherdata test) {
         /* 
         * this is the comprehensive function to get the current weather
@@ -132,38 +153,96 @@ namespace TemplateApplet {
 
         // get forecast; conditional
         if (show_forecast) {
-            print("forcast = true\n");
+            // fetch forecast
             HashMap<int, string> result_forecast = test.get_forecast();
             // produce a sorted ArrayList to get sorted timestamps
             ArrayList<int> sorted_keys = WeatherShowFunctions.sort_timespan(
                 result_forecast
             );
+            // reset stack index
+            fc_stackindex = 0;
+            // here we go, recreate the subgrids
+            int n_fc = 0;
+            int curr_index = 0;
 
-            foreach (int stamp in sorted_keys) {
-                // produces localtime
-                var time = new DateTime.from_unix_local(stamp);
-                string hour = time.get_hour().to_string();
-                string day = time.get_day_of_year().to_string();
+            Idle.add ( () => {
+                // destroy existing forecast pages
+                foreach (Grid gr in popover_subgrids) {
+                    gr.destroy();
+                }
+                popoverstack.destroy();
+                popover_subgrids = {};
+                // create new ones
+                for (int i = 0; i < 4; i++) {
+                    var newpagegrid = new Gtk.Grid();
+                    popover_subgrids += newpagegrid;
+                }
+                // recreate stack
+                popoverstack = new Stack();
+                popoverstack.set_transition_type(
+                    Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
+                );
+                popoverstack.set_transition_duration(500);
+                popoverstack.set_vexpand(true);
+                popoverstack.set_hexpand(true);
+                // make sure it exists
+                Grid currgrid = popover_subgrids[0];
 
-                print(@"hour: $hour\n");
-                print(@"day: $day\n");
-                print(result_forecast[stamp]);
-                print("\n\n");
-            }
-
-
-            
-            /*foreach (var entry in result_forecast.entries) {
-                print("\n\n");
-                var time = new DateTime.from_unix_utc (entry.key);
-                string hour = time.get_hour().to_string();
-                print(@"hour: $hour\n");
-
-                //int hours = (int) Math.remainder(snapshot_time, 86400);
-
-                //print(@"$hours\n");
-                print(entry.key.to_string() + " valuex: " + entry.value + "\n");
-            }*/
+                foreach (int stamp in sorted_keys) {
+                    // produces localtime per stamp
+                    var time = new DateTime.from_unix_local(stamp);
+                    string hour = to_hrs(time.get_hour());
+                    string day = WeatherShowFunctions.weekday(
+                        time.get_day_of_week()
+                    );
+                    // create one grid per four snapshots
+                    currgrid = popover_subgrids[curr_index];
+                    currgrid.set_column_spacing(40);
+                    currgrid.attach(new Gtk.Label(""), 0, 0, 1, 1);
+                    currgrid.attach(new Gtk.Label(""), 0, 10, 1, 1);
+                    // initiate the image
+                    var weather_image = new Gtk.Image();
+                    currgrid.attach(weather_image, n_fc, 3, 1, 1);
+                    // timelabel / daylabel
+                    var timelabel = new Gtk.Label(hour);
+                    currgrid.attach(timelabel, n_fc, 2, 1, 1);
+                    var daylabel = new Gtk.Label(day);
+                    currgrid.attach(daylabel, n_fc, 1, 1, 1);
+                    // process the produced weather data (string), calc. icon
+                    string[] labelsrc = result_forecast[stamp].split("\n");
+                    string iconname = WeatherShowFunctions.find_mappedid(
+                        labelsrc[0]
+                        ).concat(labelsrc[1]
+                    );
+                    int ic_index =  WeatherShowFunctions.get_stringindex(
+                        iconname, iconnames
+                    );
+                    // add to subgrid, set snapshot icon
+                    int line_index = 4;
+                    foreach (string l in labelsrc[2:6]) {
+                        currgrid.attach(new Label(l), n_fc, line_index, 1, 1);
+                        line_index += 1;
+                    }
+                    weather_image.set_from_pixbuf(iconpixbufs_large[ic_index]);
+                    n_fc += 1;
+                    // if grid is ready, add grid to popover_subgrids (array)
+                    // add to popoverstack (named from its index), set [0]
+                    if (n_fc == 4) {
+                        currgrid.set_column_homogeneous(true);
+                        popover_subgrids += currgrid;
+                        popoverstack.add_named(currgrid, "forecast" + curr_index.to_string());
+                        curr_index += 1;
+                        if (curr_index == 4) {
+                            popover_mastergrid.attach(popoverstack, 1, 0, 1, 1);
+                        }
+                        popoverstack.set_visible_child_name("forecast0");
+                        currgrid.show_all(); 
+                        popover_mastergrid.show_all();
+                        n_fc = 0;
+                    }
+                }
+                return false;
+            });
         }
 
         // get current weather; conditional
@@ -244,7 +323,6 @@ namespace TemplateApplet {
             *  output is optionally written to textfile in /temp from 
             *  get_weather, called by the loop in Applet().
             */
-            print(data);
             var parser = new Json.Parser ();
             parser.load_from_data(data);
             var root_object = parser.get_root ().get_object ();
@@ -255,12 +333,10 @@ namespace TemplateApplet {
             string id = check_numvalue(map["weather"], "id").to_string();
             string daynight = check_stringvalue(map["weather"], "icon").to_string();
             string add_daytime = get_dayornight(daynight);
-
             /*
             * if (unlikely) the icon field does not exist, but the id does: 
             * fallback to day version to prevent breaking
             */
-
             /* get cityline (exists anyway) */
             string city = check_stringvalue(root_object, "name");
             string country = check_stringvalue(map["sys"], "country");
@@ -269,13 +345,10 @@ namespace TemplateApplet {
             string skydisplay = check_stringvalue(
                 map["weather"], "description"
             );
-            /* get temp */
+            /* get info */
             string tempdisplay = get_temperature(map);
-            /* get wind speed */
             string wspeeddisplay = get_windspeed(map);
-            /* get wind direction */
             string wdirectiondisplay = get_winddirection(map);
-            /* get humidity */
             string humiddisplay = get_humidity(map);
             /* combined */
             string[] collected = {
@@ -292,11 +365,12 @@ namespace TemplateApplet {
                 Idle.add ( () => {
                     Pixbuf pbuf = iconpixbufs[icon_index];
                     indicatorIcon.set_from_pixbuf(pbuf);
-                    templabel.set_text(tempdisplay);
+                    templabel.set_text(" " + tempdisplay);
                     return false;
                   });
             }
             else {
+                // set default icon!
                 print("\nno icon\n");
             }
             string output = string.joinv("\n", collected);
@@ -390,7 +464,6 @@ namespace TemplateApplet {
 
         private HashMap getspan(string data) {
             // get the forecast
-            //print(data);
             var map = new HashMap<int, string> ();
             var parser = new Json.Parser ();
             parser.load_from_data (data);
@@ -403,38 +476,28 @@ namespace TemplateApplet {
             foreach (Json.Node n in nodes) {
                 var obj = n.get_object();
                 HashMap<string, Json.Object> categories = get_categories(obj);
-
                 /* get icon id */
                 string id = check_numvalue(
                     categories["weather"], "id"
                 ).to_string();
-                print("%s\n", id);
-
                 string add_dn = check_stringvalue(
                     categories["weather"], "icon"
                 );
                 string dayornight = get_dayornight(add_dn);
-
                 /* get timestamp */
                 int timestamp = (int) obj.get_int_member("dt");
-                //map["timestamp"] = timestamp.to_string();
-                print(@"$timestamp\n");
                 /* get skystate */
                 /* why no function? Ah, no numvalue, no editing, no unit*/
                 string skydisplay = check_stringvalue(
                     categories["weather"], "description"
                 );
-                print(skydisplay + "\n");
                 /* get temp */
                 string temp = get_temperature(categories);
-                print(temp + "\n");
                 /* get wind speed/direction */
                 string wspeed = get_windspeed(categories);
                 string wind = get_winddirection(categories).concat(" ", wspeed);
-                print(wind + "\n");
                 /* get humidity */
                 string humidity = get_humidity(categories);
-                print(humidity + "\n\n");
                 /* now combine the first 16 into a HashMap timestamp (int) /snapshot (str) */
                 map[timestamp] = string.joinv(
                     "\n", {id, dayornight, skydisplay, temp, wind, humidity}
@@ -451,9 +514,7 @@ namespace TemplateApplet {
             /* here we create a hashmap<time, string> */
             string data = fetch_fromsite("forecast", citycode);
             var map = new HashMap<int, string> ();
-
             if (data != "no data") {
-                print("succes!\n");
                 map = getspan(data);
             }
             return map;
@@ -473,15 +534,10 @@ namespace TemplateApplet {
     public class TemplateSettings : Gtk.Grid {
 
         /* Budgie Settings -section */
-        GLib.Settings? settings = null;
-        private CheckButton ondesktop_checkbox;
-        private CheckButton dynamicicon_checkbox;
-        private CheckButton forecast_checkbox;
         private CheckButton[] cbuttons; 
         private string[] add_args;
         private string css_template;
         private string css_data;
-        private int buttoncolor;
         private Gtk.Scale transparency_slider;
         private Gtk.Button colorbutton;
         private Gtk.Label colorlabel;
@@ -492,7 +548,6 @@ namespace TemplateApplet {
         private Gtk.Label ypos_label;
         private Gtk.Button apply;
         private Gtk.Label transparency_label;
-        private Gtk.Label desktop_category;
         private Stack stack;
         private Gtk.Button button_desktop;
         private Gtk.Button button_general;
@@ -503,23 +558,20 @@ namespace TemplateApplet {
         private Gtk.Menu citymenu;
         private Gdk.Screen screen;
         private Entry langentry;
-        /////////////////////////////////////////////// needs to be here?
-        string[] langlist; // < yes
-        Gtk.ListStore lang_liststore; // < yes
-        string[] langcodes; // < yes
-        MenuButton search_button; // <- yes
-        string[] city_menurefs;  // <- yes
-        string[] city_menucodes;  // <- yes
-        bool edit_citymenu; // <- yes
-        ///////////////////////////////////////////////
-
-
+        string[] langlist;
+        Gtk.ListStore lang_liststore;
+        string[] langcodes;
+        MenuButton search_button;
+        string[] city_menurefs;
+        string[] city_menucodes;
+        bool edit_citymenu;
+ 
         public TemplateSettings(GLib.Settings? settings) {
             /*
             * Gtk stuff, widgets etc. here 
             */
  
-            // data section
+            // language lookup data
             langlist = {
                 "Arabic", "Bulgarian", "Catalan", "Czech", "German", "Greek", "English",
                 "Persian (Farsi)", "Finnish", "French", "Galician", "Croatian",
@@ -535,6 +587,7 @@ namespace TemplateApplet {
                 "se", "sk", "sl", "es", "tr", "ua", "vi", "zh_cn", "zh_tw"
             };
 
+            // css
             css_template = """
             .colorbutton {
               border-color: transparent;
@@ -547,9 +600,9 @@ namespace TemplateApplet {
             }
             """;
 
-            // css
             screen = this.get_screen();
             css_provider = new Gtk.CssProvider();
+            // settings stack/pages
             stack = new Stack();
             stack.set_transition_type(
                 Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
@@ -593,8 +646,6 @@ namespace TemplateApplet {
             search_button.set_image(searchicon);
             citybox.pack_end(search_button, false, false, 0);
             citymenu = new Gtk.Menu();
-            //search_button.set_popup(citymenu);
-            //update_citylist();
             var spacelabel1 = new Gtk.Label("");
             subgrid_general.attach(spacelabel1, 0, 2, 1, 1);
             // set language 
@@ -624,7 +675,6 @@ namespace TemplateApplet {
             subgrid_general.attach(ondesktop_checkbox, 0, 10, 1, 1);
             ondesktop_checkbox.set_active(show_ondesktop);
             ondesktop_checkbox.toggled.connect(toggle_value);
-
             // dynamic icon
             var dynamicicon_checkbox = new CheckButton.with_label(
                 (_("Show dynamic panel icon"))
@@ -646,7 +696,6 @@ namespace TemplateApplet {
                 (_("Use Fahrenheit"))
             );
             subgrid_general.attach(tempunit_checkbox, 0, 14, 1, 1);
-            // tempunit_checkbox.set_active(show_forecast);
             tempunit_checkbox.set_active(get_tempstate());
             tempunit_checkbox.toggled.connect(set_tempunit);
             var spacelabel4 = new Gtk.Label("");
@@ -663,7 +712,6 @@ namespace TemplateApplet {
             );
             set_initialtransparency();
             subgrid_desktop.attach(transparency_slider, 0, 23, 1, 1);
-            //transparency_slider.set_value(visible_pressure);
             transparency_slider.value_changed.connect(
                 update_transparencysettings
             );
@@ -688,19 +736,14 @@ namespace TemplateApplet {
                 (_("Set custom position (px)"))
             );
             subgrid_desktop.attach(setposbutton, 0, 50, 1, 1);
-            //setposbutton.set_active(customposition);
             setposbutton.toggled.connect(toggle_value);
             var posholder = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             xpos = new Gtk.Entry();
             xpos.set_width_chars(4);
-            //xpos.set_sensitive(customposition);
             xpos_label = new Gtk.Label("x: ");
-            //xpos_label.set_sensitive(customposition);
             ypos = new Gtk.Entry();
             ypos.set_width_chars(4);
-            //ypos.set_sensitive(customposition);
             ypos_label = new Gtk.Label(" y: ");
-            //ypos_label.set_sensitive(customposition);
             posholder.pack_start(xpos_label, false, false, 0);
             posholder.pack_start(xpos, false, false, 0);
             posholder.pack_start(ypos_label, false, false, 0);
@@ -740,8 +783,6 @@ namespace TemplateApplet {
         private void set_initialpos () {
             int set_xpos = ws_settings.get_int("xposition");
             int set_ypos = ws_settings.get_int("yposition");
-            //needed?
-            //customposition = ws_settings.get_boolean("customposition");
             bool currcustom;
             if (set_xpos != 200 || set_ypos != 200){
                 currcustom = true;
@@ -751,8 +792,6 @@ namespace TemplateApplet {
             else {
                 currcustom = false;
             }
-            print(@"$currcustom\n");
-            //setposbutton.set_sensitive(currcustom);
             setposbutton.set_active(currcustom);
             xpos.set_sensitive(currcustom);
             ypos.set_sensitive(currcustom);
@@ -802,18 +841,15 @@ namespace TemplateApplet {
 
         private void update_citysettings (Gtk.MenuItem m) {
             string newselect = m.get_label();
-            print("Hello: "+ newselect + "\n");
             int index = WeatherShowFunctions.get_stringindex(
                 newselect, city_menurefs
             );
             string newcode = city_menucodes[index];
-            print("Hello: "+ newcode + "\n");
             ws_settings.set_string("citycode", newcode);
             edit_citymenu = false;
             cityentry.set_text(newselect);
             edit_citymenu = true;
             TemplateApplet.get_weather(test);
-            print(newcode + "\n");
         }
 
         public void update_transparencysettings(Gtk.Range slider) {
@@ -845,14 +881,12 @@ namespace TemplateApplet {
                 int n_matches = matches.length;
                 if (n_matches > 0) {
                     foreach (string s in matches) {
-                        print(s + "\n");
                         string[] new_ref = s.split(" ", 2);
                         string newref = new_ref[1];
                         var newitem = new Gtk.MenuItem.with_label(newref);
                         city_menurefs += newref;
                         city_menucodes += new_ref[0];
                         newitem.activate.connect(update_citysettings);
-                        print("Works?\n");
                         citymenu.add(newitem);
                     }
                 }
@@ -862,7 +896,6 @@ namespace TemplateApplet {
                     );
                     citymenu.add(newitem);
                 }
-                print(currentry + "\n");
             }
             else {
                 var newitem = new Gtk.MenuItem.with_label(
@@ -975,6 +1008,13 @@ namespace TemplateApplet {
                     ws_settings.set_int("yposition", 200);
                 }
             }
+
+            else if (val_index == 1 && newsetting == false) {
+                Pixbuf pbuf = iconpixbufs[29];
+                indicatorIcon.set_from_pixbuf(pbuf);
+                templabel.set_text("");
+            }
+            TemplateApplet.get_weather(test);
         }
     }
 
@@ -986,12 +1026,8 @@ namespace TemplateApplet {
 
 
     public class TemplatePopover : Budgie.Popover {
+
         private Gtk.EventBox indicatorBox;
-        // private Gtk.Image indicatorIcon;
-        /* process stuff */
-        /* GUI stuff */
-        private Grid maingrid;
-        /* misc stuff */
 
         public TemplatePopover(Gtk.EventBox indicatorBox) {
             GLib.Object(relative_to: indicatorBox);
@@ -1003,14 +1039,48 @@ namespace TemplateApplet {
             templabel = new Label("");
             container.pack_start(indicatorIcon, false, false, 0);
             container.pack_end(templabel, false, false, 0);
-            // create pixbuf (do it here or in applet construct?)
-            //create_iconbuf();
+            // build up the popover to contain the pages, created in get_weather
+            popover_mastergrid = new Gtk.Grid();
+            popover_mastergrid.set_column_spacing(30);
+             // left button
+            var leftbox = new Box(Gtk.Orientation.VERTICAL, 0);
+            var browseleft = new Button.from_icon_name (
+                "go-previous-symbolic", IconSize.BUTTON
+            );
+            browseleft.set_size_request(10, 10);
+            browseleft.set_relief(Gtk.ReliefStyle.NONE);
+            browseleft.clicked.connect(previous_stack);
+            leftbox.pack_end (browseleft, false, false, 0);
+            // right button
+            var rightbox = new Box(Gtk.Orientation.VERTICAL, 0);
+            var browseright = new Button.from_icon_name (
+                "go-next-symbolic", IconSize.BUTTON
+            );
+            browseright.set_size_request(10, 10);
+            browseright.set_relief(Gtk.ReliefStyle.NONE);
+            browseright.clicked.connect(next_stack);
+            rightbox.pack_end (browseright, false, false, 0);
 
-            /* gsettings stuff */
+            popover_mastergrid.attach(leftbox, 0, 0, 1, 1);
+            popover_mastergrid.attach(rightbox, 2, 0, 1, 1);
 
-            /* grid */
-            this.maingrid = new Gtk.Grid();
-            this.add(this.maingrid);
+            this.add(popover_mastergrid);
+        }
+
+        private void next_stack(Button button) {
+            if (fc_stackindex != 3) {
+                int newindex = fc_stackindex + 1;
+                popoverstack.set_visible_child_name(fc_stacknames[newindex]);
+                fc_stackindex = newindex;
+            }
+        }
+
+        private void previous_stack(Button button) {
+            if (fc_stackindex != 0) {
+                int newindex = fc_stackindex - 1;
+                popoverstack.set_visible_child_name(fc_stacknames[newindex]);
+                fc_stackindex = newindex;
+            }          
         }
     }
 
@@ -1021,84 +1091,52 @@ namespace TemplateApplet {
         private TemplatePopover popover = null;
         private unowned Budgie.PopoverManager? manager = null;
         public string uuid { public set; public get; }
-        /* specifically to the settings section */
-        public override bool supports_settings()
-        {
+
+        public override bool supports_settings() {
             return true;
         }
-        public override Gtk.Widget? get_settings_ui()
-        {
+
+        public override Gtk.Widget? get_settings_ui() {
             return new TemplateSettings(this.get_applet_settings(uuid));
         }
 
         public Applet() {
 
+            // arrows, for wind string
             directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
-            /* 
-            * OWM's icon codes are a bit oversimplified; different weather 
-            * types are pushed into one icon. the data however offers a much 
-            * more detailed set of weather types/codes, which can be used to
-            * set an improved icon mapping. below my own (again) simplification 
-            * of the extended set of weather codes, which is kind of the middle
-            * between the two.result_forecast
-            */
+            fc_stacknames = {
+                "forecast0", "forecast1", "forecast2", "forecast3"
+            };
 
-            /* 
-            * icons are listed & loaded from the icon directory. the output of
-            * the API call is then mapped according to the list above, sub-
-            * sequently a "d" or "n" version is applyed according to the API's
-            * icon-id. the matching index is then looked up in iconlist, and
-            * the matching pixbuf from iconlist
-            */
-
+            // list icons from the applet's directory
             get_icondata();
 
-            // get current settings
+            // get current settings, connect to possible changes
             ws_settings = WeatherShowFunctions.get_settings(
                 "org.ubuntubudgie.plugins.weathershow"
             );
-
             tempunit = ws_settings.get_string("tempunit");
             ws_settings.changed["tempunit"].connect (() => {
                 tempunit = ws_settings.get_string("tempunit");
             });  
-
-            // settings, used across classes
-
             lang = ws_settings.get_string("language");
             key = ws_settings.get_string("key");
-
             show_ondesktop = ws_settings.get_boolean("desktopweather");
             ws_settings.changed["desktopweather"].connect (() => {
                 show_ondesktop = ws_settings.get_boolean("desktopweather");
             }); 
-
-
             citycode = ws_settings.get_string("citycode");
             ws_settings.changed["citycode"].connect (() => {
                 citycode = ws_settings.get_string("citycode");
             }); 
-
             dynamic_icon = ws_settings.get_boolean("dynamicicon");
             ws_settings.changed["dynamicicon"].connect (() => {
                 dynamic_icon = ws_settings.get_boolean("dynamicicon");
             }); 
-
             show_forecast = ws_settings.get_boolean("forecast");
             ws_settings.changed["forecast"].connect (() => {
                 show_forecast = ws_settings.get_boolean("forecast");
             });
-
-            /////////////////////////////////////////////////
-            // run the loop
-            test = new GetWeatherdata();
-            get_weather(test);
-
-            GLib.Timeout.add (60000, () => {
-                get_weather(test);   
-                return true;
-            });
-            /////////////////////////////////////////////////
 
             initialiseLocaleLanguageSupport();
             /* box */
@@ -1110,8 +1148,7 @@ namespace TemplateApplet {
             popover = new TemplatePopover(indicatorBox);
             /* On Press indicatorBox */
             indicatorBox.button_press_event.connect((e)=> {
-
-
+                // only popu if settings say so
                 if (show_forecast == true) {
                     if (e.button != 1) {
                         return Gdk.EVENT_PROPAGATE;
@@ -1127,6 +1164,14 @@ namespace TemplateApplet {
             });
             popover.get_child().show_all();
             show_all();
+
+            // run the loop
+            test = new GetWeatherdata();
+            get_weather(test);
+            GLib.Timeout.add (60000, () => {
+                get_weather(test);   
+                return true;
+            });
         }
 
         private void get_icondata () {
@@ -1135,14 +1180,13 @@ namespace TemplateApplet {
                 "usr/lib/budgie-desktop/plugins",
                 "/budgie-weathershow/weather_icons"
             );
-            iconnames = {}; iconpixbufs = {};
+            iconnames = {}; iconpixbufs = {}; iconpixbufs_large = {};
             try {
                 var dr = Dir.open(icondir);
                 string ? filename = null;
                 while ((filename = dr.read_name()) != null) {
                     // add to icon names
                     iconnames += filename[0:4];
-                    print(filename[0:4] + "\n"); 
                     // add to pixbufs
                     string iconpath = GLib.Path.build_filename(
                         icondir, filename
@@ -1151,6 +1195,10 @@ namespace TemplateApplet {
                         iconpath, 22, 22
                     );
                     iconpixbufs += newicon;
+                    Pixbuf newicon_large = new Pixbuf.from_file_at_size (
+                        iconpath, 65, 65
+                    );
+                    iconpixbufs_large += newicon_large;
                 }
             } catch (FileError err) {
                     // unlikely to occur, but:
@@ -1158,13 +1206,12 @@ namespace TemplateApplet {
             }
         }
 
-        public override void update_popovers(Budgie.PopoverManager? manager)
-        {
+        public override void update_popovers(Budgie.PopoverManager? manager) {
             this.manager = manager;
             manager.register_popover(indicatorBox, popover);
         }
 
-        public void initialiseLocaleLanguageSupport(){
+        public void initialiseLocaleLanguageSupport() {
             // Initialize gettext
             GLib.Intl.setlocale(GLib.LocaleCategory.ALL, "");
             GLib.Intl.bindtextdomain(
