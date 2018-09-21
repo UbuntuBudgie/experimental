@@ -59,7 +59,6 @@ public class DesktopWeather : Gtk.Window {
             }
             """;
 
-        //////////////////////////////////////////////////
         // gsettings stuff
         desktop_settings = get_settings(
             "org.ubuntubudgie.plugins.weathershow"
@@ -89,7 +88,7 @@ public class DesktopWeather : Gtk.Window {
                 Gtk.main_quit();
             }    
         });
-        //////////////////////////////////////////////////
+
         css_data = get_css();
         print("css_data\n" + css_data + "\n");
         int transparency = 100 - desktop_settings.get_int("transparency");
