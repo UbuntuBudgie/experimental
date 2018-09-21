@@ -129,7 +129,7 @@ namespace TemplateApplet {
     private string citycode;
     private Gtk.Box container;
     private Gtk.Label templabel;
-    private GetWeatherdata test;
+    private GetWeatherdata weather_obj;
     private Stack popoverstack;
     private int fc_stackindex;
     private string[] fc_stacknames;
@@ -143,7 +143,7 @@ namespace TemplateApplet {
         return t.to_string() + ":00";
     }
     
-    private void get_weather (GetWeatherdata test) {
+    private void get_weather (GetWeatherdata weather_obj) {
         /* 
         * this is the comprehensive function to get the current weather
         * called sub sections are the forecast, which only runs if the popover
@@ -154,7 +154,7 @@ namespace TemplateApplet {
         // get forecast; conditional
         if (show_forecast) {
             // fetch forecast
-            HashMap<int, string> result_forecast = test.get_forecast();
+            HashMap<int, string> result_forecast = weather_obj.get_forecast();
             // produce a sorted ArrayList to get sorted timestamps
             ArrayList<int> sorted_keys = WeatherShowFunctions.sort_timespan(
                 result_forecast
@@ -247,7 +247,7 @@ namespace TemplateApplet {
 
         // get current weather; conditional
         if (show_ondesktop == true || dynamic_icon == true) {
-            string result_current = test.get_current();
+            string result_current = weather_obj.get_current();
             // write to file only for desktop show
             if (show_ondesktop == true) {
                 string username = Environment.get_user_name();
@@ -318,10 +318,11 @@ namespace TemplateApplet {
 
         private string getsnapshot (string data) {
             /*
-            *  single record; current situation. panel icon is updated
-            *  directly from within this function.
-            *  output is optionally written to textfile in /temp from 
-            *  get_weather, called by the loop in Applet().
+            * single record; current situation. panel icon is updated
+            * directly from within this function.
+            * returned output is only used for the optionally written 
+            * textfile in /temp from get_weather, called by the loop in 
+            * Applet().
             */
             var parser = new Json.Parser ();
             parser.load_from_data(data);
@@ -352,7 +353,7 @@ namespace TemplateApplet {
             string humiddisplay = get_humidity(map);
             /* combined */
             string[] collected = {
-                id, citydisplay, skydisplay, tempdisplay, 
+                id, add_daytime, citydisplay, skydisplay, tempdisplay, 
                 wspeeddisplay.concat(" ", wdirectiondisplay), humiddisplay
             };
             /* optional dynamic panel icon is set from here directly */
@@ -835,7 +836,7 @@ namespace TemplateApplet {
             string newset_lang = langcodes[index];
             ws_settings.set_string("language", newset_lang);
             lang = newset_lang;
-            TemplateApplet.get_weather(test);
+            TemplateApplet.get_weather(weather_obj);
             return true;
         }
 
@@ -849,7 +850,7 @@ namespace TemplateApplet {
             edit_citymenu = false;
             cityentry.set_text(newselect);
             edit_citymenu = true;
-            TemplateApplet.get_weather(test);
+            TemplateApplet.get_weather(weather_obj);
         }
 
         public void update_transparencysettings(Gtk.Range slider) {
@@ -974,7 +975,7 @@ namespace TemplateApplet {
             else {
                 tempunit = "Celsius";
             }
-            TemplateApplet.get_weather(test);
+            TemplateApplet.get_weather(weather_obj);
             ws_settings.set_string("tempunit", tempunit);
         }
 
@@ -1014,7 +1015,7 @@ namespace TemplateApplet {
                 indicatorIcon.set_from_pixbuf(pbuf);
                 templabel.set_text("");
             }
-            TemplateApplet.get_weather(test);
+            TemplateApplet.get_weather(weather_obj);
         }
     }
 
@@ -1166,10 +1167,10 @@ namespace TemplateApplet {
             show_all();
 
             // run the loop
-            test = new GetWeatherdata();
-            get_weather(test);
+            weather_obj = new GetWeatherdata();
+            get_weather(weather_obj);
             GLib.Timeout.add (60000, () => {
-                get_weather(test);   
+                get_weather(weather_obj);   
                 return true;
             });
         }
@@ -1191,14 +1192,12 @@ namespace TemplateApplet {
                     string iconpath = GLib.Path.build_filename(
                         icondir, filename
                     );
-                    Pixbuf newicon = new Pixbuf.from_file_at_size (
+                    iconpixbufs += new Pixbuf.from_file_at_size (
                         iconpath, 22, 22
                     );
-                    iconpixbufs += newicon;
-                    Pixbuf newicon_large = new Pixbuf.from_file_at_size (
+                    iconpixbufs_large += new Pixbuf.from_file_at_size (
                         iconpath, 65, 65
                     );
-                    iconpixbufs_large += newicon_large;
                 }
             } catch (FileError err) {
                     // unlikely to occur, but:

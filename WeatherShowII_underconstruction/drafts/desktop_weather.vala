@@ -1,5 +1,6 @@
 using Gtk;
 using Cairo;
+using Gdk;
 
 public class DesktopWeather : Gtk.Window {
 
@@ -8,6 +9,18 @@ public class DesktopWeather : Gtk.Window {
     private Gtk.Grid maingrid;
     Label locationlabel;
     Label weatherlabel;
+    GLib.Settings desktop_settings;
+    private string css_data;
+    private string css_template;
+    Gtk.CssProvider css_provider;
+    double new_transp;
+    private Gdk.Pixbuf[] iconpixbufs_1;
+    private Gdk.Pixbuf[] iconpixbufs_2;
+    private Gdk.Pixbuf[] iconpixbufs_3;
+    int currscale;
+    string[] iconnames = {};
+
+
 
     public DesktopWeather () {
         /* 
@@ -28,11 +41,14 @@ public class DesktopWeather : Gtk.Window {
 
         this.title = "Dog's Weather";
 
-        // make relative
-        string css_data = """
+        // get icon data
+        get_icondata();
+
+        // template. x-es are replaced on color set
+        css_template = """
             .biglabel {
                 font-size: 20px;
-                color: white;
+                color: xxx-xxx-xxx;
                 padding-bottom: 15px;
                 padding-right: 15px;
                 padding-top: 15px;
@@ -41,10 +57,45 @@ public class DesktopWeather : Gtk.Window {
                 padding-bottom: 15px;
                 padding-right: 15px;
                 font-size: 17px;
-                color: white;
+                color: xxx-xxx-xxx;
             }
             """;
 
+        //////////////////////////////////////////////////
+        // gsettings stuff
+        desktop_settings = get_settings(
+            "org.ubuntubudgie.plugins.weathershow"
+        );
+
+        desktop_settings.changed["desktopweather"].connect (() => {
+            bool newval = desktop_settings.get_boolean("desktopweather");
+            if (newval == false) {
+                Gtk.main_quit();
+            }    
+        });
+
+        desktop_settings.changed["textcolor"].connect (() => {
+            update_style();
+        });
+
+        desktop_settings.changed["transparency"].connect (() => {
+            int transparency = 100 - desktop_settings.get_int("transparency");
+            new_transp = transparency/100.0;
+            print(@"ex: $new_transp\n");
+            this.queue_draw();
+        });
+
+        desktop_settings.changed["desktopweather"].connect (() => {
+            bool newval = desktop_settings.get_boolean("desktopweather");
+            if (newval == false) {
+                Gtk.main_quit();
+            }    
+        });
+        //////////////////////////////////////////////////
+        css_data = get_css();
+        print("css_data\n" + css_data + "\n");
+        int transparency = 100 - desktop_settings.get_int("transparency");
+        new_transp = transparency/100.0;
         // transparency
         var screen = this.get_screen();
         this.set_app_paintable(true);
@@ -63,7 +114,7 @@ public class DesktopWeather : Gtk.Window {
         weatherlabel.set_xalign(0);
         locationlabel.set_xalign(0);
         // css (needs a separate function to update)
-        var css_provider = new Gtk.CssProvider();
+        css_provider = new Gtk.CssProvider();
         css_provider.load_from_data(css_data);
         Gtk.StyleContext.add_provider_for_screen(
             screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
@@ -74,21 +125,33 @@ public class DesktopWeather : Gtk.Window {
         maingrid.attach(weatherlabel, 1, 1, 1, 4);
         // monitor
         monitor = datasrc.monitor(FileMonitorFlags.NONE, null);
-        monitor.changed.connect(update_win);
-        update_win();
+        monitor.changed.connect(update_content);
+        update_content();
     }
 
     private bool on_draw (Widget da, Context ctx) {
         // needs to be connected to transparency settings change
-        ctx.set_source_rgba(1.0, 0.2, 0.2, 0.2);
+        ctx.set_source_rgba(0, 0, 0, new_transp);
         ctx.set_operator(Cairo.Operator.SOURCE);
         ctx.paint();
         ctx.set_operator(Cairo.Operator.OVER); 
         return false;
     }
 
-    private void update_win() {
-        // update the window if weather (file/datasrc) changes
+    private GLib.Settings get_settings(string path) {
+        var settings = new GLib.Settings(path);
+        return settings;
+    }
+
+    private string get_css() {
+        print(css_template + "\n");
+        string[] currcolor = desktop_settings.get_strv("textcolor");
+        return css_template.replace(
+            "xxx-xxx-xxx", "rgb(".concat(string.joinv(", ", currcolor), ")")
+        );
+    }
+
+    private void update_content () {
         try {
             var dis = new DataInputStream (datasrc.read ());
             string line;
@@ -97,9 +160,13 @@ public class DesktopWeather : Gtk.Window {
                 // work to do; image change
                 weatherlines += line;
             }
+
+            string newicon = find_mappedid(
+                weatherlines[0]
+            ).concat(weatherlines[1]);
             int n_lines = weatherlines.length;
-            string weathersection = string.joinv("\n", weatherlines[2:n_lines]);
-            locationlabel.set_label(weatherlines[1]);
+            string weathersection = string.joinv("\n", weatherlines[3:n_lines]);
+            locationlabel.set_label(weatherlines[2]);
             weatherlabel.set_label(weathersection);
         }
         catch (Error e) {
@@ -109,6 +176,84 @@ public class DesktopWeather : Gtk.Window {
             */
         }
     }
+
+    private void update_style() {
+        // update the window if weather (file/datasrc) or settings changes
+        // get/update textcolor
+        css_data = get_css();
+        weatherlabel.get_style_context().remove_class("label");
+        locationlabel.get_style_context().remove_class("biglabel");
+        css_provider.load_from_data(css_data);
+        locationlabel.get_style_context().add_class("biglabel");
+        weatherlabel.get_style_context().add_class("label");
+    }
+
+    private string find_mappedid (string icon_id) {
+
+        /* 
+        * OWM's icon codes are a bit oversimplified; different weather 
+        * types are pushed into one icon. the data ("id") however offers a 
+        * much more detailed set of weather types/codes, which can be used to
+        * set an improved icon mapping. below my own (again) simplification 
+        * of the extended set of weather codes, which is kind of the middle
+        * between the two.
+        */
+
+        string[,] replacements = {
+            {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
+            {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
+            {"502", "501"}, {"503", "501"}, {"504", "501"}, {"522", "521"}, 
+            {"531", "521"}, {"622", "621"}, {"711", "701"}, {"721", "701"}, 
+            {"731", "701"}, {"741", "701"}, {"751", "701"}, {"761", "701"}, 
+            {"762", "701"}
+        };
+        int lenrep = replacements.length[0];
+        for (int i=0; i < lenrep; i++) {
+            if (icon_id == replacements[i, 0]) {
+                return replacements[i, 1];
+
+            }
+        }
+        return icon_id;
+    }
+
+    private void get_icondata () {
+        // fetch the icon list
+        string icondir = "/".concat(
+            "usr/lib/budgie-desktop/plugins",
+            "/budgie-weathershow/weather_icons"
+        );
+        iconnames = {}; 
+        iconpixbufs_1 = {}; 
+        iconpixbufs_2 = {};
+        iconpixbufs_3 = {};
+        try {
+            var dr = Dir.open(icondir);
+            string ? filename = null;
+            while ((filename = dr.read_name()) != null) {
+                // add to icon names
+                iconnames += filename[0:4];
+                // add to pixbufs
+                string iconpath = GLib.Path.build_filename(
+                    icondir, filename
+                );
+                iconpixbufs_1 += new Pixbuf.from_file_at_size (
+                    iconpath, 80, 80
+                );
+                iconpixbufs_2 += new Pixbuf.from_file_at_size (
+                    iconpath, 120, 120
+                );
+                iconpixbufs_3 += new Pixbuf.from_file_at_size (
+                    iconpath, 160, 160
+                );
+            }
+        } catch (FileError err) {
+                // unlikely to occur, but:
+                print("Something went wrong loading the icons");
+        }
+    }
+
+
 
     public static void main(string[] ? args = null) {
         Gtk.init(ref args);
