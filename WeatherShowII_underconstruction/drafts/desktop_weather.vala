@@ -19,7 +19,7 @@ public class DesktopWeather : Gtk.Window {
     private Gdk.Pixbuf[] iconpixbufs_3;
     int currscale;
     string[] iconnames = {};
-
+    Image weather_image;
 
 
     public DesktopWeather () {
@@ -40,6 +40,8 @@ public class DesktopWeather : Gtk.Window {
         */
 
         this.title = "Dog's Weather";
+        
+        currscale = 1;
 
         // get icon data
         get_icondata();
@@ -47,16 +49,12 @@ public class DesktopWeather : Gtk.Window {
         // template. x-es are replaced on color set
         css_template = """
             .biglabel {
-                font-size: 20px;
+                font-size: bigfontpx;
                 color: xxx-xxx-xxx;
-                padding-bottom: 15px;
-                padding-right: 15px;
-                padding-top: 15px;
+
             }
             .label {
-                padding-bottom: 15px;
-                padding-right: 15px;
-                font-size: 17px;
+                font-size: smallfontpx;
                 color: xxx-xxx-xxx;
             }
             """;
@@ -108,6 +106,9 @@ public class DesktopWeather : Gtk.Window {
         datasrc = File.new_for_path(src);
         // report
         maingrid = new Gtk.Grid();
+        maingrid.set_column_spacing(20);
+        maingrid.attach(new Label(" "), 0, 0, 1, 1);
+        maingrid.attach(new Label(" "), 10, 10, 1, 1);
         this.add(maingrid);
         locationlabel = new Label("");
         weatherlabel = new Label("");
@@ -121,8 +122,11 @@ public class DesktopWeather : Gtk.Window {
         );
         weatherlabel.get_style_context().add_class("label");
         locationlabel.get_style_context().add_class("biglabel");
-        maingrid.attach(locationlabel, 1, 0, 1, 1);
-        maingrid.attach(weatherlabel, 1, 1, 1, 4);
+
+        maingrid.attach(locationlabel, 2, 1, 1, 1);
+        maingrid.attach(weatherlabel, 2, 2, 1, 1);
+        weather_image = new Gtk.Image();
+        maingrid.attach(weather_image, 1, 1, 1, 5);
         // monitor
         monitor = datasrc.monitor(FileMonitorFlags.NONE, null);
         monitor.changed.connect(update_content);
@@ -144,14 +148,37 @@ public class DesktopWeather : Gtk.Window {
     }
 
     private string get_css() {
-        print(css_template + "\n");
         string[] currcolor = desktop_settings.get_strv("textcolor");
-        return css_template.replace(
+        string temp_css = css_template.replace(
             "xxx-xxx-xxx", "rgb(".concat(string.joinv(", ", currcolor), ")")
         );
+
+        string bigfont = "20"; string smallfont = "15";
+        switch(currscale) {
+            case(1): bigfont = "23"; smallfont = "17"; break;
+            case(2): bigfont = "34"; smallfont = "22"; break;
+            case(3): bigfont = "48"; smallfont = "32"; break;
+        }
+
+        return temp_css.replace("bigfont", bigfont).replace("smallfont", smallfont); 
+    }
+
+    private int get_stringindex (string s, string[] arr) {
+        // get index of a string in an array
+        for (int i=0; i < arr.length; i++) {
+            if(s == arr[i]) return i;
+        } return -1;
     }
 
     private void update_content () {
+        Pixbuf[] currimages = {};
+        // just for fun: let's use switch for a change
+        switch(currscale) {
+            case(1): currimages = iconpixbufs_1; break;
+            case(2): currimages = iconpixbufs_2; break;
+            case(3): currimages = iconpixbufs_3; break;
+        }
+
         try {
             var dis = new DataInputStream (datasrc.read ());
             string line;
@@ -160,13 +187,14 @@ public class DesktopWeather : Gtk.Window {
                 // work to do; image change
                 weatherlines += line;
             }
-
             string newicon = find_mappedid(
                 weatherlines[0]
             ).concat(weatherlines[1]);
+            int ic_index = get_stringindex(newicon, iconnames);
+            weather_image.set_from_pixbuf(currimages[ic_index]);
             int n_lines = weatherlines.length;
             string weathersection = string.joinv("\n", weatherlines[3:n_lines]);
-            locationlabel.set_label(weatherlines[2]);
+            locationlabel.set_label(weatherlines[2].strip());
             weatherlabel.set_label(weathersection);
         }
         catch (Error e) {
@@ -238,13 +266,13 @@ public class DesktopWeather : Gtk.Window {
                     icondir, filename
                 );
                 iconpixbufs_1 += new Pixbuf.from_file_at_size (
-                    iconpath, 80, 80
+                    iconpath, 150, 150
                 );
                 iconpixbufs_2 += new Pixbuf.from_file_at_size (
-                    iconpath, 120, 120
+                    iconpath, 220, 220
                 );
                 iconpixbufs_3 += new Pixbuf.from_file_at_size (
-                    iconpath, 160, 160
+                    iconpath, 320, 320
                 );
             }
         } catch (FileError err) {
@@ -254,10 +282,10 @@ public class DesktopWeather : Gtk.Window {
     }
 
 
-
     public static void main(string[] ? args = null) {
         Gtk.init(ref args);
         Gtk.Window win = new DesktopWeather();
+        win.set_decorated(false);
         win.show_all();
         win.destroy.connect(Gtk.main_quit);
         Gtk.main();
