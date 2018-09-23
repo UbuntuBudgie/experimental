@@ -23,22 +23,7 @@ public class DesktopWeather : Gtk.Window {
 
 
     public DesktopWeather () {
-        /* 
-        * this window monitors the datafile, maintained by the applet.
-        * updates if needed. 
-        * todo:
-        * on first run (triggerfile in ~/.config/), 
-        * set position relative to (main) screen, set image- and font
-        * size relative. extend gschema with: header font size, 
-        * data font size, image size. connect gsettings position(x/y)
-        * to move the (this) window accordingly.
-        * unavoidable: poll-check for applet to be in the panel, kill
-        * window if not. Budgie Settings - change to -no-desktop- 
-        * should also kill the window.
-        * if -no-desktop-, applet should not maintain corresponding 
-        * datafile in /tmp.
-        */
-
+        // this window monitors the datafile, maintained by the applet.
         GLib.Timeout.add_seconds (5, () => {
             bool active = check_onapplet(
                 "/com/solus-project/budgie-panel/applets/",
@@ -49,17 +34,12 @@ public class DesktopWeather : Gtk.Window {
             }
             return true;
         });
-
-        //this.title = "Dog's Weather";
         this.set_decorated(false);
         this.set_type_hint(Gdk.WindowTypeHint.DESKTOP);
-
         currscale = 1;
         // get icon data
         get_icondata();
         check_res();
-        
-
         // template. x-es are replaced on color set
         css_template = """
             .biglabel {
@@ -72,7 +52,6 @@ public class DesktopWeather : Gtk.Window {
                 color: xxx-xxx-xxx;
             }
             """;
-
         // gsettings stuff
         desktop_settings = get_settings(
             "org.ubuntubudgie.plugins.weathershow"
@@ -81,35 +60,27 @@ public class DesktopWeather : Gtk.Window {
         set_windowpos();
         desktop_settings.changed["xposition"].connect(set_windowpos);
         desktop_settings.changed["yposition"].connect(set_windowpos);
-
-
-
-
         desktop_settings.changed["desktopweather"].connect (() => {
             bool newval = desktop_settings.get_boolean("desktopweather");
             if (newval == false) {
                 Gtk.main_quit();
             }    
         });
-
         desktop_settings.changed["textcolor"].connect (() => {
             update_style();
         });
-
         desktop_settings.changed["transparency"].connect (() => {
             int transparency = 100 - desktop_settings.get_int("transparency");
             new_transp = transparency/100.0;
             print(@"ex: $new_transp\n");
             this.queue_draw();
         });
-
         desktop_settings.changed["desktopweather"].connect (() => {
             bool newval = desktop_settings.get_boolean("desktopweather");
             if (newval == false) {
                 Gtk.main_quit();
             }    
         });
-
         css_data = get_css();
         print("css_data\n" + css_data + "\n");
         int transparency = 100 - desktop_settings.get_int("transparency");
@@ -142,7 +113,6 @@ public class DesktopWeather : Gtk.Window {
         );
         weatherlabel.get_style_context().add_class("label");
         locationlabel.get_style_context().add_class("biglabel");
-
         maingrid.attach(locationlabel, 2, 1, 1, 1);
         maingrid.attach(weatherlabel, 2, 2, 1, 1);
         weather_image = new Gtk.Image();
@@ -152,23 +122,20 @@ public class DesktopWeather : Gtk.Window {
         monitor.changed.connect(update_content);
         update_content();
     }
-    ////////////////////////////////////////////////////////////////////////////
     private bool check_onapplet(string path, string applet_name) {
-        /* check if the applet still runs */
+        // check if the applet still runs
         string cmd = "dconf dump " + path;
         string output;
         try {
             GLib.Process.spawn_command_line_sync(cmd, out output);
         } 
-        /* on an occasional exception, don't break the loop */
+        // on an occasional exception, don't break the loop
         catch (SpawnError e) {
             return true;
         }
         bool check = output.contains(applet_name);
         return check;
     }
-
-    ////////////////////////////////////////////////////////////////////////////
 
     private bool on_draw (Widget da, Context ctx) {
         // needs to be connected to transparency settings change
@@ -207,14 +174,12 @@ public class DesktopWeather : Gtk.Window {
         string temp_css = css_template.replace(
             "xxx-xxx-xxx", "rgb(".concat(string.joinv(", ", currcolor), ")")
         );
-
         string bigfont = "20"; string smallfont = "15";
         switch(currscale) {
             case(1): bigfont = "25"; smallfont = "17"; break;
             case(2): bigfont = "37"; smallfont = "22"; break;
             case(3): bigfont = "50"; smallfont = "32"; break;
         }
-
         return temp_css.replace("bigfont", bigfont).replace("smallfont", smallfont); 
     }
 
@@ -239,7 +204,6 @@ public class DesktopWeather : Gtk.Window {
             string line;
             string[] weatherlines = {};
             while ((line = dis.read_line (null)) != null) {
-                // work to do; image change
                 weatherlines += line;
             }
             string newicon = find_mappedid(
@@ -272,7 +236,6 @@ public class DesktopWeather : Gtk.Window {
     }
 
     private string find_mappedid (string icon_id) {
-
         /* 
         * OWM's icon codes are a bit oversimplified; different weather 
         * types are pushed into one icon. the data ("id") however offers a 
@@ -281,7 +244,6 @@ public class DesktopWeather : Gtk.Window {
         * of the extended set of weather codes, which is kind of the middle
         * between the two.
         */
-
         string[,] replacements = {
             {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
             {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
