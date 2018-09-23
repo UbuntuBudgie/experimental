@@ -72,7 +72,6 @@ public class DesktopWeather : Gtk.Window {
         desktop_settings.changed["transparency"].connect (() => {
             int transparency = 100 - desktop_settings.get_int("transparency");
             new_transp = transparency/100.0;
-            print(@"ex: $new_transp\n");
             this.queue_draw();
         });
         desktop_settings.changed["desktopweather"].connect (() => {
@@ -82,7 +81,6 @@ public class DesktopWeather : Gtk.Window {
             }    
         });
         css_data = get_css();
-        print("css_data\n" + css_data + "\n");
         int transparency = 100 - desktop_settings.get_int("transparency");
         new_transp = transparency/100.0;
         // transparency
@@ -154,13 +152,11 @@ public class DesktopWeather : Gtk.Window {
         if (height < 1000) {currscale = 1;}
         else if (height < 1500) {currscale = 2;}
         else {currscale = 3;}
-        print(@"scale: currscale\n");
     }
 
     private void set_windowpos () {
         int xpos = desktop_settings.get_int("xposition");
         int ypos = desktop_settings.get_int("yposition");
-        print(@"$xpos $ypos\n");
         this.move(xpos, ypos);
     }
 

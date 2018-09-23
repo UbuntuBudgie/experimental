@@ -709,9 +709,7 @@ namespace WeatherShowApplet {
             var spacelabel3 = new Gtk.Label("");
             subgrid_general.attach(spacelabel3, 0, 13, 1, 1);
             // temp unit
-            var tempunit_checkbox = new CheckButton.with_label(
-                (_("Use Fahrenheit"))
-            );
+            var tempunit_checkbox = new CheckButton.with_label("Fahrenheit");
             subgrid_general.attach(tempunit_checkbox, 0, 14, 1, 1);
             tempunit_checkbox.set_active(get_tempstate());
             tempunit_checkbox.toggled.connect(set_tempunit);
