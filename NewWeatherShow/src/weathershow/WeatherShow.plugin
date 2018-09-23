@@ -2,7 +2,7 @@
 Module=weathershow.so
 Name=WeatherShow
 Description=Show weather & forecast
-Description[nl_NL]=Show weather & forecast on the panel and / or desktop
+Description[nl_NL]=Weer & weersvoorspelling
 Authors=Jacob Vlijm
 Copyright=© 2017-2018 Ubuntu Budgie Developers
 Website=https://ubuntubudgie.org
