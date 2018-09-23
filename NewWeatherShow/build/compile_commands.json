@@ -1,0 +1,32 @@
+[
+  {
+    "directory": "/home/dad/Downloads/experimental/NewWeatherShow/build",
+    "command": "valac -C --pkg json-glib-1.0 --pkg libpeas-gtk-1.0 --pkg libsoup-2.4 --pkg gee-0.8 --pkg budgie-1.0 --pkg gtk+-3.0 --color=always --directory src/weathershow/weathershow@sha --basedir ../src/weathershow --library weathershow --header src/weathershow/weathershow.h --vapi ../weathershow.vapi --pkg=config --vapidir=/home/dad/Downloads/experimental/NewWeatherShow/vapi --target-glib=2.38 ../src/weathershow/WeatherShow.vala",
+    "file": "../src/weathershow/WeatherShow.vala"
+  },
+  {
+    "directory": "/home/dad/Downloads/experimental/NewWeatherShow/build",
+    "command": "cc  -Isrc/weathershow/weathershow@sha -Isrc/weathershow -I../src/weathershow -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/libpeas-1.0 -I/usr/include/gobject-introspection-1.0 -I/usr/include/budgie-desktop -I/usr/include/gee-0.8 -I/usr/include/libsoup-2.4 -I/usr/include/libxml2 -I/usr/include/json-glib-1.0 -fdiagnostics-color=always -pipe -D_FILE_OFFSET_BITS=64 -w -fstack-protector -pedantic -Wstrict-prototypes -Wundef -Werror-implicit-function-declaration -Wformat -Wformat-security -Werror=format-security -Wconversion -Wunused-variable -Wunreachable-code -Wall -W -fPIC -pthread -include config.h -Wl,--start-group -lm -Wl,--end-group -MD -MQ 'src/weathershow/weathershow@sha/meson-generated_WeatherShow.c.o' -MF 'src/weathershow/weathershow@sha/meson-generated_WeatherShow.c.o.d' -o 'src/weathershow/weathershow@sha/meson-generated_WeatherShow.c.o' -c 'src/weathershow/weathershow@sha/WeatherShow.c'",
+    "file": "src/weathershow/weathershow@sha/WeatherShow.c"
+  },
+  {
+    "directory": "/home/dad/Downloads/experimental/NewWeatherShow/build",
+    "command": "valac -C --pkg gee-0.8 --pkg gtk+-3.0 --color=always --directory src/get_color/get_color@exe --basedir ../src/get_color --pkg=config --vapidir=/home/dad/Downloads/experimental/NewWeatherShow/vapi --target-glib=2.38 ../src/get_color/get_color.vala",
+    "file": "../src/get_color/get_color.vala"
+  },
+  {
+    "directory": "/home/dad/Downloads/experimental/NewWeatherShow/build",
+    "command": "cc  -Isrc/get_color/get_color@exe -Isrc/get_color -I../src/get_color -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/gee-0.8 -fdiagnostics-color=always -pipe -D_FILE_OFFSET_BITS=64 -w -fstack-protector -pedantic -Wstrict-prototypes -Wundef -Werror-implicit-function-declaration -Wformat -Wformat-security -Werror=format-security -Wconversion -Wunused-variable -Wunreachable-code -Wall -W -pthread -Wl,--start-group -lm -Wl,--end-group -MD -MQ 'src/get_color/get_color@exe/meson-generated_get_color.c.o' -MF 'src/get_color/get_color@exe/meson-generated_get_color.c.o.d' -o 'src/get_color/get_color@exe/meson-generated_get_color.c.o' -c 'src/get_color/get_color@exe/get_color.c'",
+    "file": "src/get_color/get_color@exe/get_color.c"
+  },
+  {
+    "directory": "/home/dad/Downloads/experimental/NewWeatherShow/build",
+    "command": "valac -C --pkg gtk+-3.0 --color=always --directory src/desktop_weather/desktop_weather@exe --basedir ../src/desktop_weather --pkg=config --vapidir=/home/dad/Downloads/experimental/NewWeatherShow/vapi --target-glib=2.38 ../src/desktop_weather/desktop_weather.vala",
+    "file": "../src/desktop_weather/desktop_weather.vala"
+  },
+  {
+    "directory": "/home/dad/Downloads/experimental/NewWeatherShow/build",
+    "command": "cc  -Isrc/desktop_weather/desktop_weather@exe -Isrc/desktop_weather -I../src/desktop_weather -I/usr/include/at-spi2-atk/2.0 -I/usr/include/at-spi-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/x86_64-linux-gnu/dbus-1.0/include -I/usr/include/gtk-3.0 -I/usr/include/gio-unix-2.0/ -I/usr/include/harfbuzz -I/usr/include/pango-1.0 -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/libpng16 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -fdiagnostics-color=always -pipe -D_FILE_OFFSET_BITS=64 -w -fstack-protector -pedantic -Wstrict-prototypes -Wundef -Werror-implicit-function-declaration -Wformat -Wformat-security -Werror=format-security -Wconversion -Wunused-variable -Wunreachable-code -Wall -W -pthread -Wl,--start-group -lm -Wl,--end-group -MD -MQ 'src/desktop_weather/desktop_weather@exe/meson-generated_desktop_weather.c.o' -MF 'src/desktop_weather/desktop_weather@exe/meson-generated_desktop_weather.c.o.d' -o 'src/desktop_weather/desktop_weather@exe/meson-generated_desktop_weather.c.o' -c 'src/desktop_weather/desktop_weather@exe/desktop_weather.c'",
+    "file": "src/desktop_weather/desktop_weather@exe/desktop_weather.c"
+  }
+]
