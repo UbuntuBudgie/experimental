@@ -1194,7 +1194,17 @@ namespace WeatherShowApplet {
             // run the loop
             weather_obj = new GetWeatherdata();
             get_weather(weather_obj);
-            GLib.Timeout.add (60000, () => {
+
+            var currtime1 = new DateTime.now_utc();
+            // check when last update was every 15 seconds (for lid closure)
+            GLib.Timeout.add_seconds (15, () => {
+                var currtime2 = new DateTime.now_utc();
+                var diff = currtime2.difference(currtime1);
+                // refresh if last update was more than 10 minutes ago
+                if (diff > 600000000) {
+                    get_weather(weather_obj);
+                    currtime1 = currtime2;
+                }
                 get_weather(weather_obj);   
                 return true;
             });

@@ -80,7 +80,9 @@ public class ColorPicker : Gtk.Window {
 
         GLib.Timeout.add (40, () => {
             Gdk.RGBA newcolor = color.get_rgba();
-            red2 = newcolor.red; green2 = newcolor.green; blue2 = newcolor.blue;
+            red2 = newcolor.red; 
+            green2 = newcolor.green; 
+            blue2 = newcolor.blue;
             bool test = !(red2 == red1 && green2 == green1 && blue2 == blue1);
             if (test == true) {
                 // update rgb spinboxes
@@ -128,7 +130,10 @@ public class ColorPicker : Gtk.Window {
     private void get_fromrgbspins (SpinButton button) {
         int[] ncolor = get_newcolor();
         Gdk.RGBA setcolor = Gdk.RGBA () {
-            red = ncolor[0]/255.0, green = ncolor[1]/255.0, blue = ncolor[2]/255.0, alpha = 1
+            red = ncolor[0]/255.0, 
+            green = ncolor[1]/255.0, 
+            blue = ncolor[2]/255.0, 
+            alpha = 1
         };
         color.set_rgba(setcolor);
     }
