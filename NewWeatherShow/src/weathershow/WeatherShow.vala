@@ -152,6 +152,8 @@ namespace WeatherShowApplet {
     private Gtk.Grid[] popover_subgrids; // pages
     private Gtk.Grid popover_mastergrid; // real master
     private Pixbuf default_icon;
+    private string desktop_window;
+    private string color_window;
 
     private string to_hrs (int t) {
         if (t < 10) {
@@ -739,7 +741,9 @@ namespace WeatherShowApplet {
             set_buttoncolor();
             colorbutton.set_size_request(10, 10);
             // call set-color window
-            colorbutton.clicked.connect(set_color);
+            colorbutton.clicked.connect( () => {
+                WeatherShowFunctions.open_window(color_window);
+            });
             colorbox.pack_start(colorbutton, false, false, 0);
             colorlabel = new Gtk.Label("\t" + (_("Set text color")));
             colorlabel.set_xalign(0);
@@ -922,13 +926,6 @@ namespace WeatherShowApplet {
             search_button.set_popup(citymenu);
         }
 
-        private void set_color(Button button){
-            // call the set-color window
-            string colorwin = "/usr/lib/budgie-desktop/".concat(
-                "plugins/budgie-weathershow/get_color");
-            WeatherShowFunctions.open_window(colorwin);
-        }
-
         private void set_buttoncolor() {
             // set / update color button color
             string[] readcolor = ws_settings.get_strv("textcolor");
@@ -1001,11 +998,7 @@ namespace WeatherShowApplet {
             if (val_index == 0) {
                 button_desktop.set_sensitive(newsetting);
                 if (newsetting == true) {
-                    WeatherShowFunctions.open_window(
-                        "/usr/lib/budgie-desktop/plugins/".concat(
-                            "budgie-weathershow/desktop_weather"
-                        )
-                    );
+                    WeatherShowFunctions.open_window(desktop_window);
                 }
             }
             else if (val_index == 3) {
@@ -1117,6 +1110,14 @@ namespace WeatherShowApplet {
 
         public Applet() {
 
+            desktop_window ="/usr/lib/budgie-desktop/plugins/".concat(
+                    "budgie-weathershow/desktop_weather"
+            );
+
+            color_window = "/usr/lib/budgie-desktop/".concat(
+                "plugins/budgie-weathershow/get_color"
+            );
+
             // arrows, for wind string
             directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};
             fc_stacknames = {
@@ -1159,9 +1160,7 @@ namespace WeatherShowApplet {
             });
 
             if (show_ondesktop == true) {
-                WeatherShowFunctions.open_window(
-                    "/home/jacob/Desktop/experim/WeatherShowII_underconstruction/drafts/desktop_weather"
-                );
+                WeatherShowFunctions.open_window(desktop_window);
             }
 
             initialiseLocaleLanguageSupport();
@@ -1205,7 +1204,7 @@ namespace WeatherShowApplet {
                     get_weather(weather_obj);
                     currtime1 = currtime2;
                 }
-                get_weather(weather_obj);   
+                //get_weather(weather_obj);   
                 return true;
             });
         }
