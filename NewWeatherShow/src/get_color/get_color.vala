@@ -5,6 +5,7 @@ using Math;
 
 public class ColorPicker : Gtk.Window {
 
+
     private Gtk.ColorChooserWidget color;
     double red1;
     double red2;
@@ -19,6 +20,7 @@ public class ColorPicker : Gtk.Window {
     Gtk.SpinButton bluebutton;
 
     public ColorPicker () {
+        initialiseLocaleLanguageSupport();
 
         settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.weathershow"
@@ -29,7 +31,7 @@ public class ColorPicker : Gtk.Window {
         this.add(maingrid);
         // window props
         this.set_focus_on_map(true);
-        this.set_title("Set text color");
+        this.set_title((_("Set text color")));
         this.destroy.connect(Gtk.main_quit);
         this.set_skip_taskbar_hint(true);
         // colorchooser
@@ -136,6 +138,18 @@ public class ColorPicker : Gtk.Window {
             alpha = 1
         };
         color.set_rgba(setcolor);
+    }
+
+    public void initialiseLocaleLanguageSupport() {
+        // Initialize gettext
+        GLib.Intl.setlocale(GLib.LocaleCategory.ALL, "");
+        GLib.Intl.bindtextdomain(
+            Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR
+        );
+        GLib.Intl.bind_textdomain_codeset(
+            Config.GETTEXT_PACKAGE, "UTF-8"
+        );
+        GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
     }
 }
 

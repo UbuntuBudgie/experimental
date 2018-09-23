@@ -21,15 +21,15 @@ GetColorValaArgs = [
 '--target-glib=2.38',
 ]
 
-#GetColorCArgs = [
-#'-include',
-#'config.h',
-#'-lm'
-#]
-
 GetColorCArgs = [
+'-include',
+'config.h',
 '-lm'
 ]
+
+#GetColorCArgs = [
+#'-lm'
+#]
 
 #shared_library(
 #    'weathershow',

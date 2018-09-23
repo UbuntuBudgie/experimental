@@ -20,7 +20,12 @@ msgstr ""
 "Language: nl_NL\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/Template.vala:1
-msgid "Monkey"
-msgstr "Aap"
+#: src/weathershow/WeatherShow.vala:79
+msgid "Monday"
+msgstr "Maandag"
+
+#: src/get_color/get_color.vala:34
+msgid "Set text color"
+msgstr "Kies de tekstleur"
+
 

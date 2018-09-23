@@ -3,7 +3,7 @@ i18n = import('i18n')
 langs = ['nl_NL']
 
 # Stolen from gnome-twitch
-i18n.gettext('template', languages: langs, args: [
+i18n.gettext('budgie-weathershow', languages: langs, args: [
     '--from-code=UTF-8',
     '--add-comments',
     '--keyword=_',
