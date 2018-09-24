@@ -154,6 +154,7 @@ namespace WeatherShowApplet {
     private Pixbuf default_icon;
     private string desktop_window;
     private string color_window;
+    string moduledir;
 
     private string to_hrs (int t) {
         if (t < 10) {
@@ -1025,6 +1026,9 @@ namespace WeatherShowApplet {
 
     public class Plugin : Budgie.Plugin, Peas.ExtensionBase {
         public Budgie.Applet get_panel_widget(string uuid) {
+            var info = this.get_plugin_info();
+            moduledir = info.get_module_dir();
+            print(moduledir + "\n");
             return new Applet();
         }
     }
@@ -1108,13 +1112,8 @@ namespace WeatherShowApplet {
 
         public Applet() {
 
-            desktop_window ="/usr/lib/budgie-desktop/plugins/".concat(
-                    "budgie-weathershow/desktop_weather"
-            );
-
-            color_window = "/usr/lib/budgie-desktop/".concat(
-                "plugins/budgie-weathershow/get_color"
-            );
+            desktop_window = moduledir.concat("/desktop_weather");
+            color_window = moduledir.concat("/get_color");
 
             // arrows, for wind string
             directions = {"↓", "↙", "←", "↖", "↑", "↗", "→", "↘", "↓"};

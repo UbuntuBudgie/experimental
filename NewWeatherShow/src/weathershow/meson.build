@@ -16,6 +16,7 @@ dependency('gee-0.8'),
 dependency('libsoup-2.4'),
 dependency('libpeas-gtk-1.0'),
 dependency('json-glib-1.0'),
+dependency('libpeas-gtk-1.0'),
 meson.get_compiler('c').find_library('m', required: false)
 ]
 
