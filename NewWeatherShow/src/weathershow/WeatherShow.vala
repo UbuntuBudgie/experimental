@@ -99,11 +99,9 @@ namespace WeatherShowFunctions {
         } return -1;
     }
 
-    private string[] get_matches(string lookfor) {
+    private string[] get_matches(string lookfor, string dir) {
         // find matching cities
-        File datasrc = File.new_for_path(
-            "/usr/lib/budgie-desktop/plugins/budgie-weathershow/cities"
-        );
+        File datasrc = File.new_for_path(dir.concat("/cities"));
         int len_lookfor = lookfor.char_count();
         string fixed = lookfor.substring(0, 1).up().concat(
             lookfor.substring(1, len_lookfor - 1).down());
@@ -151,7 +149,7 @@ namespace WeatherShowApplet {
     private string[] fc_stacknames;
     private Gtk.Grid[] popover_subgrids; // pages
     private Gtk.Grid popover_mastergrid; // real master
-    private Pixbuf default_icon;
+    private string default_icon;
     private string desktop_window;
     private string color_window;
     string moduledir;
@@ -793,7 +791,7 @@ namespace WeatherShowApplet {
             // on opening settings, set the gui to the current value
             string initial_citycode = citycode;
             string[] initline = WeatherShowFunctions.get_matches(
-                initial_citycode
+                initial_citycode, moduledir
             );
             return initline[0].split(" ", 2)[1];
         }
@@ -894,7 +892,7 @@ namespace WeatherShowApplet {
                 entry != null
                 ) {
                 string[] matches = WeatherShowFunctions.get_matches(
-                    currentry
+                    currentry, moduledir
                 );
                 int n_matches = matches.length;
                 if (n_matches > 0) {
@@ -1016,7 +1014,9 @@ namespace WeatherShowApplet {
             }
 
             else if (val_index == 1 && newsetting == false) {
-                indicatorIcon.set_from_pixbuf(default_icon);
+                indicatorIcon.set_from_icon_name(
+                    default_icon, Gtk.IconSize.MENU
+                );
                 templabel.set_text("");
             }
             WeatherShowApplet.get_weather(weather_obj);
@@ -1043,7 +1043,9 @@ namespace WeatherShowApplet {
             this.indicatorBox = indicatorBox;
             // set default (initial) icon
             indicatorIcon = new Gtk.Image();
-            indicatorIcon.set_from_pixbuf(default_icon);
+            indicatorIcon.set_from_icon_name(
+                default_icon, Gtk.IconSize.MENU
+            );
             templabel = new Label("");
             container.pack_start(indicatorIcon, false, false, 0);
             container.pack_end(templabel, false, false, 0);
@@ -1120,14 +1122,9 @@ namespace WeatherShowApplet {
             fc_stacknames = {
                 "forecast0", "forecast1", "forecast2", "forecast3"
             };
-
             // list icons from the applet's directory
             get_icondata();
-            default_icon = new Pixbuf.from_file_at_size(
-                "/usr/share/pixmaps/budgie-wticon-symbolic.svg",
-                22, 22
-            );
-
+            default_icon = "budgie-wticon-symbolic";
             // get current settings, connect to possible changes
             ws_settings = WeatherShowFunctions.get_settings(
                 "org.ubuntubudgie.plugins.weathershow"
@@ -1208,10 +1205,7 @@ namespace WeatherShowApplet {
 
         private void get_icondata () {
             // fetch the icon list
-            string icondir = "/".concat(
-                "usr/lib/budgie-desktop/plugins",
-                "/budgie-weathershow/weather_icons"
-            );
+            string icondir = moduledir.concat("/weather_icons");
             iconnames = {}; iconpixbufs = {}; iconpixbufs_large = {};
             try {
                 var dr = Dir.open(icondir);
