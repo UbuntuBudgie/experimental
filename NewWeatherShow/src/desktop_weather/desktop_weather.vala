@@ -149,9 +149,10 @@ public class DesktopWeather : Gtk.Window {
         var prim = Gdk.Display.get_default().get_primary_monitor();
         var geo = prim.get_geometry();
         int height = geo.height;
-        if (height < 1000) {currscale = 1;}
-        else if (height < 1500) {currscale = 2;}
+        if (height < 1100) {currscale = 1;}
+        else if (height < 1600) {currscale = 2;}
         else {currscale = 3;}
+        print(@"currscale: $currscale\n");
     }
 
     private void set_windowpos () {
