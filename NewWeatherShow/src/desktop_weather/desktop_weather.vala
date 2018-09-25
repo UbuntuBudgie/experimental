@@ -195,7 +195,6 @@ public class DesktopWeather : Gtk.Window {
             case(2): currimages = iconpixbufs_2; break;
             case(3): currimages = iconpixbufs_3; break;
         }
-
         try {
             var dis = new DataInputStream (datasrc.read ());
             string line;
@@ -203,15 +202,18 @@ public class DesktopWeather : Gtk.Window {
             while ((line = dis.read_line (null)) != null) {
                 weatherlines += line;
             }
-            string newicon = find_mappedid(
-                weatherlines[0]
-            ).concat(weatherlines[1]);
-            int ic_index = get_stringindex(newicon, iconnames);
-            weather_image.set_from_pixbuf(currimages[ic_index]);
-            int n_lines = weatherlines.length;
-            string weathersection = string.joinv("\n", weatherlines[3:n_lines]);
-            locationlabel.set_label(weatherlines[2].strip());
-            weatherlabel.set_label(weathersection);
+            int len_content = weatherlines.length;
+            if (len_content != 0) {
+                string newicon = find_mappedid(
+                    weatherlines[0]
+                ).concat(weatherlines[1]);
+                int ic_index = get_stringindex(newicon, iconnames);
+                weather_image.set_from_pixbuf(currimages[ic_index]);
+                int n_lines = weatherlines.length;
+                string weathersection = string.joinv("\n", weatherlines[3:n_lines]);
+                locationlabel.set_label(weatherlines[2].strip());
+                weatherlabel.set_label(weathersection);
+            }
         }
         catch (Error e) {
             /* 
@@ -232,7 +234,7 @@ public class DesktopWeather : Gtk.Window {
         weatherlabel.get_style_context().add_class("label");
     }
 
-    private string find_mappedid (string icon_id) {
+    private string find_mappedid (string ? icon_id = null) {
         /* 
         * OWM's icon codes are a bit oversimplified; different weather 
         * types are pushed into one icon. the data ("id") however offers a 
@@ -253,7 +255,6 @@ public class DesktopWeather : Gtk.Window {
         for (int i=0; i < lenrep; i++) {
             if (icon_id == replacements[i, 0]) {
                 return replacements[i, 1];
-
             }
         }
         return icon_id;

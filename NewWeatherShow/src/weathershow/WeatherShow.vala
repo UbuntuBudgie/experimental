@@ -51,26 +51,21 @@ namespace WeatherShowFunctions {
         * of the extended set of weather codes, which is kind of the middle
         * between the two.
         */
-        // testtest
-        if (icon_id != null) {
-            string[,] replacements = {
-                {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
-                {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
-                {"502", "501"}, {"503", "501"}, {"504", "501"}, {"522", "521"}, 
-                {"531", "521"}, {"622", "621"}, {"711", "701"}, {"721", "701"}, 
-                {"731", "701"}, {"741", "701"}, {"751", "701"}, {"761", "701"}, 
-                {"762", "701"}
-            };
-            int lenrep = replacements.length[0];
-            for (int i=0; i < lenrep; i++) {
-                if (icon_id == replacements[i, 0]) {
-                    return replacements[i, 1];
-                }
+        string[,] replacements = {
+            {"221", "212"}, {"231", "230"}, {"232", "230"}, {"301", "300"}, 
+            {"302", "300"}, {"310", "300"}, {"312", "311"}, {"314", "313"}, 
+            {"502", "501"}, {"503", "501"}, {"504", "501"}, {"522", "521"}, 
+            {"531", "521"}, {"622", "621"}, {"711", "701"}, {"721", "701"}, 
+            {"731", "701"}, {"741", "701"}, {"751", "701"}, {"761", "701"}, 
+            {"762", "701"}
+        };
+        int lenrep = replacements.length[0];
+        for (int i=0; i < lenrep; i++) {
+            if (icon_id == replacements[i, 0]) {
+                return replacements[i, 1];
             }
-            return icon_id;
         }
-        // unlikely to happen, but as a fallback:
-        return "802";
+        return icon_id;
     }
 
     private string weekday (int day) {
@@ -143,7 +138,6 @@ namespace WeatherShowApplet {
     private string citycode;
     private Gtk.Box container;
     private Gtk.Label templabel;
-    private GetWeatherdata weather_obj;
     private Stack popoverstack;
     private int fc_stackindex;
     private string[] fc_stacknames;
@@ -153,6 +147,7 @@ namespace WeatherShowApplet {
     private string desktop_window;
     private string color_window;
     string moduledir;
+    bool lasttime_failed;
 
     private string to_hrs (int t) {
         if (t < 10) {
@@ -170,7 +165,7 @@ namespace WeatherShowApplet {
         */
 
         // get forecast; conditional
-        if (show_forecast) {
+        if (show_forecast == true) {
             // fetch forecast
             HashMap<int, string> result_forecast = weather_obj.get_forecast();
             // produce a sorted ArrayList to get sorted timestamps
@@ -224,6 +219,8 @@ namespace WeatherShowApplet {
                     currgrid.attach(timelabel, n_fc, 2, 1, 1);
                     var daylabel = new Gtk.Label(day);
                     currgrid.attach(daylabel, n_fc, 1, 1, 1);
+
+
                     // process the produced weather data (string), calc. icon
                     string[] labelsrc = result_forecast[stamp].split("\n");
                     string iconname = WeatherShowFunctions.find_mappedid(
@@ -403,6 +400,7 @@ namespace WeatherShowApplet {
                 return getsnapshot(data);
             }
             else {
+                lasttime_failed = true;
                 return "";
             }
         }
@@ -851,6 +849,7 @@ namespace WeatherShowApplet {
             string newset_lang = langcodes[index];
             ws_settings.set_string("language", newset_lang);
             lang = newset_lang;
+            var weather_obj = new GetWeatherdata();
             WeatherShowApplet.get_weather(weather_obj);
             return true;
         }
@@ -865,6 +864,7 @@ namespace WeatherShowApplet {
             edit_citymenu = false;
             cityentry.set_text(newselect);
             edit_citymenu = true;
+            var weather_obj = new GetWeatherdata();
             WeatherShowApplet.get_weather(weather_obj);
         }
 
@@ -975,6 +975,7 @@ namespace WeatherShowApplet {
             else {
                 tempunit = "Celsius";
             }
+            var weather_obj = new GetWeatherdata();
             WeatherShowApplet.get_weather(weather_obj);
             ws_settings.set_string("tempunit", tempunit);
         }
@@ -1019,6 +1020,7 @@ namespace WeatherShowApplet {
                 );
                 templabel.set_text("");
             }
+            var weather_obj = new GetWeatherdata();
             WeatherShowApplet.get_weather(weather_obj);
         }
     }
@@ -1028,7 +1030,6 @@ namespace WeatherShowApplet {
         public Budgie.Applet get_panel_widget(string uuid) {
             var info = this.get_plugin_info();
             moduledir = info.get_module_dir();
-            print(moduledir + "\n");
             return new Applet();
         }
     }
@@ -1183,22 +1184,21 @@ namespace WeatherShowApplet {
             });
             popover.get_child().show_all();
             show_all();
-
-            // run the loop
-            weather_obj = new GetWeatherdata();
+            // start immediately
+            var weather_obj = new GetWeatherdata();
             get_weather(weather_obj);
-
+            // run the loop
             var currtime1 = new DateTime.now_utc();
             // check when last update was every 15 seconds (for lid closure)
             GLib.Timeout.add_seconds (15, () => {
                 var currtime2 = new DateTime.now_utc();
                 var diff = currtime2.difference(currtime1);
                 // refresh if last update was more than 10 minutes ago
-                if (diff > 600000000) {
+                if (diff > 600000000 || lasttime_failed == true) {
+                    weather_obj = new GetWeatherdata();
                     get_weather(weather_obj);
                     currtime1 = currtime2;
-                }
-                //get_weather(weather_obj);   
+                }   
                 return true;
             });
         }
