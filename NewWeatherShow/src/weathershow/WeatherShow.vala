@@ -155,6 +155,11 @@ namespace WeatherShowApplet {
         }
         return t.to_string() + ":00";
     }
+
+    private void update_weathershow () {
+        var weather_obj = new GetWeatherdata();
+        WeatherShowApplet.get_weather(weather_obj);
+    }
     
     private void get_weather (GetWeatherdata weather_obj) {
         /* 
@@ -849,8 +854,7 @@ namespace WeatherShowApplet {
             string newset_lang = langcodes[index];
             ws_settings.set_string("language", newset_lang);
             lang = newset_lang;
-            var weather_obj = new GetWeatherdata();
-            WeatherShowApplet.get_weather(weather_obj);
+            update_weathershow();
             return true;
         }
 
@@ -864,8 +868,7 @@ namespace WeatherShowApplet {
             edit_citymenu = false;
             cityentry.set_text(newselect);
             edit_citymenu = true;
-            var weather_obj = new GetWeatherdata();
-            WeatherShowApplet.get_weather(weather_obj);
+            update_weathershow();
         }
 
         public void update_transparencysettings(Gtk.Range slider) {
@@ -975,8 +978,7 @@ namespace WeatherShowApplet {
             else {
                 tempunit = "Celsius";
             }
-            var weather_obj = new GetWeatherdata();
-            WeatherShowApplet.get_weather(weather_obj);
+            update_weathershow();
             ws_settings.set_string("tempunit", tempunit);
         }
 
@@ -1020,8 +1022,7 @@ namespace WeatherShowApplet {
                 );
                 templabel.set_text("");
             }
-            var weather_obj = new GetWeatherdata();
-            WeatherShowApplet.get_weather(weather_obj);
+            update_weathershow();
         }
     }
 
@@ -1185,8 +1186,7 @@ namespace WeatherShowApplet {
             popover.get_child().show_all();
             show_all();
             // start immediately
-            var weather_obj = new GetWeatherdata();
-            get_weather(weather_obj);
+            update_weathershow();
             // run the loop
             var currtime1 = new DateTime.now_utc();
             // check when last update was every 15 seconds (for lid closure)
@@ -1195,8 +1195,7 @@ namespace WeatherShowApplet {
                 var diff = currtime2.difference(currtime1);
                 // refresh if last update was more than 10 minutes ago
                 if (diff > 600000000 || lasttime_failed == true) {
-                    weather_obj = new GetWeatherdata();
-                    get_weather(weather_obj);
+                    update_weathershow();
                     currtime1 = currtime2;
                 }   
                 return true;
