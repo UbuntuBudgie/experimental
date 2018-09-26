@@ -53,5 +53,6 @@ message('Installing applet...')
 subdir('src')
 subdir('po')
 subdir('weather_icons')
+subdir('icons_for_pixmaps')
 
 meson.add_install_script('meson_post_install')
