@@ -402,6 +402,7 @@ namespace WeatherShowApplet {
             */
             string data = fetch_fromsite("weather", citycode);
             if (data != "no data") {
+                lasttime_failed = false;
                 return getsnapshot(data);
             }
             else {
@@ -535,6 +536,10 @@ namespace WeatherShowApplet {
             var map = new HashMap<int, string> ();
             if (data != "no data") {
                 map = getspan(data);
+                lasttime_failed = false;
+            }
+            else {
+                lasttime_failed = true;
             }
             return map;
         }
@@ -1196,7 +1201,6 @@ namespace WeatherShowApplet {
                 // refresh if last update was more than 10 minutes ago
                 if (diff > 600000000 || lasttime_failed == true) {
                     update_weathershow();
-                    lasttime_failed = false;
                     currtime1 = currtime2;
                 }   
                 return true;
