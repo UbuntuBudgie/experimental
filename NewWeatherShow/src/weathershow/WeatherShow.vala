@@ -1196,6 +1196,7 @@ namespace WeatherShowApplet {
                 // refresh if last update was more than 10 minutes ago
                 if (diff > 600000000 || lasttime_failed == true) {
                     update_weathershow();
+                    lasttime_failed = false;
                     currtime1 = currtime2;
                 }   
                 return true;
