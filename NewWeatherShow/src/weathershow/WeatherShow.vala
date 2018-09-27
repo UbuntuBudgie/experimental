@@ -146,8 +146,8 @@ namespace WeatherShowApplet {
     private string default_icon;
     private string desktop_window;
     private string color_window;
-    string moduledir;
-    bool lasttime_failed;
+    private string moduledir;
+    private bool lasttime_failed;
 
     private string to_hrs (int t) {
         if (t < 10) {
@@ -582,13 +582,13 @@ namespace WeatherShowApplet {
         private Gtk.Menu citymenu;
         private Gdk.Screen screen;
         private Entry langentry;
-        string[] langlist;
-        Gtk.ListStore lang_liststore;
-        string[] langcodes;
-        MenuButton search_button;
-        string[] city_menurefs;
-        string[] city_menucodes;
-        bool edit_citymenu;
+        private string[] langlist;
+        private Gtk.ListStore lang_liststore;
+        private string[] langcodes;
+        private MenuButton search_button;
+        private string[] city_menurefs;
+        private string[] city_menucodes;
+        private bool edit_citymenu;
  
         public WeatherShowSettings(GLib.Settings? settings) {
             /*
@@ -876,12 +876,12 @@ namespace WeatherShowApplet {
             update_weathershow();
         }
 
-        public void update_transparencysettings(Gtk.Range slider) {
+        private void update_transparencysettings(Gtk.Range slider) {
             int newval = (int) slider.get_value();
             ws_settings.set_int("transparency", newval);
         }
 
-        public void set_initialtransparency() {
+        private void set_initialtransparency() {
             // on opening settings, set the gui to the current value
             int intialsetting = ws_settings.get_int("transparency");
             transparency_slider.set_value(intialsetting);
