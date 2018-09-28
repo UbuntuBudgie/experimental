@@ -172,6 +172,6 @@ public class ColorPicker : Gtk.Window {
 
 public int main(string[] args) {
     Gtk.init(ref args);
-    var win = new ColorPicker();
+    new ColorPicker();
     return 0;
 }

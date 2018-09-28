@@ -28,17 +28,47 @@ namespace WeatherShowFunctions {
         return settings;
     }
 
-    private void open_window(string path) {
-        // call the set-color window
+    private bool check_onwindow(string path) {
         string cmd_check = "pgrep -f " + path;
         string output;
         try {
             GLib.Process.spawn_command_line_sync(cmd_check, out output);
             if (output == "") {
-                Process.spawn_command_line_async(path);   
+                return false;  
             }
         }
-        catch (SpawnError e) {/* let's say it always works */}
+        catch (SpawnError e) {
+            /* let's say it always works */
+            return false;
+        }
+        return true;
+    }
+
+    private void close_window(string path) {
+        bool win_exists = check_onwindow(path);
+        if (win_exists) {
+            try {
+                Process.spawn_command_line_async(
+                    "pkill -f ".concat(path));
+            }
+            catch (SpawnError e) {
+                /* nothing to be done */
+            }
+
+        }
+    }
+
+    private void open_window(string path) {
+        // call the set-color window
+        bool win_exists = check_onwindow(path);
+        if (!win_exists) {
+            try {
+                Process.spawn_command_line_async(path);
+            }
+            catch (SpawnError e) {
+                /* nothing to be done */
+            }
+        }
     }
 
     private string find_mappedid (string icon_id) {
@@ -1040,7 +1070,7 @@ namespace WeatherShowApplet {
         }
     }
 
-
+    
     public class WeatherShowPopover : Budgie.Popover {
 
         private Gtk.EventBox indicatorBox;
@@ -1192,19 +1222,45 @@ namespace WeatherShowApplet {
             show_all();
             // start immediately
             update_weathershow();
-            // run the loop
+            Thread<bool> timerthread = new Thread<bool>.try (
+                "oldtimer", run_periodiccheck
+            );
+        }
+
+        private bool run_periodiccheck () {
             var currtime1 = new DateTime.now_utc();
-            // check when last update was every 15 seconds (for lid closure)
-            GLib.Timeout.add_seconds (15, () => {
+            while (true) {
                 var currtime2 = new DateTime.now_utc();
                 var diff = currtime2.difference(currtime1);
                 // refresh if last update was more than 10 minutes ago
                 if (diff > 600000000 || lasttime_failed == true) {
                     update_weathershow();
                     currtime1 = currtime2;
-                }   
+                }
+                if (!check_onapplet(
+                    "/com/solus-project/budgie-panel/applets/",
+                    "WeatherShow"
+                )) {
+                    WeatherShowFunctions.close_window(desktop_window);
+                    return false;
+                }
+                Thread.usleep(15 * 1000000);
+            }
+        }
+
+        private bool check_onapplet(string path, string applet_name) {
+            // check if the applet still runs
+            string cmd = "dconf dump " + path;
+            string output;
+            try {
+                GLib.Process.spawn_command_line_sync(cmd, out output);
+            } 
+            // on an occasional exception, don't break the loop
+            catch (SpawnError e) {
                 return true;
-            });
+            }
+            bool check = output.contains(applet_name);
+            return check;
         }
 
         private void get_icondata () {
