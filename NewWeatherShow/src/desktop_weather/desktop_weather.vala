@@ -41,16 +41,6 @@ public class DesktopWeather : Gtk.Window {
 
     public DesktopWeather () {
         // this window monitors the datafile, maintained by the applet.
-        /*GLib.Timeout.add_seconds (5, () => {
-            bool active = check_onapplet(
-                "/com/solus-project/budgie-panel/applets/",
-                "WeatherShow"
-            );
-            if (active != true) {
-                Gtk.main_quit();
-            }
-            return true;
-        }); */
         this.set_decorated(false);
         this.set_type_hint(Gdk.WindowTypeHint.DESKTOP);
         currscale = 1;
@@ -137,21 +127,6 @@ public class DesktopWeather : Gtk.Window {
         monitor.changed.connect(update_content);
         update_content();
     }
-
-    /*private bool check_onapplet(string path, string applet_name) {
-        // check if the applet still runs
-        string cmd = "dconf dump " + path;
-        string output;
-        try {
-            GLib.Process.spawn_command_line_sync(cmd, out output);
-        } 
-        // on an occasional exception, don't break the loop
-        catch (SpawnError e) {
-            return true;
-        }
-        bool check = output.contains(applet_name);
-        return check;
-    }*/
 
     private bool on_draw (Widget da, Context ctx) {
         // needs to be connected to transparency settings change
