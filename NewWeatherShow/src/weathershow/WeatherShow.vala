@@ -1222,9 +1222,7 @@ namespace WeatherShowApplet {
             show_all();
             // start immediately
             update_weathershow();
-            Thread<bool> timerthread = new Thread<bool>.try (
-                "oldtimer", run_periodiccheck
-            );
+            new Thread<bool>.try ("oldtimer", run_periodiccheck);
         }
 
         private bool run_periodiccheck () {
