@@ -1139,6 +1139,7 @@ namespace WeatherShowApplet {
         private WeatherShowPopover popover = null;
         private unowned Budgie.PopoverManager? manager = null;
         public string uuid { public set; public get; }
+        Thread<bool> update_thread;
         
 
         public override bool supports_settings() {
@@ -1222,12 +1223,13 @@ namespace WeatherShowApplet {
             show_all();
             // start immediately
             update_weathershow();
-            new Thread<bool>.try ("oldtimer", run_periodiccheck);
+            update_thread = new Thread<bool>.try ("oldtimer", run_periodiccheck);
         }
 
         private bool run_periodiccheck () {
             var currtime1 = new DateTime.now_utc();
             while (true) {
+                print("thread alive\n");
                 var currtime2 = new DateTime.now_utc();
                 var diff = currtime2.difference(currtime1);
                 // refresh if last update was more than 10 minutes ago
@@ -1240,7 +1242,7 @@ namespace WeatherShowApplet {
                     "WeatherShow"
                 )) {
                     WeatherShowFunctions.close_window(desktop_window);
-                    return false;
+                    update_thread.exit(true);
                 }
                 Thread.usleep(15 * 1000000);
             }

@@ -26,6 +26,7 @@ public class ModernTimes : Gtk.Window {
     private bool showdate;
     private string css_template;
     private bool custom_pos;
+    Thread<bool> test;
 
     public ModernTimes () {
         twelve_hrs = true;
@@ -60,7 +61,7 @@ public class ModernTimes : Gtk.Window {
         check_res();
         this.add(maingrid);
         this.show_all();
-        new Thread<bool>.try ("oldtimer", get_time);
+        test = new Thread<bool>.try ("oldtimer", get_time);
     }
 
     private void set_labelsize (int scale) {
@@ -175,7 +176,13 @@ public class ModernTimes : Gtk.Window {
             int break_tonext = 61 - sec;
             print(@"$break_tonext\n");
             Thread.usleep(break_tonext * 1000000);
+            // exit on removing applet
+            /*if (<condition>) {
+                print("exit\n");
+                test.exit(true);
+            }*/
         }
+        
     }
 }
 
