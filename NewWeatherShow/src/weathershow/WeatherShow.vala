@@ -1229,7 +1229,6 @@ namespace WeatherShowApplet {
         private bool run_periodiccheck () {
             var currtime1 = new DateTime.now_utc();
             while (true) {
-                print("thread alive\n");
                 var currtime2 = new DateTime.now_utc();
                 var diff = currtime2.difference(currtime1);
                 // refresh if last update was more than 10 minutes ago

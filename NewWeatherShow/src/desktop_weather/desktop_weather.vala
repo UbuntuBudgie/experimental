@@ -145,7 +145,6 @@ public class DesktopWeather : Gtk.Window {
         if (height < 1100) {currscale = 1;}
         else if (height < 1600) {currscale = 2;}
         else {currscale = 3;}
-        print(@"currscale: $currscale\n");
     }
 
     private void set_windowpos () {
