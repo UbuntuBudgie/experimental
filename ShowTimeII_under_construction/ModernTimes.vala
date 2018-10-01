@@ -119,6 +119,14 @@ public class ModernTimes : Gtk.Window {
         return days[day - 1];
     }
 
+    private string fix_mins(int minutes) {
+        string minsdisplay = minutes.to_string();
+        if (minsdisplay.length == 1) {
+            return "0".concat(minsdisplay);
+        }
+        return minsdisplay;
+    }
+
     private void set_timelabel(DateTime obj) {
 
         // timedisplay
@@ -129,7 +137,8 @@ public class ModernTimes : Gtk.Window {
                 convert_totwelve(hrs, mins);
             }
             else {
-                timelabel.set_text(@"$hrs:$mins");
+                string minsdisplay = fix_mins(mins);
+                timelabel.set_text(@"$hrs:$minsdisplay");
             }
         }
         else {
@@ -146,6 +155,7 @@ public class ModernTimes : Gtk.Window {
     }
 
     private void convert_totwelve(int hrs, int mins) {
+        string showmins = fix_mins(mins);
         int newhrs = hrs;
         string add = " ".concat("AM");
         if (twelve_hrs == true) {
@@ -159,7 +169,7 @@ public class ModernTimes : Gtk.Window {
                 add = " ".concat("PM");
             }
         }
-        timelabel.set_text(@"$newhrs:$mins$add");
+        timelabel.set_text(@"$newhrs:$showmins $add");
     }
 
     public bool get_time() {
