@@ -591,9 +591,9 @@ namespace WeatherShowApplet {
         private CheckButton[] cbuttons; 
         private string[] add_args;
         private string css_template;
-        private string css_data;
+        private string css_data2;
         private Gtk.Scale transparency_slider;
-        private Gtk.Button colorbutton;
+        private Gtk.Button weathercbutton;
         private Gtk.Label colorlabel;
         private Gtk.CheckButton setposbutton;
         private Gtk.Entry xpos;
@@ -643,7 +643,7 @@ namespace WeatherShowApplet {
 
             // css
             css_template = """
-            .colorbutton {
+            .weathercbutton {
               border-color: transparent;
               background-color: rgb(xxx, xxx, xxx);
               padding: 0px;
@@ -654,8 +654,8 @@ namespace WeatherShowApplet {
             }
             """;
 
-            screen = this.get_screen();
-            css_provider = new Gtk.CssProvider();
+            //screen = this.get_screen();
+            //css_provider = new Gtk.CssProvider();
             // settings stack/pages
             stack = new Stack();
             stack.set_transition_type(
@@ -772,14 +772,14 @@ namespace WeatherShowApplet {
             // text color
             var colorbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             subgrid_desktop.attach(colorbox, 0, 30, 1, 1);
-            colorbutton = new Gtk.Button();
+            weathercbutton = new Gtk.Button();
             set_buttoncolor();
-            colorbutton.set_size_request(10, 10);
+            weathercbutton.set_size_request(10, 10);
             // call set-color window
-            colorbutton.clicked.connect( () => {
+            weathercbutton.clicked.connect( () => {
                 WeatherShowFunctions.open_window(color_window);
             });
-            colorbox.pack_start(colorbutton, false, false, 0);
+            colorbox.pack_start(weathercbutton, false, false, 0);
             colorlabel = new Gtk.Label("\t" + (_("Set text color")));
             colorlabel.set_xalign(0);
             colorbox.pack_start(colorlabel, false, false, 0);
@@ -963,15 +963,19 @@ namespace WeatherShowApplet {
 
         private void set_buttoncolor() {
             // set / update color button color
+            screen = weathercbutton.get_screen();
+            css_provider = new Gtk.CssProvider();
+
+
             string[] readcolor = ws_settings.get_strv("textcolor");
             string newcsscolor = string.joinv(", ", readcolor);
-            css_data = css_template.replace("xxx, xxx, xxx", newcsscolor);
-            colorbutton.get_style_context().remove_class("colorbutton");
-            css_provider.load_from_data(css_data);
+            css_data2 = css_template.replace("xxx, xxx, xxx", newcsscolor);
+            weathercbutton.get_style_context().remove_class("weathercbutton");
+            css_provider.load_from_data(css_data2);
             Gtk.StyleContext.add_provider_for_screen(
                 screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
             );
-            colorbutton.get_style_context().add_class("colorbutton");
+            weathercbutton.get_style_context().add_class("weathercbutton");
             this.show_all();
         }
 

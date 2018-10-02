@@ -28,6 +28,8 @@ public class ModernTimes : Gtk.Window {
     private bool custom_pos;
     Thread<bool> test;
 
+
+
     public ModernTimes () {
         twelve_hrs = true;
         showtime = true;
@@ -62,6 +64,11 @@ public class ModernTimes : Gtk.Window {
         this.add(maingrid);
         this.show_all();
         test = new Thread<bool>.try ("oldtimer", get_time);
+    }
+
+    private GLib.Settings get_settings(string path) {
+        var settings = new GLib.Settings(path);
+        return settings;
     }
 
     private void set_labelsize (int scale) {
