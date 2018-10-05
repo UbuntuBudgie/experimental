@@ -27,6 +27,7 @@ public class ModernTimes : Gtk.Window {
     private string css_template;
     private bool custom_pos;
     Thread<bool> test;
+    private GLib.Settings timesettings;
 
 
 
@@ -49,6 +50,15 @@ public class ModernTimes : Gtk.Window {
         }
         """;
 
+        // gsettings
+        timesettings = get_settings(
+            "org.ubuntubudgie.plugins.showtime"
+        );
+        timesettings.changed["showtime"].connect( () => {
+            print("Monkey\n");
+        });
+
+
         // window 
         this.title = "Charlie Chaplin";
         this.destroy.connect(Gtk.main_quit);
@@ -70,6 +80,8 @@ public class ModernTimes : Gtk.Window {
         var settings = new GLib.Settings(path);
         return settings;
     }
+
+
 
     private void set_labelsize (int scale) {
         string[] color = {"0", "0", "0"};

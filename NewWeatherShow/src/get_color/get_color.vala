@@ -61,7 +61,7 @@ public class ColorPicker : Gtk.Window {
         spinboxgrid.set_column_homogeneous(true);
         // spinbuttons - labels
         int index = 0;
-        string[] rgblabels = {"Red", "Green", "Blue"};
+        string[] rgblabels = {(_("Red")), (_("Green")), (_("Blue"))};
         foreach (string s in rgblabels) {
             Label l = new Gtk.Label(s + ":");
             l.set_xalign(0);
@@ -81,11 +81,11 @@ public class ColorPicker : Gtk.Window {
         // Choose / Cancel
         var buttonbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
         maingrid.attach(buttonbox, 1, 11, 1, 1);
-        var apply_button = new Gtk.Button.with_label("Choose");
+        var apply_button = new Gtk.Button.with_label((_("Choose")));
         apply_button.clicked.connect(update_gsettings);
         apply_button.set_size_request(100, 10);
         buttonbox.pack_end(apply_button, false, false, 0);
-        var cancel_button = new Gtk.Button.with_label("Cancel");
+        var cancel_button = new Gtk.Button.with_label((_("Cancel")));
         cancel_button.clicked.connect( () => {
             Gtk.main_quit();
         });
