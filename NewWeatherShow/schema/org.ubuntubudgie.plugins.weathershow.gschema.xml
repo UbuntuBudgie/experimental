@@ -17,11 +17,6 @@
             <description>Either Celsius or Fahrenheit</description>
 	    <default>"Celsius"</default>
         </key>
-        <key type="s" name="language">
-            <summary>Language setting</summary>
-            <description>Set one of the supported languages</description>
-	    <default>"en"</default>
-        </key>
         <key type="as" name="textcolor">
             <summary>Desktop text color</summary>
             <description>Text color of the applet's desktop representation</description>

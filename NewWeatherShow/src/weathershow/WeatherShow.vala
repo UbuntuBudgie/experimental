@@ -28,6 +28,23 @@ namespace WeatherShowFunctions {
         return settings;
     }
 
+    private string get_langmatch () {
+        // look up the language match from OWM, if it exists. default to EN if not
+        string set_lang = GLib.Environment.get_variable("LANGUAGE").split(":")[0];
+        string[] langcodes = {
+            "ar", "bg", "ca", "cz", "de", "el", "en", "fa", "fi", "fr", "gl", "hr",
+            "hu", "it", "ja", "kr", "la", "lt", "mk", "nl", "pl", "pt", "ro", "ru",
+            "se", "sk", "sl", "es", "tr", "ua", "vi", "zh_cn", "zh_tw"
+        };
+        string default_lang = "en";
+        foreach (string l in langcodes) {
+            if (l == set_lang || l == set_lang.split("_")[0]) {
+                return l;
+            }
+        }
+        return default_lang;
+    }
+
     private bool check_onwindow(string path) {
         string cmd_check = "pgrep -f " + path;
         string output;
@@ -611,36 +628,12 @@ namespace WeatherShowApplet {
         private Gtk.Entry cityentry;
         private Gtk.Menu citymenu;
         private Gdk.Screen screen;
-        private Entry langentry;
-        private string[] langlist;
-        private Gtk.ListStore lang_liststore;
-        private string[] langcodes;
         private MenuButton search_button;
         private string[] city_menurefs;
         private string[] city_menucodes;
         private bool edit_citymenu;
  
         public WeatherShowSettings(GLib.Settings? settings) {
-            /*
-            * Gtk stuff, widgets etc. here 
-            */
- 
-            // language lookup data
-            langlist = {
-                "Arabic", "Bulgarian", "Catalan", "Czech", "German", "Greek", "English",
-                "Persian (Farsi)", "Finnish", "French", "Galician", "Croatian",
-                "Hungarian", "Italian", "Japanese", "Korean", "Latvian", "Lithuanian",
-                "Macedonian", "Dutch", "Polish", "Portuguese", "Romanian", "Russian",
-                "Swedish", "Slovak", "Slovenian", "Spanish", "Turkish", "Ukrainian",
-                "Vietnamese", "Chinese Simplified", "Chinese Traditional"
-            };
-
-            langcodes = {
-                "ar", "bg", "ca", "cz", "de", "el", "en", "fa", "fi", "fr", "gl", "hr",
-                "hu", "it", "ja", "kr", "la", "lt", "mk", "nl", "pl", "pt", "ro", "ru",
-                "se", "sk", "sl", "es", "tr", "ua", "vi", "zh_cn", "zh_tw"
-            };
-
             // css
             css_template = """
             .weathercbutton {
@@ -654,8 +647,6 @@ namespace WeatherShowApplet {
             }
             """;
 
-            //screen = this.get_screen();
-            //css_provider = new Gtk.CssProvider();
             // settings stack/pages
             stack = new Stack();
             stack.set_transition_type(
@@ -703,23 +694,6 @@ namespace WeatherShowApplet {
             var spacelabel1 = new Gtk.Label("");
             subgrid_general.attach(spacelabel1, 0, 2, 1, 1);
             // set language 
-            var langlabel = new Gtk.Label((_("Interface language")));
-            langlabel.set_xalign(0);
-            subgrid_general.attach(langlabel, 0, 3, 1, 1);
-            langentry = new Gtk.Entry();
-            set_initiallang();
-            subgrid_general.attach(langentry, 0, 4, 1, 1);
-            Gtk.EntryCompletion completion = new Gtk.EntryCompletion();
-            langentry.set_completion(completion);
-            lang_liststore = new Gtk.ListStore(1, typeof (string));
-            completion.set_model(lang_liststore);
-            completion.set_text_column(0);
-            Gtk.TreeIter iter;
-            foreach (string lang in langlist) {
-                lang_liststore.append (out iter);
-                lang_liststore.set (iter, 0, lang);
-            }
-            completion.match_selected.connect(update_langsetting);
             var spacelabel2 = new Gtk.Label("");
             subgrid_general.attach(spacelabel2, 0, 5, 1, 1);
             // show on desktop
@@ -854,15 +828,6 @@ namespace WeatherShowApplet {
             ypos_label.set_sensitive(currcustom);
         }
 
-        private void set_initiallang () {
-            // on opening settings, set the gui to the current value
-            string initial_lang = ws_settings.get_string("language");
-            int index = WeatherShowFunctions.get_stringindex(
-                initial_lang, langcodes
-            );
-            langentry.set_text(langlist[index]);
-        }
-
         private void update_xysetting (Button button) {
             string newxpos_str = xpos.get_text();
             int newx = int.parse(newxpos_str);
@@ -875,22 +840,6 @@ namespace WeatherShowApplet {
             else {
                 print("incorrect input: no integer");
             }
-        }
-
-        private bool update_langsetting(
-            Gtk.EntryCompletion e, Gtk.TreeModel t, Gtk.TreeIter i
-        ) {
-            string match;
-            t.get(i, 0 ,out match);
-            int index = WeatherShowFunctions.get_stringindex(
-                match, langlist
-            );
-            langentry.set_text(match);
-            string newset_lang = langcodes[index];
-            ws_settings.set_string("language", newset_lang);
-            lang = newset_lang;
-            update_weathershow();
-            return true;
         }
 
         private void update_citysettings (Gtk.MenuItem m) {
@@ -1174,8 +1123,8 @@ namespace WeatherShowApplet {
             tempunit = ws_settings.get_string("tempunit");
             ws_settings.changed["tempunit"].connect (() => {
                 tempunit = ws_settings.get_string("tempunit");
-            });  
-            lang = ws_settings.get_string("language");
+            });
+            lang = WeatherShowFunctions.get_langmatch();
             key = ws_settings.get_string("key");
             show_ondesktop = ws_settings.get_boolean("desktopweather");
             ws_settings.changed["desktopweather"].connect (() => {
