@@ -26,7 +26,7 @@ public class ModernTimes : Gtk.Window {
     private bool showdate;
     private string css_template;
     private bool custom_pos;
-    Thread<bool> test;
+    //Thread<bool> test;
     private GLib.Settings timesettings;
 
 
@@ -38,6 +38,16 @@ public class ModernTimes : Gtk.Window {
         custom_pos = false;
 
         //data
+        string[] dateformats = {
+            "Friday, October 26 2018", "Friday, 23 October 2018", 
+            "Fri, October 26 2018", "Fri, 23 October 2018"
+        };
+
+        string[] allwidgets = {
+            "showdate", "showtime", "datecolor", "timecolor",
+            "transparency", "xposition", "yposition", 
+        };
+
         css_template = """
         .timelabel {
             font-size: bigfontpx;
@@ -54,10 +64,14 @@ public class ModernTimes : Gtk.Window {
         timesettings = get_settings(
             "org.ubuntubudgie.plugins.showtime"
         );
-        timesettings.changed["showtime"].connect( () => {
-            print("Monkey\n");
-        });
 
+        foreach (string val in allwidgets) {
+            // connect settings change to gui update
+            timesettings.changed[val].connect( () => {
+                update_widget(val);
+                apply_guiupdate();
+            });
+        }
 
         // window 
         this.title = "Charlie Chaplin";
@@ -73,15 +87,73 @@ public class ModernTimes : Gtk.Window {
         check_res();
         this.add(maingrid);
         this.show_all();
-        test = new Thread<bool>.try ("oldtimer", get_time);
+        foreach (string val in allwidgets) {
+            update_widget(val);
+        }
+        apply_guiupdate();
+        var test = new Thread<bool>.try ("oldtimer", get_time);
     }
+
+    /*private int get_format () {
+        int n = 0;
+        string currformat = timesettings.get_string("dateformat");
+        foreach (string fmt in dateformats) {
+            if (string ==)
+
+        }
+    } */
 
     private GLib.Settings get_settings(string path) {
         var settings = new GLib.Settings(path);
         return settings;
     }
 
+    private void update_widget (string keyval) {
+        print("banana\n");
+        switch(keyval) {
+            case "showtime":
+                showtime = timesettings.get_boolean("showtime"); break;
+            case "showdate":
+                showdate = timesettings.get_boolean("showdate"); break;
+            case "dateformat":
+                print("yet to do\n"); break;            
+            case "xposition":
+                print("yet to do\n"); break;
+            case "yposition":
+                print("yet to do\n"); break;
+            case "timecolor":
+                print("yet to do\n"); break;
+            case "datecolor":
+                print("yet to do\n"); break;
+            case "transparency":
+                print("yet to do\n"); break;    
+        }
+    }
 
+    private int get_localdatefmt() {
+        // check if the applet still runs
+        string cmd = "locale date_fmt";
+        string output = "";
+        try {
+            GLib.Process.spawn_command_line_sync(cmd, out output);
+        } 
+        catch (SpawnError e) {
+            return -1;
+        };
+        string check_fmt = string.joinv("", output.split(" ")[0:4]);
+        switch(check_fmt) {
+            case "%a%e%b%Y":
+                print("yep, that works\n"); return 0;
+            case "%a%b%e%Y":
+                print("EN format\n"); return 1;
+        }
+        return -1;
+    }
+
+    private void apply_guiupdate() {
+        var now = new DateTime.now_local();
+        set_timelabel(now);
+    }
 
     private void set_labelsize (int scale) {
         string[] color = {"0", "0", "0"};
@@ -100,7 +172,6 @@ public class ModernTimes : Gtk.Window {
         print(@"scale: $scale, css: $css\n");
     }
         
-
     private string get_months(int month) {
         string[] months = {
             "January", "February", "March", "April", "May", "June",
@@ -111,7 +182,6 @@ public class ModernTimes : Gtk.Window {
 
     private void check_res() {
         /* see what is the resolution on the primary monitor */
-
         var prim = Gdk.Display.get_default().get_primary_monitor();
         var geo = prim.get_geometry();
         int height = geo.height;
@@ -123,12 +193,9 @@ public class ModernTimes : Gtk.Window {
         if (height < 1100) {currscale = 1;}
         else if (height < 1600) {currscale = 2;}
         else {currscale = 3;}
-
         set_labelsize(currscale);
-
         print(@"$width $height\n");
     }
-
 
     private string get_days(int day) {
         string[] days = {
@@ -171,6 +238,9 @@ public class ModernTimes : Gtk.Window {
             int year = obj.get_year();
             datelabel.set_text(@"$day, $monthday $month $year");
         }
+        else {
+            datelabel.set_text("");
+        }
     }
 
     private void convert_totwelve(int hrs, int mins) {
@@ -192,9 +262,12 @@ public class ModernTimes : Gtk.Window {
     }
 
     public bool get_time() {
+        int lang_fmt = get_localdatefmt(); ///////////////////////////////////////////////
+        print(@"format: $lang_fmt\n");
+
         while (true) {
             // get time obj
-            var now = new DateTime.now_local();
+            var now = new DateTime.now_local(); /////////////////
             // get/set new time
             Idle.add ( () => {
                 set_timelabel(now);
