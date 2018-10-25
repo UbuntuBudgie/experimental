@@ -25,6 +25,8 @@ public class ModernTimes : Gtk.Window {
     private int dateformat;
     private bool showtime;
     private bool showdate;
+    private int xposition;
+    private int yposition;
     private string css_template;
     private bool custom_pos;
     //Thread<bool> test;
@@ -41,7 +43,8 @@ public class ModernTimes : Gtk.Window {
         //data
         dateformats = {
             "Friday, 26 October 2018", "Fri, 26 October 2018",
-            "Friday, October 26 2018", "Fri, October 26 2018"
+            "Friday, October 26 2018", "Fri, October 26 2018",
+            "26 October 2018", "October 26 2018"
         };
 
         string[] allwidgets = {
@@ -100,6 +103,12 @@ public class ModernTimes : Gtk.Window {
         return settings;
     }
 
+    private void move_window() {
+        xposition = timesettings.get_int("xposition");
+        yposition = timesettings.get_int("yposition");
+        this.move(xposition, yposition);
+    }
+
     private void update_widget (string keyval) {
         print("banana\n");
         switch(keyval) {
@@ -110,9 +119,9 @@ public class ModernTimes : Gtk.Window {
             case "dateformat":
                 dateformat = datefmt(); break;           
             case "xposition":
-                print("yet to do\n"); break;
+                move_window(); break;
             case "yposition":
-                print("yet to do\n"); break;
+                move_window(); break;
             case "timecolor":
                 print("yet to do\n"); break;
             case "datecolor":
@@ -259,6 +268,12 @@ public class ModernTimes : Gtk.Window {
                     break;
                 case 3:
                     datelabel.set_text(@"$shortday, $month $monthday $year");
+                    break;
+                case 4:
+                    datelabel.set_text(@"$monthday $month $year");
+                    break;
+                case 5:
+                    datelabel.set_text(@"$month $monthday $year");
                     break;
             }
         }
