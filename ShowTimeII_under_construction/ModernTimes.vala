@@ -22,13 +22,14 @@ public class ModernTimes : Gtk.Window {
     private Label datelabel;
     private Label timelabel;
     bool twelve_hrs;
+    private int dateformat;
     private bool showtime;
     private bool showdate;
     private string css_template;
     private bool custom_pos;
     //Thread<bool> test;
     private GLib.Settings timesettings;
-
+    string[] dateformats;
 
 
     public ModernTimes () {
@@ -38,14 +39,14 @@ public class ModernTimes : Gtk.Window {
         custom_pos = false;
 
         //data
-        string[] dateformats = {
-            "Friday, October 26 2018", "Friday, 23 October 2018", 
-            "Fri, October 26 2018", "Fri, 23 October 2018"
+        dateformats = {
+            "Friday, 26 October 2018", "Fri, 26 October 2018",
+            "Friday, October 26 2018", "Fri, October 26 2018"
         };
 
         string[] allwidgets = {
             "showdate", "showtime", "datecolor", "timecolor",
-            "transparency", "xposition", "yposition", 
+            "transparency", "xposition", "yposition", "dateformat"
         };
 
         css_template = """
@@ -94,15 +95,6 @@ public class ModernTimes : Gtk.Window {
         var test = new Thread<bool>.try ("oldtimer", get_time);
     }
 
-    /*private int get_format () {
-        int n = 0;
-        string currformat = timesettings.get_string("dateformat");
-        foreach (string fmt in dateformats) {
-            if (string ==)
-
-        }
-    } */
-
     private GLib.Settings get_settings(string path) {
         var settings = new GLib.Settings(path);
         return settings;
@@ -116,7 +108,7 @@ public class ModernTimes : Gtk.Window {
             case "showdate":
                 showdate = timesettings.get_boolean("showdate"); break;
             case "dateformat":
-                print("yet to do\n"); break;            
+                dateformat = datefmt(); break;           
             case "xposition":
                 print("yet to do\n"); break;
             case "yposition":
@@ -130,15 +122,32 @@ public class ModernTimes : Gtk.Window {
         }
     }
 
-    private int get_localdatefmt() {
-        // check if the applet still runs
+    private int get_stringindex (string[] arr, string lookfor) {
+        for (int i=0; i < arr.length; i++) {
+            if(lookfor == arr[i]) return i;
+        }
+        return -1;
+    }
+
+    private int datefmt() {
+        // get date format
+
+        string set_fmt = timesettings.get_string("dateformat");
+        int match = get_stringindex(dateformats, set_fmt);
+        // in case of a set (valid) value, use it
+        if (match != -1) {
+            return match;
+        }
+        print("continueing\n");
+        // if there is't a set match, set to local format
         string cmd = "locale date_fmt";
         string output = "";
         try {
             GLib.Process.spawn_command_line_sync(cmd, out output);
-        } 
+        }
+        // in case of error, fallback to default
         catch (SpawnError e) {
-            return -1;
+            return 0;
         };
         string check_fmt = string.joinv("", output.split(" ")[0:4]);
         switch(check_fmt) {
@@ -147,10 +156,11 @@ public class ModernTimes : Gtk.Window {
             case "%a%b%e%Y":
                 print("EN format\n"); return 1;
         }
-        return -1;
+        return 0;
     }
 
     private void apply_guiupdate() {
+        print("update is done\n");
         var now = new DateTime.now_local();
         set_timelabel(now);
     }
@@ -235,8 +245,22 @@ public class ModernTimes : Gtk.Window {
             string month = get_months(obj.get_month());
             int monthday = obj.get_day_of_month();
             string day = get_days(obj.get_day_of_week());
+            string shortday = day[0:3];
             int year = obj.get_year();
-            datelabel.set_text(@"$day, $monthday $month $year");
+            switch(dateformat) {
+                case 0:
+                    datelabel.set_text(@"$day, $monthday $month $year");
+                    break;
+                case 1:
+                    datelabel.set_text(@"$shortday, $monthday $month $year");
+                    break;
+                case 2:
+                    datelabel.set_text(@"$day, $month $monthday $year");
+                    break;
+                case 3:
+                    datelabel.set_text(@"$shortday, $month $monthday $year");
+                    break;
+            }
         }
         else {
             datelabel.set_text("");
@@ -262,7 +286,7 @@ public class ModernTimes : Gtk.Window {
     }
 
     public bool get_time() {
-        int lang_fmt = get_localdatefmt(); ///////////////////////////////////////////////
+        int lang_fmt = datefmt(); ///////////////////////////////////////////////
         print(@"format: $lang_fmt\n");
 
         while (true) {
