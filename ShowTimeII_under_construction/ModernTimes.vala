@@ -21,21 +21,32 @@ public class ModernTimes : Gtk.Window {
 
     private Label datelabel;
     private Label timelabel;
-    bool twelve_hrs;
+    bool twelvehrs;
     private int dateformat;
     private bool showtime;
     private bool showdate;
     private int xposition;
     private int yposition;
     private string css_template;
+
+
+    private string css_data; //////////////////////////////////////////
+    Gtk.CssProvider css_provider; ///////////////////////////////////////////
+
+
+
     private bool custom_pos;
-    //Thread<bool> test;
+    Thread<bool> test;
     private GLib.Settings timesettings;
     string[] dateformats;
+    private int height;
+    private int width;
+    private int screen_xpos;
+    private int screen_ypos;
 
 
     public ModernTimes () {
-        twelve_hrs = true;
+        twelvehrs = true;
         showtime = true;
         showdate = true;
         custom_pos = false;
@@ -48,7 +59,7 @@ public class ModernTimes : Gtk.Window {
         };
 
         string[] allwidgets = {
-            "showdate", "showtime", "datecolor", "timecolor",
+            "showdate", "showtime", "datecolor", "timecolor", "twelvehrs",
             "transparency", "xposition", "yposition", "dateformat"
         };
 
@@ -56,11 +67,10 @@ public class ModernTimes : Gtk.Window {
         .timelabel {
             font-size: bigfontpx;
             color: xxx-xxx-xxx;
-
         }
         .datelabel {
             font-size: smallfontpx;
-            color: xxx-xxx-xxx;
+            color: yyy-yyy-yyy;
         }
         """;
 
@@ -80,6 +90,7 @@ public class ModernTimes : Gtk.Window {
         // window 
         this.title = "Charlie Chaplin";
         this.destroy.connect(Gtk.main_quit);
+        screen = this.get_screen();
         var maingrid = new Grid();
         timelabel = new Label("");
         timelabel.xalign = 1;
@@ -88,14 +99,13 @@ public class ModernTimes : Gtk.Window {
         maingrid.attach(timelabel, 0, 0, 1, 1);
         maingrid.attach(datelabel, 0, 1, 1, 1);
         //check environment
-        check_res();
         this.add(maingrid);
         this.show_all();
         foreach (string val in allwidgets) {
             update_widget(val);
         }
         apply_guiupdate();
-        var test = new Thread<bool>.try ("oldtimer", get_time);
+        test = new Thread<bool>.try ("oldtimer", get_time);
     }
 
     private GLib.Settings get_settings(string path) {
@@ -106,14 +116,44 @@ public class ModernTimes : Gtk.Window {
     private void move_window() {
         xposition = timesettings.get_int("xposition");
         yposition = timesettings.get_int("yposition");
-        this.move(xposition, yposition);
+        if (xposition != -1 && yposition != -1) {
+            this.move(xposition, yposition);
+        }
+        else {
+            check_res();
+            int default_x = screen_xpos + width - 250;
+            int default_y = screen_ypos + height - 150;
+            this.move(default_x, default_y);
+            print("set winmdow to calculated default position\n");
+        }
     }
+
+    ////////////////////////////////////////////////////
+    /*private void set_textcolor() {
+        // set / update color button color
+        screen = this.get_screen();
+        css_provider = new Gtk.CssProvider();
+        string[] readcolor = timesettings.get_strv("timecolor");
+        string newcsscolor = string.joinv(", ", readcolor);
+        css_data = css_template.replace("xxx-xxx-xxx", newcsscolor);
+        print(@"newcss:\n$css_data\n");
+        timelabel.get_style_context().remove_class("timelabel");
+        css_provider.load_from_data(css_data);
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+        );
+        timelabel.get_style_context().add_class("timelabel");
+        this.show_all();
+    }*/
+    //////////////////////////////////////////////////////
 
     private void update_widget (string keyval) {
         print("banana\n");
         switch(keyval) {
             case "showtime":
                 showtime = timesettings.get_boolean("showtime"); break;
+            case "twelvehrs":
+                twelvehrs = timesettings.get_boolean("twelvehrs"); break;
             case "showdate":
                 showdate = timesettings.get_boolean("showdate"); break;
             case "dateformat":
@@ -123,9 +163,11 @@ public class ModernTimes : Gtk.Window {
             case "yposition":
                 move_window(); break;
             case "timecolor":
-                print("yet to do\n"); break;
+                set_labelsize(2); break; /////
+                //print("yet to do\n"); break;
             case "datecolor":
-                print("yet to do\n"); break;
+                set_labelsize(2); break; /////
+                //print("yet to do\n"); break;
             case "transparency":
                 print("yet to do\n"); break;    
         }
@@ -175,10 +217,21 @@ public class ModernTimes : Gtk.Window {
     }
 
     private void set_labelsize (int scale) {
-        string[] color = {"0", "0", "0"};
-        string temp_css = css_template.replace(
-            "xxx-xxx-xxx", "rgb(".concat(string.joinv(", ", color), ")")
+        // ^^^ change name
+        //TODO in here!!
+        // also: make string replacement more sophisticated
+        string[] tcolor = timesettings.get_strv("timecolor"); ////
+        string[] dcolor = timesettings.get_strv("datecolor"); ////
+
+        string temp_css2 = css_template.replace(
+            "xxx-xxx-xxx", "rgb(".concat(string.joinv(", ", tcolor), ")")
         );
+        string temp_css = temp_css2.replace(
+            "yyy-yyy-yyy", "rgb(".concat(string.joinv(", ", dcolor), ")")
+        );
+
+        // edit/remove after taking care of custom textsize setting:
+        // add custom scaling to gsettings
         string bigfont = "20"; string smallfont = "15";
         switch(scale) {
             case(1): bigfont = "25"; smallfont = "17"; break;
@@ -189,6 +242,19 @@ public class ModernTimes : Gtk.Window {
             "bigfont", bigfont).replace("smallfont", smallfont
         ); 
         print(@"scale: $scale, css: $css\n");
+
+
+        // set / update time label
+        css_provider = new Gtk.CssProvider();
+        timelabel.get_style_context().remove_class("timelabel");
+        datelabel.get_style_context().remove_class("datelabel");
+        css_provider.load_from_data(css);
+        Gtk.StyleContext.add_provider_for_screen(
+            screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+        );
+        timelabel.get_style_context().add_class("timelabel");
+        datelabel.get_style_context().add_class("datelabel");
+        this.show_all();
     }
         
     private string get_months(int month) {
@@ -200,20 +266,23 @@ public class ModernTimes : Gtk.Window {
     }
 
     private void check_res() {
-        /* see what is the resolution on the primary monitor */
+        /* 
+        * see what is the resolution on the primary monitor,
+        * textsize accordingly, set default position accordingly
+        */
         var prim = Gdk.Display.get_default().get_primary_monitor();
         var geo = prim.get_geometry();
-        int height = geo.height;
-        int width = geo.width;
-        if (!custom_pos) {
-            this.move(width - 400, height- 300);
-        }
+        height = geo.height;
+        width = geo.width;
+        screen_xpos = geo.x;
+        screen_ypos = geo.y;
+        // to be removed/edited after custom size is applied
         int currscale;
         if (height < 1100) {currscale = 1;}
         else if (height < 1600) {currscale = 2;}
         else {currscale = 3;}
         set_labelsize(currscale);
-        print(@"$width $height\n");
+        print(@"$width $height $screen_xpos $screen_ypos\n");
     }
 
     private string get_days(int day) {
@@ -238,7 +307,7 @@ public class ModernTimes : Gtk.Window {
         if (showtime) {
             int hrs = obj.get_hour();
             int mins = obj.get_minute();
-            if (twelve_hrs) {
+            if (twelvehrs) {
                 convert_totwelve(hrs, mins);
             }
             else {
@@ -286,7 +355,7 @@ public class ModernTimes : Gtk.Window {
         string showmins = fix_mins(mins);
         int newhrs = hrs;
         string add = " ".concat("AM");
-        if (twelve_hrs == true) {
+        if (twelvehrs) {
             if (hrs > 12) {
                 newhrs = hrs - 12;
             }

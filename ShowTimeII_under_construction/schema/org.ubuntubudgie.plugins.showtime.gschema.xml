@@ -20,18 +20,23 @@
         </key>
         <key type="i" name="xposition">
             <summary>X- position of the desktop window</summary>
-            <description>Sets the top-left position of the desktop window</description>
-	    <default>200</default>
+            <description>Sets the top-left position of the desktop window, -1 sets to default (bottom-right)</description>
+	    <default>-1</default>
         </key>
         <key type="i" name="yposition">
             <summary>Y- position of the desktop window</summary>
-            <description>Sets the top-left position of the desktop window</description>
-	    <default>200</default>
+            <description>Sets the top-left position of the desktop window, -1 sets to default (bottom-right)</description>
+	    <default>-1</default>
         </key>
         <key type="b" name="showtime">
             <summary>Show the time on the desktop</summary>
             <description>Show a dynamically updated report on the desktop</description>
             <default>true</default>
+        </key>
+        <key type="b" name="twelvehrs">
+            <summary>Use 12 hrs time format</summary>
+            <description>Wheter to display time in 12 hrs format</description>
+            <default>false</default>
         </key>
         <key type="b" name="showdate">
             <summary>Show the date on the desktop</summary>
