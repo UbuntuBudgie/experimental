@@ -344,6 +344,48 @@ namespace WeatherShowApplet {
             session.send_message (message);
             string output = (string) message.response_body.flatten().data;
             int len_output = output.length;
+
+
+            // error log
+            /////////////////////////////////////////////////////////
+            var logtime = new DateTime.now_local();
+            string glue = "\n==========\n";
+            int hrs = logtime.get_hour();
+            int mins = logtime.get_minute();
+            string pre = "";
+            if (mins < 10) {
+                pre = "0";
+            }
+            string time = @"$hrs:$pre$mins";
+            // define logfile currfile
+            string home = Environment.get_home_dir();
+            string logfile = home + "/weatherlog" ;
+            // get content (if any)
+            string file_contents;
+            FileUtils.get_contents(logfile, out file_contents);
+            string[] records = file_contents.split(glue);
+            int length = records.length;
+            string[] keeprecords;
+            if (length > 20) {
+                keeprecords = records[length - 9:length];
+            }
+            else {keeprecords = records;}
+            // add new record
+            string log_output = wtype + " time: " + time + "\n\n" + output + glue;
+            keeprecords += log_output;
+            string newlog = string.joinv(glue, keeprecords);
+            // delete prvious version
+            File datasrc = File.new_for_path(logfile);
+            if (datasrc.query_exists ()) {
+                datasrc.delete ();
+            }
+            var file_stream = datasrc.create (FileCreateFlags.NONE);
+            var data_stream = new DataOutputStream (file_stream);
+            data_stream.put_string (newlog);
+            //////////////////////////////////////////////////////////
+            // end error log */
+
+
             if (len_output != 0) {
                 return output;
             }
