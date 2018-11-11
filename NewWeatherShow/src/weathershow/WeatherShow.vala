@@ -348,8 +348,14 @@ namespace WeatherShowApplet {
 
             // error log
             /////////////////////////////////////////////////////////
+            // define logfile
+            string loglocation = Environment.get_home_dir() + "/weatherlog";
+            var logfile = File.new_for_path (loglocation);
+            if (!logfile.query_exists ()) {
+                var file_stream = logfile.create (FileCreateFlags.NONE);
+            }
+            // define logtime
             var logtime = new DateTime.now_local();
-            string glue = "\n==========\n";
             int hrs = logtime.get_hour();
             int mins = logtime.get_minute();
             string pre = "";
@@ -357,29 +363,26 @@ namespace WeatherShowApplet {
                 pre = "0";
             }
             string time = @"$hrs:$pre$mins";
-            // define logfile currfile
-            string home = Environment.get_home_dir();
-            string logfile = home + "/weatherlog" ;
-            // get content (if any)
+            // read history
+            string glue = "\n==========\n";
             string file_contents;
-            FileUtils.get_contents(logfile, out file_contents);
+            FileUtils.get_contents(loglocation, out file_contents);
             string[] records = file_contents.split(glue);
             int length = records.length;
             string[] keeprecords;
             if (length > 20) {
-                keeprecords = records[length - 9:length];
+                keeprecords = records[length - 20:length];
             }
             else {keeprecords = records;}
             // add new record
             string log_output = wtype + " time: " + time + "\n\n" + output + glue;
             keeprecords += log_output;
             string newlog = string.joinv(glue, keeprecords);
-            // delete prvious version
-            File datasrc = File.new_for_path(logfile);
-            if (datasrc.query_exists ()) {
-                datasrc.delete ();
+            // delete previous version
+            if (logfile.query_exists ()) {
+                logfile.delete ();
             }
-            var file_stream = datasrc.create (FileCreateFlags.NONE);
+            var file_stream = logfile.create (FileCreateFlags.NONE);
             var data_stream = new DataOutputStream (file_stream);
             data_stream.put_string (newlog);
             //////////////////////////////////////////////////////////
