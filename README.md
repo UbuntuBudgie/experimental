@@ -1,5 +1,5 @@
 # Experimental
-Mainly two section
+Mainly two sections:
 
 ## unreleased_ready_to_use
 For adventurous users who'd like to tweak their desktop - unpublished work, not released anywhere, but perfectly working.
