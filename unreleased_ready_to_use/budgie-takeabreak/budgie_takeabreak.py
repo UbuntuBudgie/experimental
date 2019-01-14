@@ -137,12 +137,18 @@ class BudgieTakeaBreakApplet(Budgie.Applet):
         self.tab_message = ""
         Budgie.Applet.__init__(self)
         self.uuid = uuid
+        
         # applet appearance
-        icon = Gtk.Image.new_from_icon_name(
+        self.icon = Gtk.Image()
+        self.img_normal = "takeabreak-symbolic"
+        self.img_normal = "takeabreakpaused-symbolic"
+        self.icon.set_from_icon_name(
             "takeabreak-symbolic", Gtk.IconSize.MENU
         )
+
+        
         self.box = Gtk.EventBox()
-        self.box.add(icon)
+        self.box.add(self.icon)
         self.add(self.box)
         self.popover = Budgie.Popover.new(self.box)
         self.maingrid = Gtk.Grid()
@@ -164,6 +170,9 @@ class BudgieTakeaBreakApplet(Budgie.Applet):
             self.on_offbutton.set_active(True)
         else:
             self.on_offbutton.set_active(False)
+            self.icon.set_from_icon_name(
+                "takeabreakpaused-symbolic", Gtk.IconSize.MENU
+            )
         self.maingrid.attach(self.on_offbutton, 1, 3, 1, 1)
         self.on_offbutton.connect("state-set", self.act_on_switch)
         self.maingrid.show_all()
@@ -182,6 +191,13 @@ class BudgieTakeaBreakApplet(Budgie.Applet):
         # instead of reading it from the file (else timing issue on startup)
         if state:
             self.set_time_fromapplet()
+            self.icon.set_from_icon_name(
+                "takeabreak-symbolic", Gtk.IconSize.MENU
+            )
+        else:
+            self.icon.set_from_icon_name(
+                "takeabreakpaused-symbolic", Gtk.IconSize.MENU
+            )
 
     def set_time_fromapplet(self):
         wait = tab_settings.get_int("awaketime") * 60

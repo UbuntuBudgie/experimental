@@ -13,6 +13,6 @@ For testing:
 
 - copy `org.ubuntubudgie.plugins.takeabreak.gschema.xml` to `/usr/share/glib-2.0/schemas`
 - run from a terminal: `sudo glib-compile-schemas /usr/share/glib-2.0/schemas/`
-- copy `takeabreak-symbolic.svg` to `/usr/share/pixmaps`, all other files to `~/.local/share/budgie-desktop/plugins/budgie-takeabreak`. Log out and back in, add the applet from Budgie Settings.
+- copy `takeabreak-symbolic.svg` and `takeabreakpaused-symbolic.svg` to `/usr/share/pixmaps`, all other files to `~/.local/share/budgie-desktop/plugins/budgie-takeabreak`. Log out and back in, add the applet from Budgie Settings.
 
 
