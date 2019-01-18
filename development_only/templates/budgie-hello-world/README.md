@@ -6,7 +6,7 @@ Hello World is a Budgie Desktop applet example of vala.
 
 Evo Pop                    |  Arc Design
 :-------------------------:|:-------------------------:
-<img src="https://github.com/bashfulrobot/experimental/blob/master/development_only/templates/budgie-hello-world/screenshots/screenshot1.gif" width="300"/>  |  <img src="https://github.com/bashfulrobot/experimental/blob/master/development_only/templates/budgie-hello-world/screenshots/screenshot2.gif" width="300"/>
+<img src="https://github.com/UbuntuBudgie/experimental/blob/master/development_only/templates/budgie-hello-world/screenshots/screenshot1.gif" width="300"/>  |  <img src="https://github.com/UbuntuBudgie/experimental/blob/master/development_only/templates/budgie-hello-world/screenshots/screenshot2.gif" width="300"/>
 
 <br/>
 
