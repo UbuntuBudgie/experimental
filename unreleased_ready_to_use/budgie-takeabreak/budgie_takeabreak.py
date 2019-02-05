@@ -137,7 +137,7 @@ class BudgieTakeaBreakApplet(Budgie.Applet):
         self.tab_message = ""
         Budgie.Applet.__init__(self)
         self.uuid = uuid
-        
+
         # applet appearance
         self.icon = Gtk.Image()
         self.img_normal = "takeabreak-symbolic"
@@ -146,7 +146,6 @@ class BudgieTakeaBreakApplet(Budgie.Applet):
             "takeabreak-symbolic", Gtk.IconSize.MENU
         )
 
-        
         self.box = Gtk.EventBox()
         self.box.add(self.icon)
         self.add(self.box)
