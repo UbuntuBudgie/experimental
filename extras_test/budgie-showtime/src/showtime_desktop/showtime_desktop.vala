@@ -525,6 +525,7 @@ namespace  ShowTime {
     }
 
     public static void main (string[] args) {
+        Thread.usleep(2000000);
         Gtk.init(ref args);
         new TimeWindow();
         Gtk.main();
