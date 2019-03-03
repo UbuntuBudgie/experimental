@@ -207,6 +207,7 @@ namespace  ShowTime {
             // set signal on windowsize change
             this.configure_event.connect(setcondition);
             new_setwindowposition();
+            update_interface();
             new Thread<bool> ("oldtimer", run_time);
         }
 
@@ -264,16 +265,17 @@ namespace  ShowTime {
         }
 
         private int[] get_windowsize () {
-            int width;
-            int height;
-            this.get_size (out width, out height);
+            int? width = null;
+            int? height = null;
+            while (width == null || height == null) {
+                this.get_size (out width, out height);
+            }
             return {width, height};
         }
 
         private void new_setwindowposition (int x = 0, int y = 0) {
 
             ShowTimeLog.update_log("walking in\n", "no data yet");
-
 
             int newx = 0;
             int newy = 0;
@@ -494,7 +496,7 @@ namespace  ShowTime {
 
         private bool run_time () {
             // make sure time shows instantly
-            update_interface();
+            //update_interface();
             calibrate_time();
             // this is the main time-loop
             int[] calibrated_loopdata = calibrate_time();
@@ -525,7 +527,6 @@ namespace  ShowTime {
     }
 
     public static void main (string[] args) {
-        Thread.usleep(2000000);
         Gtk.init(ref args);
         new TimeWindow();
         Gtk.main();
