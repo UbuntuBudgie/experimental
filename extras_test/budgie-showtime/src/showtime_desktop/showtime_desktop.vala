@@ -167,6 +167,7 @@ namespace  ShowTime {
             );
             dateformat = get_dateformat();
             appearance = new ShowTimeappearance();
+            ShowTimeLog.update_log("timewindow constructor\n", "start");
             // window
             this.title = "Showtime";
             this.set_type_hint(Gdk.WindowTypeHint.DESKTOP);
@@ -189,13 +190,12 @@ namespace  ShowTime {
             foreach (string s in bind) {
                 showtime_settings.changed[s].connect(update_appearance);
             }
+            skip_update = true;
             showtime_settings.changed["draggable"].connect(update_positionsettings);
             update_appearance();
             appearance.get_appearance(screen);
             // surpass on initiation
-            skip_update = true;
             update_positionsettings ();
-            skip_update = false;
             // transparency
             this.set_app_paintable(true);
             var visual = screen.get_rgba_visual();
@@ -209,6 +209,7 @@ namespace  ShowTime {
             new_setwindowposition();
             update_interface();
             new Thread<bool> ("oldtimer", run_time);
+            skip_update = false;
         }
 
         private bool setcondition () {
@@ -259,11 +260,17 @@ namespace  ShowTime {
             string newanchor = get_anchor();
             int currx = showtime_settings.get_int("xposition");
             if (newanchor == "ne") {
+                ShowTimeLog.update_log("act_onalignment\n", "ne");
+
                 currx = currx + get_windowsize()[0];
             }
             else if (newanchor == "nw") {
+                ShowTimeLog.update_log("act_onalignment\n", "nw");
+
                 currx = currx - get_windowsize()[0];
             }
+            ShowTimeLog.update_log("act_onalignment\n", "going to write new x and y");
+
             showtime_settings.set_int("xposition", currx);
         }
 
@@ -446,6 +453,8 @@ namespace  ShowTime {
                 this.get_position (out newroot_x, out newroot_y);
                 root_x = newroot_x + add;
                 root_y = newroot_y;
+                ShowTimeLog.update_log("update_positionsettings\n", "going to write new x and y");
+
                 showtime_settings.set_int("xposition", root_x);
                 showtime_settings.set_int("yposition", root_y);
             }
