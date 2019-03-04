@@ -282,6 +282,9 @@ namespace  ShowTime {
                     giveup = true;
                     break;
                 }
+            }
+            if (giveup) {
+                print("trying to quit\n");
                 Gtk.main_quit();
             }
             return {width, height};
