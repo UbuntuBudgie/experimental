@@ -217,7 +217,10 @@ namespace  ShowTime {
             // -but not if the window is draggable...
             bool drag = showtime_settings.get_boolean("draggable");
             if (!bypass && !drag) {
-                new_setwindowposition();
+                Idle.add ( () => {
+                    new_setwindowposition();
+                    return false;
+                });
             }
             return false;
         }
@@ -269,6 +272,7 @@ namespace  ShowTime {
             int? height = null;
             while (width == null || height == null) {
                 this.get_size (out width, out height);
+                Thread.usleep(100000);
             }
             return {width, height};
         }
