@@ -270,9 +270,19 @@ namespace  ShowTime {
         private int[] get_windowsize () {
             int? width = null;
             int? height = null;
+            bool giveup = false;
+            //prevent initial delay
+            int n = 0;
+            this.get_size (out width, out height);
             while (width == null || height == null) {
                 this.get_size (out width, out height);
-                Thread.usleep(100000);
+                Thread.usleep(50000);
+                n += 1;
+                if (n >= 100) {
+                    giveup = true;
+                    break;
+                }
+                Gtk.main_quit();
             }
             return {width, height};
         }
