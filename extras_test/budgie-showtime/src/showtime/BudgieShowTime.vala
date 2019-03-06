@@ -1,6 +1,7 @@
 using Gtk;
 using Gdk;
 using Math;
+using Wnck;
 
 /*
 * BudgieShowTimeII
@@ -28,6 +29,9 @@ namespace BudgieShowTimeApplet {
         /* Budgie Settings -section */
         GLib.Settings? settings = null;
         Button dragbutton;
+        RadioButton[] anchorbuttons;
+        string[] anchors;
+        string curr_anchor;
         CheckButton leftalign;
         CheckButton twelve_hrs;
         Gtk.FontButton timefontbutton;
@@ -39,6 +43,8 @@ namespace BudgieShowTimeApplet {
         Label draghint;
         string dragposition;
         string fixposition;
+        Grid anchorgrid;
+        CheckButton autopos;
 
         public BudgieShowTimeSettings(GLib.Settings? settings) {
 
@@ -56,20 +62,49 @@ namespace BudgieShowTimeApplet {
             var screen = this.get_screen();
             // window content
             this.set_row_spacing(10);
-            var position_header = new Gtk.Label(_("Position"));
+            var position_header = new Gtk.Label(_("Position & anchor"));
             position_header.xalign = 0;
             this.attach(position_header, 0, 0, 10, 1);
+            // automatic positioning
+            autopos = new CheckButton.with_label((_("Automatic")));
+            // first get setting
+            autopos.toggled.connect(toggle_autopos);
+            this.attach(autopos, 0, 1, 10, 1);
             // drag button
-            var dragbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            this.attach(dragbox, 0, 1, 2, 1);
             dragbutton = new Gtk.Button();
             dragbutton.set_tooltip_text(dragtext);
             dragbutton.set_label(_("Drag position"));
             dragbutton.set_size_request(150, 10);
-            dragbox.pack_start(dragbutton, false, false, 0);
             draghint = new Gtk.Label("");
             draghint.xalign = (float)0.5;
-            this.attach(draghint, 0, 2, 2, 1);
+            //this.attach(draghint, 0, 2, 2, 1);
+            // anchor section
+            anchorgrid = new Gtk.Grid();
+            var leftspace = new Gtk.Label("\t");
+            var centerlabel = new Gtk.Label("\t");
+            anchorgrid.attach(leftspace, 1, 0, 1, 1);
+            anchorgrid.attach(centerlabel, 3, 1, 1, 1);
+            // group leader
+            var nw = new RadioButton(null);
+            // group
+            anchors = {"nw", "ne", "se", "sw"};
+            var ne = new RadioButton(nw.get_group());
+            var se = new RadioButton(nw.get_group());
+            var sw = new RadioButton(nw.get_group());
+            anchorgrid.attach(nw, 2, 0, 1, 1);
+            anchorgrid.attach(ne, 4, 0, 1, 1);
+            anchorgrid.attach(se, 4, 2, 1, 1);
+            anchorgrid.attach(sw, 2, 2, 1, 1);
+            anchorgrid.attach(dragbutton, 0, 1, 1, 1);
+            anchorgrid.attach(draghint, 0, 0, 1, 1);
+            this.attach(anchorgrid, 0, 2, 2, 1);
+            // group stuff
+            anchorbuttons = {nw, ne, se, sw};
+            anchors = {"nw", "ne", "se", "sw"};
+            curr_anchor = showtime_settings.get_string("anchor");
+            anchorbuttons[
+                get_stringindex(anchors, curr_anchor)
+            ].set_active(true);
             // time font settings -> boxed!!
             var time_header = new Gtk.Label(_("Time font, size & color"));
             time_header.xalign = 0;
@@ -131,6 +166,64 @@ namespace BudgieShowTimeApplet {
             this.show_all();
         }
 
+        private int get_stringindex (string[] arr, string lookfor) {
+            // get index of string in list
+            for (int i=0; i < arr.length; i++) {
+                if(lookfor == arr[i]) return i;
+            }
+            return -1;
+        }
+
+        private void set_anchor (ToggleButton button) {
+            int n = 0;
+            string newanchor = "se";
+            foreach (ToggleButton b in anchorbuttons) {
+                if (b == button) {
+                    newanchor = anchors[n];
+                }
+                n += 1;
+            }
+            update_xy_gsettings(newanchor);
+        }
+
+        private void update_xy_gsettings (string newanchor) {
+            /*
+            if anchor or dragged position changes,
+            update gsettings position and anchor
+            */
+            int[] windata = getwindata();
+            int newx = windata[0];
+            int newy = windata[1];
+            if (newanchor.contains("e")) {
+                newx = windata[0] + windata[2];
+            }
+            if (newanchor.contains("s")) {
+                newy = windata[1] + windata[3];
+            }
+            curr_anchor = newanchor;
+            // Set gsettings!! both xpos/ypos & anchor...
+            showtime_settings.set_string("anchor", curr_anchor);
+            showtime_settings.set_int("xposition", newx);
+            showtime_settings.set_int("yposition", newy);
+        }
+
+        private int[] getwindata () {
+            int x;
+            int y;
+            int wth;
+            int hth;
+            unowned Wnck.Screen scr = Wnck.Screen.get_default();
+            scr.force_update();
+            unowned List<Wnck.Window> wins = scr.get_windows();
+            foreach (Wnck.Window w in wins) {
+                if (w.get_name() == "Showtime") {
+                    w.get_geometry(out x, out y, out wth, out hth);
+                    return {x, y, wth, hth};
+                }
+            }
+            return {0, 0, 0, 0};
+        }
+
         private void set_newlinespacing (SpinButton button, string setting) {
             // get current settings from button, set gsetings
             int newval = (int)button.get_value();
@@ -147,6 +240,13 @@ namespace BudgieShowTimeApplet {
             set_initialcheck(twelve_hrs, "twelvehrs");
             set_initialfont(timefontbutton, "timefont");
             set_initialfont(datefontbutton, "datefont");
+            set_initialautopos();
+        }
+
+        public void set_initialautopos () {
+            bool newval = showtime_settings.get_boolean("autoposition");
+            autopos.set_active(newval);
+            anchorgrid.set_sensitive(!newval);
         }
 
         private void set_initialfont (FontButton button, string setting) {
@@ -191,6 +291,25 @@ namespace BudgieShowTimeApplet {
             twelve_hrs.toggled.connect (() => {
                 toggle_value(twelve_hrs, "twelvehrs");
             });
+            // connect anchors
+            foreach (RadioButton b in anchorbuttons) {
+                b.toggled.connect (() => {
+                    filter_active(b);
+                });
+            }
+        }
+
+        private void filter_active (ToggleButton button) {
+            // only act on activating button, not on deactivating
+            if (button.get_active()) {
+                set_anchor(button);
+            }
+        }
+
+        private void toggle_autopos (ToggleButton button) {
+            bool val = button.get_active();
+            anchorgrid.set_sensitive(!val);
+            showtime_settings.set_boolean("autoposition", val);
         }
 
         private void set_hexcolor(ColorButton button, string setting) {
@@ -223,6 +342,7 @@ namespace BudgieShowTimeApplet {
         private void set_initialdrag () {
             // get current settings from gsettinsg, set dragbutton label
             bool curr_draggable = showtime_settings.get_boolean("draggable");
+            autopos.set_sensitive(!curr_draggable);
             dragbutton.set_label(dragposition);
             if (curr_draggable) {
                 dragbutton.set_label(fixposition);
@@ -230,12 +350,15 @@ namespace BudgieShowTimeApplet {
         }
 
         private void toggle_drag () {
-            // act on toggling drag, chage label
+            // act on toggling drag, change label, set widgets
             bool curr_draggable = showtime_settings.get_boolean("draggable");
+            autopos.set_sensitive(curr_draggable);
+            // update gsettings toggle setting
             showtime_settings.set_boolean("draggable", !curr_draggable);
             if (curr_draggable) {
                 dragbutton.set_label(dragposition);
                 draghint.set_text("");
+                update_xy_gsettings(curr_anchor);
             }
             else {
                 dragbutton.set_label(fixposition);
@@ -243,7 +366,6 @@ namespace BudgieShowTimeApplet {
             }
         }
     }
-
 
     public class Plugin : Budgie.Plugin, Peas.ExtensionBase {
 
@@ -267,7 +389,7 @@ namespace BudgieShowTimeApplet {
         }
 
         private void open_window(string path) {
-            // call the set-color window
+            // call the desktop showtime window
             bool win_exists = check_onwindow(path);
             if (!win_exists) {
                 try {
@@ -280,6 +402,7 @@ namespace BudgieShowTimeApplet {
         }
 
         private bool check_onwindow(string path) {
+            // check if the desktop window exists
             string cmd_check = "pgrep -f " + path;
             string output;
             try {
@@ -296,6 +419,7 @@ namespace BudgieShowTimeApplet {
         }
 
         public Applet() {
+            // call desktop window
             open_window(moduledir.concat("/showtime_desktop"));
             initialiseLocaleLanguageSupport();
         }

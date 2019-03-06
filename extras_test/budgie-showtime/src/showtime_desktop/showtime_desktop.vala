@@ -2,82 +2,6 @@ using Gtk;
 using Math;
 using Cairo;
 
-namespace ShowTimeLog {
-        ///////////////////////////////////////////////////////////////////////////////////////
-    /////
-
-    public string create_dirs_file (string subpath, string filename) {
-        // if needed, creates directory for logfile
-        string homedir = Environment.get_home_dir();
-        string fullpath = GLib.Path.build_path(
-            GLib.Path.DIR_SEPARATOR_S, homedir, subpath, filename
-        );
-        GLib.File file = GLib.File.new_for_path(fullpath);
-        try {
-            file.make_directory_with_parents();
-        }
-        catch (Error e) {
-            /* the directory exists, nothing to be done */
-        }
-        return GLib.Path.build_filename(fullpath, filename);
-    }
-
-    private string currtime() {
-        // creates the timestamp for the log file
-        var logtime = new DateTime.now_local();
-        int hrs = logtime.get_hour();
-        int mins = logtime.get_minute();
-        string pre = "";
-        if (mins < 10) {
-            pre = "0";
-        }
-        return @"$hrs:$pre$mins";
-    }
-
-
-    private void update_log (
-        string wtype, string output
-
-        ) {
-        // update log file
-        string loglocation = create_dirs_file(".config/budgie-extras", "showtimelog");
-        var logfile = File.new_for_path (loglocation);
-        if (!logfile.query_exists ()) {
-            var file_stream = logfile.create (FileCreateFlags.NONE);
-        }
-        var logtime = currtime();
-        // read history
-        string glue = "\n=\n";
-        string file_contents;
-        FileUtils.get_contents(loglocation, out file_contents);
-        string[] records = file_contents.split(glue);
-        int length = records.length;
-        string[] keeprecords;
-        if (length > 40) {
-            keeprecords = records[length - 40:length];
-        }
-        else {keeprecords = records;}
-        // add new record
-        string log_output = "time: ".concat(
-            logtime, "\n", wtype, " ", output, glue
-        );
-        keeprecords += log_output;
-        string newlog = string.joinv(glue, keeprecords);
-        // delete previous version
-        if (logfile.query_exists ()) {
-            logfile.delete ();
-        }
-        var file_stream = logfile.create (FileCreateFlags.NONE);
-        var data_stream = new DataOutputStream (file_stream);
-        data_stream.put_string (newlog);
-    }
-
-    /////
-    ///////////////////////////////////////////////////////////////////////////////////////
-
-
-}
-
 
 namespace  ShowTime {
 
@@ -87,7 +11,6 @@ namespace  ShowTime {
     private Label timelabel;
     private Label datelabel;
     GLib.Settings showtime_settings;
-
     private class ShowTimeappearance {
 
         public void get_appearance (Gdk.Screen screen) {
@@ -150,24 +73,18 @@ namespace  ShowTime {
     public class TimeWindow : Gtk.Window {
         int next_time;
         bool twelvehrs;
-        bool showdate;
         string dateformat;
         ShowTimeappearance appearance;
-        bool skip_update;
-        int root_x;
-        int root_y;
         bool bypass;
 
         public TimeWindow () {
             // define stuff
-            check_res();
             bypass = false;
             showtime_settings = new GLib.Settings(
                 "org.ubuntubudgie.plugins.budgie-showtime"
             );
             dateformat = get_dateformat();
             appearance = new ShowTimeappearance();
-            ShowTimeLog.update_log("timewindow constructor\n", "start");
             // window
             this.title = "Showtime";
             this.set_type_hint(Gdk.WindowTypeHint.DESKTOP);
@@ -183,33 +100,26 @@ namespace  ShowTime {
             maingrid.attach(datelabel, 0, 1, 1, 1);
             this.add(maingrid);
             string[] bind = {
-                "leftalign", "showdate", "twelvehrs", "xposition",
+                "leftalign", "twelvehrs", "xposition",
                 "yposition", "linespacing", "timefontcolor", "linespacing",
                 "datefontcolor", "timefont", "datefont"
             };
             foreach (string s in bind) {
                 showtime_settings.changed[s].connect(update_appearance);
             }
-            skip_update = true;
-            showtime_settings.changed["draggable"].connect(update_positionsettings);
+            showtime_settings.changed["draggable"].connect(toggle_draggable);
             update_appearance();
             appearance.get_appearance(screen);
-            // surpass on initiation
-            update_positionsettings ();
             // transparency
             this.set_app_paintable(true);
             var visual = screen.get_rgba_visual();
             this.set_visual(visual);
             this.draw.connect(on_draw);
             this.show_all();
-            // set new x pos in gsettings if not anchor = se or sw
-            showtime_settings.changed["leftalign"].connect(act_onalignment);
-            // set signal on windowsize change
+            set_windowposition();
             this.configure_event.connect(setcondition);
-            new_setwindowposition();
-            update_interface();
+            showtime_settings.changed["autoposition"].connect(set_windowposition); ////
             new Thread<bool> ("oldtimer", run_time);
-            skip_update = false;
         }
 
         private bool setcondition () {
@@ -218,10 +128,7 @@ namespace  ShowTime {
             // -but not if the window is draggable...
             bool drag = showtime_settings.get_boolean("draggable");
             if (!bypass && !drag) {
-                Idle.add ( () => {
-                    new_setwindowposition();
-                    return false;
-                });
+                set_windowposition();
             }
             return false;
         }
@@ -230,115 +137,48 @@ namespace  ShowTime {
             return showtime_settings.get_boolean("leftalign");
         }
 
-        private string get_anchor () {
-            // check what should be the anchor, given cuurent settings
-            int xpos = showtime_settings.get_int("xposition");
-            int ypos = showtime_settings.get_int("yposition");
-            if (ypos == -1) {
-                if (xpos == 1) {
-                    return "sw";
-                }
-                else if (xpos == 2) {
-                    return "se";
-                }
-            }
-            else {
-                bool left = get_leftalign();
-                if (left) {
-                    return "nw";
-                }
-                else {
-                    return "ne";
-                }
-            }
-            return "";
-        }
-
-        private void act_onalignment () {
-            // edit gsettings on xposition if ne or nw
-            // no need for reposition, windowsize remains the same
-            string newanchor = get_anchor();
-            int currx = showtime_settings.get_int("xposition");
-            if (newanchor == "ne") {
-                ShowTimeLog.update_log("act_onalignment\n", "ne");
-
-                currx = currx + get_windowsize()[0];
-            }
-            else if (newanchor == "nw") {
-                ShowTimeLog.update_log("act_onalignment\n", "nw");
-
-                currx = currx - get_windowsize()[0];
-            }
-            ShowTimeLog.update_log("act_onalignment\n", "going to write new x and y");
-
-            showtime_settings.set_int("xposition", currx);
-        }
-
         private int[] get_windowsize () {
-            int? width = null;
-            int? height = null;
-            bool giveup = false;
-            //prevent initial delay
-            int n = 0;
+            int width;
+            int height;
             this.get_size (out width, out height);
-            while (width == null || height == null) {
-                this.get_size (out width, out height);
-                Thread.usleep(50000);
-                n += 1;
-                if (n >= 100) {
-                    giveup = true;
-                    break;
-                }
-            }
-            if (giveup) {
-                print("trying to quit\n");
-                Gtk.main_quit();
-            }
             return {width, height};
         }
 
-        private void new_setwindowposition (int x = 0, int y = 0) {
-
-            ShowTimeLog.update_log("walking in\n", "no data yet");
-
-            int newx = 0;
-            int newy = 0;
-            string anchor = get_anchor();
-            ShowTimeLog.update_log("anchor:", anchor);
-            if (anchor != "nw") {
-                // make sure the width / height are available
-                if (x == 0 || y == 0) {
-                    int[] winsize = get_windowsize();
-                    x = winsize[0];
-                    y = winsize[1];
-                }
-                if (anchor == "se") {
-                    // get right/bottom
-                    int [] scrdata = check_res();
-                    int rightside = scrdata[0] + scrdata[2];
-                    int downside = scrdata[1] + scrdata[3];
-                    ShowTimeLog.update_log("screendata: ", @"$rightside, $downside");
-                    //
-                    newx = rightside - 150 - x;
-                    newy = downside - 150 - y;
-                }
-                else if (anchor == "sw") {
-                    int [] scrdata = check_res();
-                    newx = scrdata[2] + 150;
-                    int downside = scrdata[1] + scrdata[3];
-                    newy = downside - 150 - y;
-                }
-                else if (anchor == "nw") {
-                    newx = showtime_settings.get_int("xposition");
-                    newy = showtime_settings.get_int("yposition");
-                }
-                else if (anchor == "ne") {
-                    newx = showtime_settings.get_int("xposition") - x;
-                    newy = showtime_settings.get_int("yposition");
-                }
-                ShowTimeLog.update_log("new position:", @"$newx, $newy");
-                this.move(newx, newy);
+        public void set_windowposition () {
+            int setx;
+            int sety;
+            string anchor;
+            bool autopostition = showtime_settings.get_boolean("autoposition");
+            if (autopostition) {
+                int[] newpos = get_default_right();
+                setx = newpos[0];
+                sety = newpos[1];
+                anchor = "se";
             }
+            else {
+                anchor = showtime_settings.get_string("anchor");
+                setx = showtime_settings.get_int("xposition");
+                sety = showtime_settings.get_int("yposition");
+            }
+            int[] winsize = get_windowsize();
+            int wd = winsize[0];
+            int ht = winsize[1];
+            int usedx = setx;
+            int usedy = sety;
+            if (anchor.contains("e")) {
+                usedx = setx - winsize[0];
+            }
+            if (anchor.contains("s")) {
+                usedy = sety - winsize[1];
+            }
+            this.move(usedx, usedy);
+        }
+
+        private int[] get_default_right () {
+            int[] screendata = check_res();
+            int x = screendata[0] + screendata[2] - 150;
+            int y = screendata[1] + screendata[3] - 150;
+            return {x, y};
         }
 
         private int[] check_res() {
@@ -368,12 +208,6 @@ namespace  ShowTime {
             }
             return -1;
         }
-
-        /* private string capitalize (string s) {
-            string header = s.substring(0, 1).up();
-            string remaining = s.substring(1, s.length - 1);
-            return header.concat(remaining);
-        } */
 
         private string fix_mins(int minutes) {
             // make sure the minutes are displayed in double digits
@@ -437,26 +271,13 @@ namespace  ShowTime {
             }
         }
 
-        private void update_positionsettings () {
-            int add = 0;
+        private void toggle_draggable () {
             bool draggable = showtime_settings.get_boolean("draggable");
             if (draggable) {
                 this.set_type_hint(Gdk.WindowTypeHint.NORMAL);
             }
-            else if (!skip_update) {
+            else {
                 this.set_type_hint(Gdk.WindowTypeHint.DESKTOP);
-                if (!get_leftalign()) {
-                    add = get_windowsize()[0];
-                }
-                int newroot_x;
-                int newroot_y;
-                this.get_position (out newroot_x, out newroot_y);
-                root_x = newroot_x + add;
-                root_y = newroot_y;
-                ShowTimeLog.update_log("update_positionsettings\n", "going to write new x and y");
-
-                showtime_settings.set_int("xposition", root_x);
-                showtime_settings.set_int("yposition", root_y);
             }
         }
 
@@ -468,7 +289,7 @@ namespace  ShowTime {
             datelabel.xalign = al;
             // showdate
             linespacing = showtime_settings.get_int("linespacing");
-            showdate = showtime_settings.get_boolean("showdate");
+
             twelvehrs = showtime_settings.get_boolean("twelvehrs");
             appearance.get_appearance(screen);
             update_interface();
@@ -477,7 +298,6 @@ namespace  ShowTime {
         private void update_interface () {
             var now = new DateTime.now_local();
             string datestring = now.format(dateformat);
-            if (!showdate) {datestring = "";}
             appearance.get_hexcolor(get_localtime(now), datestring);
         }
 
@@ -522,7 +342,7 @@ namespace  ShowTime {
 
         private bool run_time () {
             // make sure time shows instantly
-            //update_interface();
+            update_interface();
             calibrate_time();
             // this is the main time-loop
             int[] calibrated_loopdata = calibrate_time();
