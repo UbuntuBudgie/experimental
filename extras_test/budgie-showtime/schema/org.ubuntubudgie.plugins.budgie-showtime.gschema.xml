@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
+    <enum id="org.ubuntubudgie.plugins.budgie-showtime.Anchor">
+        <value nick="nw" value="1" />
+        <value nick="ne" value="2" />
+        <value nick="se" value="3" />
+        <value nick="sw" value="4" />
+    </enum>
     <schema path="/org/ubuntubudgie/plugins/budgie-showtime/"
             id="org.ubuntubudgie.plugins.budgie-showtime">
         <key type="s" name="dateformat">
@@ -27,14 +33,14 @@
             <description>The font and fontstyle, showing on the desktop's time representation</description>
             <default>"Sans 50"</default>
         </key>
-        <key type="s" name="anchor">
+        <key enum="org.ubuntubudgie.plugins.budgie-showtime.Anchor" name="anchor">
             <summary>Window anchor of the desktop representation</summary>
             <description>Which corner should be pinned to the desktop. Window will expand on the opposite direction(s)</description>
             <default>"se"</default>
         </key>
         <key type="i" name="xposition">
             <summary>X- position of the desktop window</summary>
-            <description>Sets the X position, if y is also -1, x=1 positions to the left and x=2 positions to the right</description>
+            <description>Sets the screen X position</description>
 	    <default>200</default>
         </key>
         <key type="i" name="linespacing">
@@ -44,7 +50,7 @@
         </key>
         <key type="i" name="yposition">
             <summary>Y- position of the desktop window</summary>
-            <description>Sets the Y position, -1 sets to default (bottom left or right)</description>
+            <description>Sets the screen Y position</description>
 	    <default>200</default>
         </key>
         <key type="b" name="twelvehrs">
@@ -59,7 +65,7 @@
         </key>
 
         <key type="b" name="autoposition">
-            <summary>Wether to automatically set position</summary>
+            <summary>Automatically set position</summary>
             <description>If selected, the window sets to a default position</description>
             <default>true</default>
         </key>

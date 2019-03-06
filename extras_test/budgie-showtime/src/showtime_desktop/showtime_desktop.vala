@@ -161,8 +161,6 @@ namespace  ShowTime {
                 sety = showtime_settings.get_int("yposition");
             }
             int[] winsize = get_windowsize();
-            int wd = winsize[0];
-            int ht = winsize[1];
             int usedx = setx;
             int usedy = sety;
             if (anchor.contains("e")) {
