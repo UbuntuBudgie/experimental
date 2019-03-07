@@ -308,6 +308,19 @@ namespace BudgieShowTimeApplet {
 
         private void toggle_autopos (ToggleButton button) {
             bool val = button.get_active();
+            if (!val) {
+                /*
+                if automatic is switched off start off from the current
+                position and anchor settings
+                */
+                int[] currpos = getwindata();
+                int newx = currpos[0] + currpos[2];
+                int newy = currpos[1] + currpos[3];
+                showtime_settings.set_int("xposition", newx);
+                showtime_settings.set_int("yposition", newy);
+                showtime_settings.set_string("anchor", "se");
+            }
+            anchorbuttons[2].set_active(true);
             anchorgrid.set_sensitive(!val);
             showtime_settings.set_boolean("autoposition", val);
         }
