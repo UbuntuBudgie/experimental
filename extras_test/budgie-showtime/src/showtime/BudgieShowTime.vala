@@ -45,6 +45,7 @@ namespace BudgieShowTimeApplet {
         string fixposition;
         Grid anchorgrid;
         CheckButton autopos;
+        Label spinlabel;
 
         public BudgieShowTimeSettings(GLib.Settings? settings) {
 
@@ -143,7 +144,7 @@ namespace BudgieShowTimeApplet {
             this.attach(linespacebox, 0, 30, 3, 1);
             linespacing = new Gtk.SpinButton.with_range (-50, 50, 1);
             linespacebox.pack_start(linespacing, false, false, 0);
-            var spinlabel = new Gtk.Label(_("Linespacing"));
+            spinlabel = new Gtk.Label(_("Linespacing"));
             linespacebox.pack_start(spinlabel, false, false, 0);
             // Set style on headers
             Gtk.CssProvider css_provider = new Gtk.CssProvider();
@@ -355,17 +356,32 @@ namespace BudgieShowTimeApplet {
         private void set_initialdrag () {
             // get current settings from gsettinsg, set dragbutton label
             bool curr_draggable = showtime_settings.get_boolean("draggable");
-            autopos.set_sensitive(!curr_draggable);
+            toggle_sensitive(!curr_draggable);
             dragbutton.set_label(dragposition);
             if (curr_draggable) {
                 dragbutton.set_label(fixposition);
             }
         }
 
+        private void toggle_sensitive (bool active) {
+            autopos.set_sensitive(active);
+            foreach (RadioButton b in anchorbuttons) {
+                b.set_sensitive(active);
+            }
+            datefontbutton.set_sensitive(active);
+            datecolor.set_sensitive(active);
+            timefontbutton.set_sensitive(active);
+            timecolor.set_sensitive(active);
+            leftalign.set_sensitive(active);
+            twelve_hrs.set_sensitive(active);
+            linespacing.set_sensitive(active);
+            spinlabel.set_sensitive(active);
+        }
+
         private void toggle_drag () {
             // act on toggling drag, change label, set widgets
             bool curr_draggable = showtime_settings.get_boolean("draggable");
-            autopos.set_sensitive(curr_draggable);
+            toggle_sensitive(curr_draggable);
             // update gsettings toggle setting
             showtime_settings.set_boolean("draggable", !curr_draggable);
             if (curr_draggable) {
