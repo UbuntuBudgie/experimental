@@ -44,15 +44,4 @@ class ToggleDesktopIconsApplet(Budgie.Applet):
     def toggle_show(self, box, button):
         currset.set_boolean(
             val, currset.get_boolean(val) == False
-        )
-
-    def alternative_desktop(self, box, button):
-        path = "/home/jacob/Desktop/alternative_desktop"
-        try:
-            pid = subprocess.check_output([
-                "pgrep", "-f", path
-            ]).decode("utf-8").strip()
-            subprocess.Popen(["kill", str(pid)])
-        except subprocess.CalledProcessError:
-            subprocess.Popen(path)
-        
+        )     
