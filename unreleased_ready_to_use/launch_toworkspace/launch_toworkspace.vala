@@ -26,22 +26,16 @@ namespace move_newwins {
     int[] targeted_workspaces;
     Wnck.Workspace[] workspaces;
 
-    private Wnck.Screen getscreen () {
-        unowned Wnck.Screen scr = Wnck.Screen.get_default();
-        scr.force_update();
-        return scr;
-    }
-
     private void getstarted() {
-        Wnck.Screen screen = getscreen();
+        unowned Wnck.Screen screen = Wnck.Screen.get_default();
         update_workspaces(screen);
-        screen.window_opened.connect(newwin);
         screen.workspace_created.connect(() => {
             update_workspaces(screen);
         });
         screen.workspace_destroyed.connect(() => {
             update_workspaces(screen);
         });
+        screen.window_opened.connect(newwin);
     }
 
     private void update_workspaces (Wnck.Screen screen) {
@@ -81,5 +75,4 @@ namespace move_newwins {
         getstarted();
         Gtk.main();
     }
-
 }
