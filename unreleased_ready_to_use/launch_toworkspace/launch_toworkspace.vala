@@ -28,6 +28,7 @@ namespace move_newwins {
 
     private void getstarted() {
         unowned Wnck.Screen screen = Wnck.Screen.get_default();
+        screen.force_update();
         update_workspaces(screen);
         screen.workspace_created.connect(() => {
             update_workspaces(screen);
