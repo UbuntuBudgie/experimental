@@ -1,5 +1,4 @@
 using Wnck;
-using Gdk;
 using Gtk;
 
 /*
