@@ -9,6 +9,7 @@ namespace NewPreviews {
     int currtilindex;
     int currws;
     int maxcol;
+    bool allworkspaces;
     Gtk.Button[] currbuttons;
     string user;
     File triggerdir;
@@ -294,14 +295,24 @@ namespace NewPreviews {
             this.add(maingrid);
         }
 
+
+        ///////////////////////////////////////////////////////////////////////////////
         private bool filter_workspace (int windowspace, int currspace) {
-            if (windowspace == currspace) {
+            // bool defaultfilter = gsettings!!
+            // check on workspace if set in gsettings
+            if (allworkspaces) {
                 return true;
             }
-            return false;
+            else {
+                if (windowspace == currspace) {
+                    return true;
+                }
+                return false;
+            }
         }
-
+         /////////////////////////////////////////////////////////////////////////////// 
         private Grid create_hspacer(int extend = 0) {
+            // last row needs to be positioned, add to all boxes, set the last
             var spacegrid = new Gtk.Grid();
             spacegrid.attach(new Gtk.Grid(), 0, 0, 1, 1);
             spacegrid.attach(new Gtk.Grid(), 1, 0, 1, 1);
@@ -319,11 +330,13 @@ namespace NewPreviews {
         }
 
         private void set_closebuttonimg(Button button, string path) {
+            // we don't like repeating
             var newimage = new Gtk.Image.from_file(path);
             button.set_image(newimage);
         }
 
         private void remove_button (Button button) {
+            // remove a button from the array of buttons
             Button[] newbuttons = {};
             foreach (Button b in currbuttons) {
                 if (b != button) {
@@ -511,6 +524,10 @@ namespace NewPreviews {
     private void windowdeamon(string[]? args = null) {
         // This is the daemon from where the previews window rises
         // paths and stuff
+        ///////////////////////////
+        //just a test for coming gsettings bool
+        allworkspaces = true;
+        ///////////////////////////
         user = Environment.get_user_name();
         triggerdir = File.new_for_path("/tmp");
         triggerfile = File.new_for_path("/tmp/".concat(user, "_prvtrigger"));
