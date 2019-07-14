@@ -7,7 +7,6 @@ using Gdk;
 namespace NewPreviews {
 
     int currtilindex;
-    GLib.Settings previews_settings;
     int currws;
     int maxcol;
     bool allworkspaces;
@@ -524,7 +523,7 @@ namespace NewPreviews {
 
     private void windowdeamon(string[]? args = null) {
         // This is the daemon from where the previews window rises
-        previews_settings = new GLib.Settings(
+        GLib.Settings previews_settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.budgie-wpreviews"
         );
         allworkspaces = previews_settings.get_boolean("allworkspaces");
