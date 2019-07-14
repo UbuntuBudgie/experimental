@@ -7,6 +7,7 @@ using Gdk;
 namespace NewPreviews {
 
     int currtilindex;
+    GLib.Settings previews_settings;
     int currws;
     int maxcol;
     bool allworkspaces;
@@ -523,10 +524,13 @@ namespace NewPreviews {
 
     private void windowdeamon(string[]? args = null) {
         // This is the daemon from where the previews window rises
-        // paths and stuff
-        ///////////////////////////
-        //just a test for coming gsettings bool
-        allworkspaces = true;
+        previews_settings = new GLib.Settings(
+            "org.ubuntubudgie.plugins.budgie-wpreviews"
+        );
+        allworkspaces = previews_settings.get_boolean("allworkspaces");
+        previews_settings.changed.connect (() => {
+            allworkspaces = previews_settings.get_boolean("allworkspaces");
+        });
         ///////////////////////////
         user = Environment.get_user_name();
         triggerdir = File.new_for_path("/tmp");
