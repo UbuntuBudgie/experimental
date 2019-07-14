@@ -7,6 +7,7 @@ using Gdk;
 namespace NewPreviews {
 
     int currtilindex;
+    int currws;
     int maxcol;
     Gtk.Button[] currbuttons;
     string user;
@@ -180,8 +181,8 @@ namespace NewPreviews {
             }
             // [3] create maingrid, you never know if we can use it...
             maingrid = new Gtk.Grid();
-            maingrid.attach(new Label("\n"), 0, 0, 1, 1); /////////////////////////////////////////////////////////////////////// removed \t  -> naar box
-            maingrid.attach(new Label("\n"), 100, 100, 1, 1); /////////////////////////////////////////////////////////////////////// removed \t -> naar box
+            maingrid.attach(new Label("\n"), 0, 0, 1, 1);
+            maingrid.attach(new Label("\n"), 100, 100, 1, 1);
             maingrid.set_column_spacing(20);
             maingrid.set_row_spacing(20);
             // [4] create arrays from dirlist -> window_id arr, path arr (which is dirlist), workspace arr
@@ -210,27 +211,34 @@ namespace NewPreviews {
             // [a] get windowstack
             z_list = scr.get_windows_stacked();
             // [b] get workspace
-            int ws = -1;
-            Wnck.Workspace curr = scr.get_active_workspace(); //.get_number();
-            if (curr != null) {
-                ws = curr.get_number();
-            }
+            //int ws = -1;
+            // Wnck.Workspace curr = scr.get_active_workspace(); //.get_number();
+            //if (currws != null) {
+            //    ws = curr.get_number();
+            //}
             foreach (Wnck.Window w in z_list) {
                 if (w.get_window_type() == Wnck.WindowType.NORMAL) {
                     // [c]
                     string z_intid = w.get_xid().to_string();
                     int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
-                    string img_path = currpreviews[dirlistindex]; // <
-                    string window_on_workspace = win_workspaces[dirlistindex];
-                    print(@"$z_intid, $dirlistindex, $img_path, on workspace: $window_on_workspace, currws: $ws\n");
-                    // [d]
-                    Pixbuf icon = w.get_mini_icon();
-                    Image img = new Gtk.Image.from_pixbuf(icon); // <
-                    string wname = w.get_name(); // < ellipsize in subgrid creator
-                    // [e]
-                    Grid newtile = makebuttongrid(img_path, img, wname, w);
-                    // [f]
-                    subgrids += newtile;
+                    int window_on_workspace = int.parse(
+                        win_workspaces[dirlistindex]
+                    );
+                    //print(@"check: $window_on_workspace, $currws\n");
+                    bool test = filter_workspace(window_on_workspace, currws);
+                    string wn = w.get_name();
+                    print(@"test: $wn, $window_on_workspace, $currws, $test\n");
+                    if (filter_workspace(window_on_workspace, currws)) {
+                        string img_path = currpreviews[dirlistindex]; // <
+                        // [d]
+                        Pixbuf icon = w.get_mini_icon();
+                        Image img = new Gtk.Image.from_pixbuf(icon); // <
+                        string wname = w.get_name(); // < ellipsize in subgrid creator
+                        // [e]
+                        Grid newtile = makebuttongrid(img_path, img, wname, w);
+                        // [f]
+                        subgrids += newtile;
+                    }
                 }
             }
             // new: reverse buttons, don't forget to delete on closing tile
@@ -255,6 +263,7 @@ namespace NewPreviews {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////// edit: make Box, add spacer etx
             var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 20); // firstbox
+
             box.pack_start(create_hspacer(), false, false, 0); // start spacer
             currlast_startspacer = create_hspacer();
             foreach (Grid g in reversed_tiles) {
@@ -271,18 +280,25 @@ namespace NewPreviews {
                 }
             }
             // add last box
+            box.pack_start(create_hspacer(), false, false, 0); // end spacer last one
             maingrid.attach(box, 1, row, 1);
             //print("col:" + col.to_string() + "\n");
             if (col != 0) {
-                print("need to adapt\n");
+                //print("need to adapt\n");
                 int tofix = maxcol - col;
-                print(@"need to adapt, $tofix\n");
+                //print(@"need to adapt, $tofix\n");
                 int add = tofix * 300 / 2;
                 currlast_startspacer.set_column_spacing (add);
             }
-
             this.title = "PreviewsWindow";
             this.add(maingrid);
+        }
+
+        private bool filter_workspace (int windowspace, int currspace) {
+            if (windowspace == currspace) {
+                return true;
+            }
+            return false;
         }
 
         private Grid create_hspacer(int extend = 0) {
@@ -381,12 +397,17 @@ namespace NewPreviews {
             actionbar.pack_end(closebutton, false, false, 0);
             closebutton.clicked.connect (() => {
                 // remove Button -button- from buttons!
-                remove_button(button);
                 uint now = Gtk.get_current_event_time();
                 w.close(now);
-                subgrid.destroy();
-                this.resize(100, 100);
-                //this.set_position(Gtk.WindowPosition.CENTER);
+                if (currbuttons.length == 1) {
+                    this.destroy();
+                }
+                else {
+                    remove_button(button);
+                    subgrid.destroy();
+                    currtilindex = 0;
+                    this.resize(100, 100);
+                }
             });
             return subgrid;
         }
@@ -429,7 +450,7 @@ namespace NewPreviews {
     private bool close_onrelease(Gdk.EventKey k) {
         // on releasing Alt_L, destroy previews, virtually click current button
         // (connect is gone with destroying previews window)
-        print("release event\n");
+        //print("release event\n");
         if (Gdk.keyval_name(k.keyval) == "Alt_L") {
             currbuttons[currtilindex].clicked();
         }
@@ -467,8 +488,24 @@ namespace NewPreviews {
         Gdk.Monitor prim = Gdk.Display.get_default().get_primary_monitor();
         var geo = prim.get_geometry();
         int width = geo.width;
-        print(@"width: $width\n");
+        //print(@"width: $width\n");
         maxcol = width / 360;
+    }
+
+    private void update_currws () {
+        scr.force_update();
+        var currspace = scr.get_active_workspace();
+        unowned GLib.List<Wnck.Workspace> currspaces = scr.get_workspaces();
+        int n = 0;
+        foreach (Wnck.Workspace ws in currspaces) {
+            if (ws == currspace) {
+                currws = n;
+                print(@"currspace: $n\n");
+                break;
+            }
+            n += 1;
+        }
+
     }
 
     private void windowdeamon(string[]? args = null) {
@@ -494,6 +531,10 @@ namespace NewPreviews {
         get_n_cols();
         // miscellaneous
         scr = Wnck.Screen.get_default();
+        scr.active_workspace_changed.connect(update_currws);
+        update_currws();
+
+
         scr.window_opened.connect(raise_previewswin);
         // prevent cold start (no clue why, but it works)
         showstuff = new PreviewsWindow();
