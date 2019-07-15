@@ -7,9 +7,11 @@ using Gdk;
 namespace NewPreviews {
 
     int currtilindex;
+    bool no_windows;
     int currws;
     int maxcol;
     bool allworkspaces;
+    bool allapps;
     Gtk.Button[] currbuttons;
     string user;
     File triggerdir;
@@ -157,6 +159,8 @@ namespace NewPreviews {
         }
 
         public PreviewsWindow () {
+            no_windows = true;
+            this.set_default_size(200, 150);
             this.set_decorated(false);
             monitor.changed.connect(actonbrowsetrigger);
             currbuttons = {};
@@ -211,6 +215,12 @@ namespace NewPreviews {
             */
             // [a] get windowstack
             z_list = scr.get_windows_stacked();
+
+            //string wm_class = "";
+            Wnck.ClassGroup wm_class = scr.get_active_window().get_class_group();
+
+
+
             // [b] get workspace
             //int ws = -1;
             // Wnck.Workspace curr = scr.get_active_workspace(); //.get_number();
@@ -219,17 +229,18 @@ namespace NewPreviews {
             //}
             foreach (Wnck.Window w in z_list) {
                 if (w.get_window_type() == Wnck.WindowType.NORMAL) {
-                    // [c]
                     string z_intid = w.get_xid().to_string();
                     int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
                     int window_on_workspace = int.parse(
                         win_workspaces[dirlistindex]
                     );
-                    //print(@"check: $window_on_workspace, $currws\n");
-                    bool test = filter_workspace(window_on_workspace, currws);
-                    string wn = w.get_name();
-                    print(@"test: $wn, $window_on_workspace, $currws, $test\n");
-                    if (filter_workspace(window_on_workspace, currws)) {
+                    //bool match = filter_wmclass(w, wm_class);
+                    //print(@"\nmatch: $match\n");
+                    if (
+                        filter_workspace(window_on_workspace, currws) &&
+                        filter_wmclass(w, wm_class)
+                    ) {
+                        no_windows = false;
                         string img_path = currpreviews[dirlistindex]; // <
                         // [d]
                         Pixbuf icon = w.get_mini_icon();
@@ -293,6 +304,21 @@ namespace NewPreviews {
             }
             this.title = "PreviewsWindow";
             this.add(maingrid);
+            print(@"no_windows: $no_windows\n");
+        }
+
+        private bool filter_wmclass (Wnck.Window w, Wnck.ClassGroup wm_class) {
+            if (allapps) {
+                return true;
+            }
+            else {
+                
+                Wnck.ClassGroup group = w.get_class_group();
+                if (group == wm_class) {
+                    return true;
+                }
+                return false;
+            }
         }
 
 
@@ -349,7 +375,6 @@ namespace NewPreviews {
         private Grid makebuttongrid(
             string imgpath, Image appicon, string windowname, Wnck.Window w
             ) {
-
             string picspath = "/usr/share/budgie-desktop/plugins/budgie-wprviews/pics";
             var subgrid = new Gtk.Grid();
             subgrid.set_row_spacing(0);
@@ -362,14 +387,12 @@ namespace NewPreviews {
             st_ct.add_class("windowbutton");
             st_ct.remove_class("image-button");
             button.set_relief(Gtk.ReliefStyle.NONE);
-
             button.clicked.connect (() => {
                 //raise_win(s);
                 uint now = Gtk.get_current_event_time();
                 w.activate(now);
                 showstuff.destroy();
             });
-
             currbuttons += button;
             subgrid.attach(button, 0, 1, 1, 1);
             // box
@@ -417,7 +440,8 @@ namespace NewPreviews {
                 }
                 else {
                     remove_button(button);
-                    subgrid.destroy();
+                    //subgrid.destroy();
+                    subgrid.set_sensitive(false);
                     currtilindex = 0;
                     this.resize(100, 100);
                 }
@@ -465,7 +489,12 @@ namespace NewPreviews {
         // (connect is gone with destroying previews window)
         //print("release event\n");
         if (Gdk.keyval_name(k.keyval) == "Alt_L") {
-            currbuttons[currtilindex].clicked();
+            if (!no_windows) {
+                currbuttons[currtilindex].clicked();
+            }
+            else {
+                showstuff.destroy();
+            }
         }
         return true;
     }
@@ -513,7 +542,7 @@ namespace NewPreviews {
         foreach (Wnck.Workspace ws in currspaces) {
             if (ws == currspace) {
                 currws = n;
-                print(@"currspace: $n\n");
+                //printprint(@"currspace: $n\n");
                 break;
             }
             n += 1;
@@ -523,6 +552,9 @@ namespace NewPreviews {
 
     private void windowdeamon(string[]? args = null) {
         // This is the daemon from where the previews window rises
+        ///////////////////////////
+        allapps = false;
+        ///////////////////////////
         GLib.Settings previews_settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.budgie-wpreviews"
         );
