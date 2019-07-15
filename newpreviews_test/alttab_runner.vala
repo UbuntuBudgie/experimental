@@ -15,9 +15,10 @@ namespace NewPreviews {
     Gtk.Button[] currbuttons;
     string user;
     File triggerdir;
-    File triggernext;
-    File triggerfile;
-    File triggerprevious;
+    File nexttrigger;
+    File allappstrigger;
+    File previoustrigger;
+    File triggercurrent;
     bool ignore;
     PreviewsWindow showstuff;
     string[] num_ids_fromdir;
@@ -140,20 +141,20 @@ namespace NewPreviews {
             """;
 
         public void actonbrowsetrigger () {
-            if (triggernext.query_exists()) {
+            if (nexttrigger.query_exists()) {
                 currtilindex += 1;
                 if (currtilindex == currbuttons.length) {
                     currtilindex = 0;
                 }
-                delete_file(triggernext);
+                delete_file(nexttrigger);
                 currbuttons[currtilindex].grab_focus();
             }
-            else if (triggerprevious.query_exists()) {
+            else if (previoustrigger.query_exists()) {
                 currtilindex -= 1;
                 if (currtilindex < 0) {
                     currtilindex =  currbuttons.length - 1;
                 }
-                delete_file(triggerprevious);
+                delete_file(previoustrigger);
                 currbuttons[currtilindex].grab_focus();
             }
         }
@@ -202,31 +203,10 @@ namespace NewPreviews {
                 string found_xid = last_section[0];
                 num_ids_fromdir += hextoint(found_xid);
             }
-            /*
-            [5]
-            [a] get windowstack.
-            [b] get workspace
-            Per window:
-            [c] get xid, from that, index in currpreviews
-                to look up img, path, workspace
-            [d] get appicon, w_name
-            [e] create buttongrid from ^
-            [f] add to subgrid array
-            */
-            // [a] get windowstack
+
             z_list = scr.get_windows_stacked();
 
-            //string wm_class = "";
             Wnck.ClassGroup wm_class = scr.get_active_window().get_class_group();
-
-
-
-            // [b] get workspace
-            //int ws = -1;
-            // Wnck.Workspace curr = scr.get_active_workspace(); //.get_number();
-            //if (currws != null) {
-            //    ws = curr.get_number();
-            //}
             foreach (Wnck.Window w in z_list) {
                 if (w.get_window_type() == Wnck.WindowType.NORMAL) {
                     string z_intid = w.get_xid().to_string();
@@ -234,8 +214,6 @@ namespace NewPreviews {
                     int window_on_workspace = int.parse(
                         win_workspaces[dirlistindex]
                     );
-                    //bool match = filter_wmclass(w, wm_class);
-                    //print(@"\nmatch: $match\n");
                     if (
                         filter_workspace(window_on_workspace, currws) &&
                         filter_wmclass(w, wm_class)
@@ -476,11 +454,13 @@ namespace NewPreviews {
 
     private void cleanup () {
         /*
-        delete (main) triggerfile after it did its job, reset ignore
+        delete (main) allappstrigger after it did its job, reset ignore
         (ignore is set true to prevent multiple previews while previews)
         window exists
         */
-        delete_file(triggerfile);
+        delete_file(allappstrigger);
+        delete_file(triggercurrent);
+
         ignore = false;
     }
 
@@ -499,24 +479,7 @@ namespace NewPreviews {
         return true;
     }
 
-    private void actonfile() {
-        // specifically acts on main triggerdir to create / destroy previews
-        // next / previous is handled form window
-        if (triggerfile.query_exists()) {
-            if (!ignore) {
-                showstuff = new PreviewsWindow();
-                showstuff.destroy.connect(cleanup);
-                showstuff.key_release_event.connect(close_onrelease);
-                showstuff.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
-                showstuff.show_all();
-            }
-            ignore = true;
-        }
-        else {
-            showstuff.destroy();
-            ignore = false;
-        }
-    }
+
 
     private void raise_previewswin(Wnck.Window newwin) {
         // make sure new previews window is activated on creation
@@ -535,7 +498,7 @@ namespace NewPreviews {
     }
 
     private void update_currws () {
-        scr.force_update();
+        // scr.force_update();
         var currspace = scr.get_active_workspace();
         unowned GLib.List<Wnck.Workspace> currspaces = scr.get_workspaces();
         int n = 0;
@@ -550,11 +513,50 @@ namespace NewPreviews {
 
     }
 
+    private void actonfile() {
+        /*
+        possible args, set here to decide action in the window:
+        - "current" (show only current apps)
+        - "previous" (go one tile reverse) <- handled from window
+
+        [previews_triggers] first creates a trigger file -allappstrigger- if no arg is
+        set, or -triggercurrent- if the arg "current" is set. this file will
+        trigger the previews daemon to show previews of all apps or only current
+
+        if the previews window exists however (and either one of the above
+        triggers), this executabel creates an additional -nexttrigger- if not
+        "previous" is set as arg, or -previoustrigger- if "previous" is set as arg
+        */
+        // optimize? -> file and event as args
+        bool allapps_trigger = allappstrigger.query_exists();
+        bool onlycurrent_trigger = triggercurrent.query_exists();
+        if (
+            allapps_trigger || onlycurrent_trigger
+        ) {
+            if (!ignore) {
+                if (allapps_trigger) {
+                    print("all: true\n");
+                    allapps = true;
+                }
+                else {
+                    allapps = false;
+                    print("all: false\n");
+                }
+                showstuff = new PreviewsWindow();
+                showstuff.destroy.connect(cleanup);
+                showstuff.key_release_event.connect(close_onrelease);
+                showstuff.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
+                showstuff.show_all();
+            }
+            ignore = true;
+        }
+        else {
+            showstuff.destroy();
+            ignore = false;
+        }
+    }
+
     private void windowdeamon(string[]? args = null) {
-        // This is the daemon from where the previews window rises
-        ///////////////////////////
-        allapps = false;
-        ///////////////////////////
         GLib.Settings previews_settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.budgie-wpreviews"
         );
@@ -562,12 +564,20 @@ namespace NewPreviews {
         previews_settings.changed.connect (() => {
             allworkspaces = previews_settings.get_boolean("allworkspaces");
         });
-        ///////////////////////////
         user = Environment.get_user_name();
         triggerdir = File.new_for_path("/tmp");
-        triggerfile = File.new_for_path("/tmp/".concat(user, "_prvtrigger"));
-        triggernext = File.new_for_path("/tmp/".concat(user, "_nexttrigger"));
-        triggerprevious = File.new_for_path("/tmp/".concat(user, "_previoustrigger"));
+        allappstrigger = File.new_for_path(
+            "/tmp/".concat(user, "_prvtrigger_all")
+        );
+        nexttrigger = File.new_for_path(
+            "/tmp/".concat(user, "_nexttrigger")
+        );
+        previoustrigger = File.new_for_path(
+            "/tmp/".concat(user, "_previoustrigger")
+        );
+        triggercurrent = File.new_for_path(
+            "/tmp/".concat(user, "_prvtrigger_current")
+        );
         // start the loop
         Gtk.init(ref args);
         // monitoring files / dirs
@@ -585,8 +595,6 @@ namespace NewPreviews {
         scr = Wnck.Screen.get_default();
         scr.active_workspace_changed.connect(update_currws);
         update_currws();
-
-
         scr.window_opened.connect(raise_previewswin);
         // prevent cold start (no clue why, but it works)
         showstuff = new PreviewsWindow();
