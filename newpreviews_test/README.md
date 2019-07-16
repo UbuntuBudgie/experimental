@@ -14,6 +14,15 @@ Create shortcuts
 
 *Alt_L is needed as modifier, to trigger closing previews
 
+# Run from hotcorners
+- `preview_triggers`
+
+or 
+
+- `preview_triggers current`
+
+- Press Escape to close
+
 - run the daemon `alttab_runner`
 
 # Still to fix
@@ -21,8 +30,6 @@ Create shortcuts
 
 # Still to do.
 - rewrite backgrounder in Vala (should be a quick one)
-- hotcorner integration
 
 # Possible tweaks/improvements
 - n-columns is currently taken from primary monitor, make it more sophisticated?
-- rearranging buttons on closing windows from previews could be more sophisticated.

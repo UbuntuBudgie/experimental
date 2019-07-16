@@ -60,9 +60,13 @@ namespace previews_triggers {
     }
 
     private void create_trigger (File trigger) {
-        FileOutputStream createtrigger = trigger.create (
-            FileCreateFlags.PRIVATE
-        );
-        createtrigger.write("".data);
+        try {
+            FileOutputStream createtrigger = trigger.create (
+                FileCreateFlags.PRIVATE
+            );
+            createtrigger.write("".data);
+        }
+        catch (Error e) {
+        }
     }
 }
