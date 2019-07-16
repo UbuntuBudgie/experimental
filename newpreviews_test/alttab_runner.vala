@@ -43,6 +43,14 @@ namespace NewPreviews {
     FileMonitor monitor;
     unowned Wnck.Screen scr;
     unowned GLib.List<Wnck.Window> z_list;
+    Gdk.X11.Window timestamp_window;
+
+    //Gdk.X11.Window timestamp_window;
+
+
+    private uint get_now() {
+        return Gdk.X11.get_server_time(timestamp_window);
+    }
 
     private int get_stringindex (string[] arr, string lookfor) {
         // get index of string in list
@@ -345,12 +353,6 @@ namespace NewPreviews {
             currbuttons = newbuttons;
         }
 
-        /*
-        private uint get_now () {
-            return 0;
-        }
-        */
-
         private Grid makebuttongrid(
             string imgpath, Image appicon, string windowname, Wnck.Window w
             ) {
@@ -368,9 +370,7 @@ namespace NewPreviews {
             button.set_relief(Gtk.ReliefStyle.NONE);
             button.clicked.connect (() => {
                 //raise_win(s);
-                uint now = Gtk.get_current_event_time();
-                // uint now =
-                // uint now = get_now();
+                uint now = get_now();
                 w.activate(now);
                 previews_window.destroy();
             });
@@ -421,7 +421,8 @@ namespace NewPreviews {
             actionbar.pack_end(closebutton, false, false, 0);
             closebutton.clicked.connect (() => {
                 // remove Button -button- from buttons!
-                uint now = Gtk.get_current_event_time();
+                //uint now = Gtk.get_current_event_time();
+                uint now = get_now();
                 w.close(now);
                 if (currbuttons.length == 1) {
                     this.destroy();
@@ -494,7 +495,8 @@ namespace NewPreviews {
     private void raise_previewswin(Wnck.Window newwin) {
         // make sure new previews window is activated on creation
         if (newwin.get_name() == "PreviewsWindow") {
-            uint timestamp = Gtk.get_current_event_time();
+            //uint timestamp = Gtk.get_current_event_time();
+            uint timestamp = get_now();
             newwin.activate(timestamp);
         }
     }
@@ -596,6 +598,11 @@ namespace NewPreviews {
         );
         // start the loop
         Gtk.init(ref args);
+        // X11 stuff, non-dynamic part
+        unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
+        unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
+        Gdk.X11.Display display = Gdk.X11.Display.lookup_for_xdisplay(xdisplay);
+        timestamp_window = new Gdk.X11.Window.foreign_for_display(display, xwindow);
         // monitoring files / dirs
         try {
             monitor = triggerdir.monitor(FileMonitorFlags.NONE, null);
