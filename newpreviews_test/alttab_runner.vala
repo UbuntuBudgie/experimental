@@ -1,8 +1,6 @@
 using Gtk;
 using Cairo;
 using Gdk;
-using Gdk.X11;
-using X11;
 
 
 /*
