@@ -26,10 +26,11 @@ or
 - run the daemon `alttab_runner`
 
 # Still to fix
-- We'll see
+- Currently, runner has an now unnecessary translation to hex- window id. We still need to make the connection to uint xid. 
+- The above unfortunately cannot be done since we first need to fix an error that was caused (?) by a recent (Gtk?) update, breaking the alttab-runner.
 
 # Still to do.
-- rewrite backgrounder in Vala (should be a quick one)
+- See above
 
 # Possible tweaks/improvements
 - n-columns is currently taken from primary monitor, make it more sophisticated?
