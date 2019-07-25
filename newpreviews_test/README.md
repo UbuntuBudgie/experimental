@@ -1,10 +1,12 @@
 # Setup
 
-[Currently running, using the existing previews backgrounder!]
-
 - compile `preview_triggers.vala `
 - compile `alttab_runner.vala`
+- compile `previews_creator.vala`
+- copy folder `pics` to the same location as the executable `alttab_runner.vala`
 - install the gschema
+
+Run both `previews_creator.vala` and `alttab_runner.vala`
 
 Create shortcuts
 - all applications / browse forward: Alt + Tab -> `preview_triggers`
@@ -26,11 +28,10 @@ or
 - run the daemon `alttab_runner`
 
 # Still to fix
-- Currently, runner has an now unnecessary translation to hex- window id. We still need to make the connection to uint xid. 
-- The above unfortunately cannot be done since we first need to fix an error that was caused (?) by a recent (Gtk?) update, breaking the alttab-runner.
+- Let's find out
 
 # Still to do.
-- See above
+- 
 
 # Possible tweaks/improvements
 - n-columns is currently taken from primary monitor, make it more sophisticated?

@@ -25,12 +25,7 @@ namespace create_previews {
         } catch (Error e) {
             print ("I can't\n");
         }
-
-
-
-        // create directory for previews
         Gtk.init(ref args);
-        // get initial gdk_winlist
         // all valid windows are in queue to be refreshed, starting index o
         curr_refreshindex = 0;
         // set sources

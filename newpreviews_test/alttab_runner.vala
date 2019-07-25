@@ -38,14 +38,13 @@ namespace NewPreviews {
     File triggercurrent;
     bool ignore;
     string filepath;
-    PreviewsWindow previews_window;
+    Gtk.Window previews_window;
     string[] num_ids_fromdir;
     FileMonitor monitor;
-    unowned Wnck.Screen scr;
+    unowned Wnck.Screen wnck_scr;
     unowned GLib.List<Wnck.Window> z_list;
     Gdk.X11.Window timestamp_window;
-
-    //Gdk.X11.Window timestamp_window;
+    string previewspath;
 
 
     private uint get_now() {
@@ -60,52 +59,6 @@ namespace NewPreviews {
         return -1;
     }
 
-    public int hexval( string c ) {
-        // (helper of hextoint)
-        switch(c) {
-            case "a":
-            return 10;
-            case "b":
-            return 11;
-            case "c":
-            return 12;
-            case "d":
-            return 13;
-            case "e":
-            return 14;
-            case "f":
-            return 15;
-            default:
-            return int.parse(c);
-        }
-    }
-
-    private string hextoint(string hex){
-        // convert from hex to int
-        // convert the string to lowercase
-        string hexdown = hex.down();
-        // get the length of the hex string
-        int hexlen = hex.length;
-        int64 ret_val = 0;
-        string chr;
-        int chr_int;
-        int multiplier;
-        // loop through the string
-        for (int i = 0; i < hexlen ; i++) {
-            // get the string chars from right to left
-            int inv = (hexlen-1)-i;
-            chr = hexdown[inv:inv+1];
-            chr_int = hexval(chr);
-            // how are we going to multiply the current characters value?
-            multiplier = 1;
-            for(int j = 0 ; j < i ; j++) {
-            multiplier *= 16;
-            }
-            ret_val += chr_int * multiplier;
-        }
-        return ret_val.to_string();
-    }
-
 
     public class PreviewsWindow : Gtk.Window {
 
@@ -115,208 +68,40 @@ namespace NewPreviews {
         string[] win_workspaces;
 
         string newpv_css = """
-            .windowbutton {
-              border-width: 2px;
-              border-color: #5A5A5A;
-              background-color: transparent;
-              padding: 4px;
-              border-radius: 1px;
-              -gtk-icon-effect: none;
-              border-style: solid;
-            }
-            .windowbutton:hover {
-              border-color: #E6E6E6;
-              background-color: transparent;
-              border-width: 1px;
-              padding: 6px;
-              border-radius: 1px;
-              border-style: solid;
-            }
-            .windowbutton:focus {
-              border-color: white;
-              background-color: transparent;
-              border-width: 2px;
-              padding: 3px;
-            }
-            .label {
-              color: white;
-              padding-bottom: 0px;
-            }
-            """;
-
-        public void actonbrowsetrigger () {
-            // browse through tiles -only works if prv window exists-
-            if (nexttrigger.query_exists()) {
-                currtilindex += 1;
-                if (currtilindex == currbuttons.length) {
-                    currtilindex = 0;
-                }
-                delete_file(nexttrigger);
-                currbuttons[currtilindex].grab_focus();
-            }
-            else if (previoustrigger.query_exists()) {
-                currtilindex -= 1;
-                if (currtilindex < 0) {
-                    currtilindex =  currbuttons.length - 1;
-                }
-                delete_file(previoustrigger);
-                currbuttons[currtilindex].grab_focus();
-            }
+        .windowbutton {
+        border-width: 2px;
+        border-color: #5A5A5A;
+        background-color: transparent;
+        padding: 4px;
+        border-radius: 1px;
+        -gtk-icon-effect: none;
+        border-style: solid;
+        transition: 0.1s linear;
         }
-
-        public PreviewsWindow () {
-            // if nothing to show
-            no_windows = true;
-            this.set_default_size(200, 150);
-            this.set_decorated(false);
-            this.set_keep_above(true);
-            this.set_skip_taskbar_hint(true);
-            monitor.changed.connect(actonbrowsetrigger);
-            currbuttons = {};
-            currtilindex = 0;
-            // set initial numbers cols/rows etc.
-            int row = 1;
-            int col = 0;
-            // whole bunch of styling
-            var screen = this.get_screen();
-            this.set_app_paintable(true);
-            var visual = screen.get_rgba_visual();
-            this.set_visual(visual);
-            this.draw.connect(on_draw);
-            Gtk.CssProvider css_provider = new Gtk.CssProvider();
-            try {
-                css_provider.load_from_data(newpv_css);
-                Gtk.StyleContext.add_provider_for_screen(
-                    screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
-                );
-            }
-            catch (Error e) {
-            }
-            // create maingrid
-            maingrid = new Gtk.Grid();
-            maingrid.attach(new Label(""), 0, 0, 1, 1);
-            maingrid.attach(new Label("\n"), 100, 100, 1, 1);
-            maingrid.set_column_spacing(20);
-            maingrid.set_row_spacing(20);
-            // create arrays from dirlist -> window_id arr, path arr (which is dirlist), workspace arr
-            string previewspath = "/tmp/".concat(user, "_window-previews");
-            string[] currpreviews = previews(previewspath);
-            num_ids_fromdir = {};
-            foreach (string s in currpreviews) {
-                string[] fname = s.split("/");
-                string[] last_section = fname[fname.length - 1].split(".");
-                string win_workspace = last_section[1];
-                win_workspaces += win_workspace;
-                string found_xid = last_section[0];
-                num_ids_fromdir += hextoint(found_xid);
-            }
-
-            z_list = scr.get_windows_stacked();
-            Wnck.ClassGroup wm_class = scr.get_active_window().get_class_group();
-
-            foreach (Wnck.Window w in z_list) {
-                if (w.get_window_type() == Wnck.WindowType.NORMAL) {
-                    string z_intid = w.get_xid().to_string();
-                    int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
-                    int window_on_workspace = int.parse(
-                        win_workspaces[dirlistindex]
-                    );
-                    /*
-                    optionally filter out only windows on current workspace
-                    and/or only current application
-                    */
-                    if (
-                        filter_workspace(window_on_workspace, currws) &&
-                        filter_wmclass(w, wm_class)
-                    ) {
-                        no_windows = false;
-                        string img_path = currpreviews[dirlistindex];
-                        Pixbuf icon = w.get_mini_icon();
-                        Image img = new Gtk.Image.from_pixbuf(icon);
-                        string wname = w.get_name();
-                        Grid newtile = makebuttongrid(img_path, img, wname, w);
-                        subgrids += newtile;
-                    }
-                }
-            }
-            // reverse buttons
-            Button[] reversed_buttons = {};
-            int n_buttons = currbuttons.length;
-            while (n_buttons > 0) {
-                reversed_buttons += currbuttons[n_buttons - 1];
-                n_buttons -= 1;
-            }
-            currbuttons = reversed_buttons;
-            // reverse order of tiles
-            Grid[] reversed_tiles = {};
-            int n_tiles = subgrids.length;
-            while (n_tiles > 0) {
-                reversed_tiles += subgrids[n_tiles-1];
-                n_tiles -= 1;
-            }
-            // firstbox / row
-            var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 20);
-            // start spacer
-            box.pack_start(create_hspacer(), false, false, 0);
-            currlast_startspacer = create_hspacer();
-            foreach (Grid g in reversed_tiles) {
-                box.pack_start(g, false, false, 0);
-                col += 1;
-                if (col == maxcol) {
-                    // end spacer previous one
-                    box.pack_start(create_hspacer(), false, false, 0);
-                    maingrid.attach(box, 1, row, 1);
-                    box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 20);
-                    currlast_startspacer = create_hspacer();
-                    // start spacer new one
-                    box.pack_start(currlast_startspacer, false, false, 0);
-                    row += 1;
-                    col = 0;
-                }
-            }
-            // add last box, align (tile width = 300px)
-            box.pack_start(create_hspacer(), false, false, 0);
-            maingrid.attach(box, 1, row, 1);
-            if (col != 0) {
-                int tofix = maxcol - col;
-                int add = tofix * 300 / 2;
-                currlast_startspacer.set_column_spacing (add);
-            }
-            this.title = "PreviewsWindow";
-            this.add(maingrid);
+        .windowbutton:hover {
+        border-color: #E6E6E6;
+        background-color: transparent;
+        border-width: 1px;
+        padding: 6px;
+        border-radius: 1px;
+        border-style: solid;
         }
-
-        private bool filter_wmclass (Wnck.Window w, Wnck.ClassGroup wm_class) {
-            // if set, only allow current wm_class
-            if (allapps) {
-                return true;
-            }
-            else {
-                Wnck.ClassGroup group = w.get_class_group();
-                if (group == wm_class) {
-                    return true;
-                }
-                return false;
-            }
+        .windowbutton:focus {
+        border-color: white;
+        background-color: transparent;
+        border-width: 2px;
+        padding: 3px;
         }
-
-        private bool filter_workspace (int windowspace, int currspace) {
-            // check windows on workspace if set in gsettings
-            if (allworkspaces) {
-                return true;
-            }
-            else {
-                if (windowspace == currspace) {
-                    return true;
-                }
-                return false;
-            }
+        .label {
+        color: white;
+        padding-bottom: 0px;
         }
+        """;
+
+
         private Grid create_hspacer(int extend = 0) {
-            /*
-            last row needs to be positioned, add to all boxes,
-            only set width > 0 on the last
-            */
+            //last row needs to be positioned, add to all boxes,
+            //only set width > 0 on the last
             var spacegrid = new Gtk.Grid();
             spacegrid.attach(new Gtk.Grid(), 0, 0, 1, 1);
             spacegrid.attach(new Gtk.Grid(), 1, 0, 1, 1);
@@ -324,26 +109,10 @@ namespace NewPreviews {
             return spacegrid;
         }
 
-        private bool on_draw (Widget da, Context ctx) {
-            // needs to be connected to transparency settings change
-            ctx.set_source_rgba(0.15, 0.15, 0.15, 0.85);
-            ctx.set_operator(Cairo.Operator.SOURCE);
-            ctx.paint();
-            ctx.set_operator(Cairo.Operator.OVER);
-            return false;
-        }
-
-        private void set_closebuttonimg(Button button, string path) {
-            // we don't like repeating
-            var newimage = new Gtk.Image.from_file(path);
-            button.set_image(newimage);
-        }
-
         private void remove_button (Button button) {
-            /*
-            remove a button from the array of buttons
-            to prevent browse errors
-            */
+
+            //remove a button from the array of buttons
+            //to prevent browse errors
             Button[] newbuttons = {};
             foreach (Button b in currbuttons) {
                 if (b != button) {
@@ -351,6 +120,12 @@ namespace NewPreviews {
                 }
             }
             currbuttons = newbuttons;
+        }
+
+        private void set_closebuttonimg(Button button, string path) {
+            // we don't like repeating
+            var newimage = new Gtk.Image.from_file(path);
+            button.set_image(newimage);
         }
 
         private Grid makebuttongrid(
@@ -437,23 +212,210 @@ namespace NewPreviews {
             return subgrid;
         }
 
-    private string[] previews (string directory) {
-        // list the created preview images
-        string[] somestrings = {};
-        try {
-            var dr = Dir.open(directory);
-            string ? filename = null;
-            while ((filename = dr.read_name()) != null) {
-                string addpic = GLib.Path.build_filename(directory, filename);
-                somestrings += addpic;
+        private bool filter_wmclass (Wnck.Window w, Wnck.ClassGroup wm_class) {
+            // if set, only allow current wm_class
+            if (allapps) {
+                return true;
+            }
+            else {
+                Wnck.ClassGroup group = w.get_class_group();
+                if (group == wm_class) {
+                    return true;
+                }
+                return false;
             }
         }
-        catch (FileError err) {
-                stderr.printf(err.message);
+
+        private bool filter_workspace (int windowspace, int currspace) {
+            // check windows on workspace if set in gsettings
+            if (allworkspaces) {
+                return true;
+            }
+            else {
+                if (windowspace == currspace) {
+                    return true;
+                }
+                return false;
+            }
         }
-        return somestrings;
+
+        public void actonbrowsetrigger () {
+            // browse through tiles -only works if prv window exists-
+            if (nexttrigger.query_exists()) {
+                currtilindex += 1;
+                if (currtilindex == currbuttons.length) {
+                    currtilindex = 0;
+                }
+                delete_file(nexttrigger);
+                currbuttons[currtilindex].grab_focus();
+            }
+            else if (previoustrigger.query_exists()) {
+                currtilindex -= 1;
+                if (currtilindex < 0) {
+                    currtilindex =  currbuttons.length - 1;
+                }
+                delete_file(previoustrigger);
+                currbuttons[currtilindex].grab_focus();
+            }
+        }
+
+
+        public PreviewsWindow () {
+            // if nothing to show
+            no_windows = true;
+            this.set_default_size(200, 150);
+            this.set_decorated(false);
+            this.set_keep_above(true);
+            this.set_skip_taskbar_hint(true);
+            monitor.changed.connect(actonbrowsetrigger);
+            currbuttons = {};
+            currtilindex = 0;
+            // set initial numbers cols/rows etc.
+            int row = 1;
+            int col = 0;
+            // whole bunch of styling
+            var screen = this.get_screen();
+            this.set_app_paintable(true);
+            var visual = screen.get_rgba_visual();
+            this.set_visual(visual);
+            this.draw.connect(on_draw);
+            Gtk.CssProvider css_provider = new Gtk.CssProvider();
+
+            try {
+                css_provider.load_from_data(newpv_css);
+                Gtk.StyleContext.add_provider_for_screen(
+                    screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+                );
+            }
+            catch (Error e) {
+            }
+
+
+            // create maingrid
+            maingrid = new Gtk.Grid();
+            maingrid.attach(new Label(""), 0, 0, 1, 1);
+            maingrid.attach(new Label("\n"), 100, 100, 1, 1);
+            maingrid.set_column_spacing(20);
+            maingrid.set_row_spacing(20);
+            // create arrays from dirlist -> window_id arr, path arr (which is dirlist), workspace arr
+            //string previewspath = "/tmp/".concat(user, "_window-previews");
+            string[] currpreviews = previews(previewspath);
+            num_ids_fromdir = {};
+            foreach (string s in currpreviews) {
+                string[] fname = s.split("/");
+                string[] last_section = fname[fname.length - 1].split(".");
+                string win_workspace = last_section[1];
+                win_workspaces += win_workspace;
+                string found_xid = last_section[0];
+                num_ids_fromdir += found_xid;
+            }
+            z_list = wnck_scr.get_windows_stacked();
+            Wnck.ClassGroup wm_class = wnck_scr.get_active_window().get_class_group();
+
+            foreach (Wnck.Window w in z_list) {
+
+                string z_intid = w.get_xid().to_string();
+                int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
+
+                if (
+                    w.get_window_type() == Wnck.WindowType.NORMAL &&
+                    dirlistindex != -1
+                    ) {
+                    int window_on_workspace = int.parse(
+                        win_workspaces[dirlistindex]
+                    );
+                    if (
+                        filter_workspace(window_on_workspace, currws) &&
+                        filter_wmclass(w, wm_class)
+                    ) {
+                        no_windows = false;
+                        string img_path = currpreviews[dirlistindex];
+                        Pixbuf icon = w.get_mini_icon();
+                        Image img = new Gtk.Image.from_pixbuf(icon);
+                        string wname = w.get_name();
+                        Grid newtile = makebuttongrid(img_path, img, wname, w);
+                        subgrids += newtile;
+                    }
+
+
+
+
+
+                }
+            }
+            // reverse buttons
+            Button[] reversed_buttons = {};
+            int n_buttons = currbuttons.length;
+            while (n_buttons > 0) {
+                reversed_buttons += currbuttons[n_buttons - 1];
+                n_buttons -= 1;
+            }
+            currbuttons = reversed_buttons;
+            // reverse order of tiles
+            Grid[] reversed_tiles = {};
+            int n_tiles = subgrids.length;
+            while (n_tiles > 0) {
+                reversed_tiles += subgrids[n_tiles-1];
+                n_tiles -= 1;
+            }
+            // firstbox / row
+            var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 20);
+            // start spacer
+            box.pack_start(create_hspacer(), false, false, 0);
+            currlast_startspacer = create_hspacer();
+            foreach (Grid g in reversed_tiles) {
+                box.pack_start(g, false, false, 0);
+                col += 1;
+                if (col == maxcol) {
+                    // end spacer previous one
+                    box.pack_start(create_hspacer(), false, false, 0);
+                    maingrid.attach(box, 1, row, 1);
+                    box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 20);
+                    currlast_startspacer = create_hspacer();
+                    // start spacer new one
+                    box.pack_start(currlast_startspacer, false, false, 0);
+                    row += 1;
+                    col = 0;
+                }
+            }
+            // add last box, align (tile width = 300px)
+            box.pack_start(create_hspacer(), false, false, 0);
+            maingrid.attach(box, 1, row, 1);
+            if (col != 0) {
+                int tofix = maxcol - col;
+                int add = tofix * 300 / 2;
+                currlast_startspacer.set_column_spacing (add);
+            }
+            this.title = "PreviewsWindow";
+            this.add(maingrid);
+        }
+
+        private bool on_draw (Widget da, Context ctx) {
+            // needs to be connected to transparency settings change
+            ctx.set_source_rgba(0.15, 0.15, 0.15, 0.85);
+            ctx.set_operator(Cairo.Operator.SOURCE);
+            ctx.paint();
+            ctx.set_operator(Cairo.Operator.OVER);
+            return false;
+        }
+
+        private string[] previews (string directory) {
+            // list the created preview images
+            string[] somestrings = {};
+            try {
+                var dr = Dir.open(directory);
+                string ? filename = null;
+                while ((filename = dr.read_name()) != null) {
+                    string addpic = GLib.Path.build_filename(directory, filename);
+                    somestrings += addpic;
+                }
+            }
+            catch (FileError err) {
+                    stderr.printf(err.message);
+            }
+            return somestrings;
+        }
     }
-}
 
     private void delete_file (File file) {
         try {
@@ -464,11 +426,6 @@ namespace NewPreviews {
     }
 
     private void cleanup () {
-        /*
-        delete triggers after they did their job, reset -ignore-
-        (ignore is set true to prevent multiple previews while previews)
-        window exists
-        */
         delete_file(allappstrigger);
         delete_file(triggercurrent);
         ignore = false;
@@ -511,9 +468,9 @@ namespace NewPreviews {
 
     private void update_currws () {
         // keep track of current workspace
-        scr.force_update();
-        var currspace = scr.get_active_workspace();
-        unowned GLib.List<Wnck.Workspace> currspaces = scr.get_workspaces();
+        wnck_scr.force_update();
+        var currspace = wnck_scr.get_active_workspace();
+        unowned GLib.List<Wnck.Workspace> currspaces = wnck_scr.get_workspaces();
         int n = 0;
         foreach (Wnck.Workspace ws in currspaces) {
             if (ws == currspace) {
@@ -525,20 +482,6 @@ namespace NewPreviews {
     }
 
     private void actonfile() {
-        /*
-        possible args, set here to decide action in the window:
-        - "current" (show only current apps)
-        - "previous" (go one tile reverse) <- handled from window
-
-        [previews_triggers] first creates a trigger file -allappstrigger- if no arg is
-        set, or -triggercurrent- if the arg "current" is set. this file will
-        trigger the previews daemon to show previews of all apps or only current
-
-        if the previews window exists however (and either one of the above
-        triggers), this executabel creates an additional -nexttrigger- if not
-        "previous" is set as arg, or -previoustrigger- if "previous" is set as arg
-        */
-        // optimize? -> file and event as args
         bool allapps_trigger = allappstrigger.query_exists();
         bool onlycurrent_trigger = triggercurrent.query_exists();
         if (
@@ -552,6 +495,8 @@ namespace NewPreviews {
                     allapps = false;
                 }
                 previews_window = new PreviewsWindow();
+                //previews_window.destroy.connect
+
                 previews_window.destroy.connect(cleanup);
                 previews_window.key_release_event.connect(close_onrelease);
                 previews_window.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
@@ -582,7 +527,7 @@ namespace NewPreviews {
         previews_settings.changed.connect (() => {
             allworkspaces = previews_settings.get_boolean("allworkspaces");
         });
-        user = Environment.get_user_name();
+        //user = Environment.get_user_name();
         triggerdir = File.new_for_path("/tmp");
         allappstrigger = File.new_for_path(
             "/tmp/".concat(user, "_prvtrigger_all")
@@ -597,7 +542,7 @@ namespace NewPreviews {
             "/tmp/".concat(user, "_prvtrigger_current")
         );
         // start the loop
-        Gtk.init(ref args);
+        //Gtk.init(ref args);
         // X11 stuff, non-dynamic part
         unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
         unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
@@ -610,23 +555,35 @@ namespace NewPreviews {
         }
         catch (Error e) {
         }
-        // monitoring Screen & Display for n_columns
+        // monitoring wnck_screen & Display for n_columns
         var gdk_screen = Gdk.Screen.get_default();
         gdk_screen.monitors_changed.connect(get_n_cols);
         get_n_cols();
         // miscellaneous
-        scr = Wnck.Screen.get_default();
-        scr.active_workspace_changed.connect(update_currws);
+        wnck_scr = Wnck.Screen.get_default();
+        wnck_scr.active_workspace_changed.connect(update_currws);
         update_currws();
-        scr.window_opened.connect(raise_previewswin);
+        wnck_scr.window_opened.connect(raise_previewswin);
         // prevent cold start (no clue why, but it works)
         previews_window = new PreviewsWindow();
         previews_window.destroy();
-        z_list = scr.get_windows_stacked();
+
+        z_list = wnck_scr.get_windows_stacked();
         Gtk.main();
     }
 
     public static void main (string[] args) {
+        user = Environment.get_user_name();
+        previewspath = "/tmp/".concat(user, "_window-previews");
+
+        try {
+            File file = File.new_for_commandline_arg (previewspath);
+            file.make_directory ();
+        } catch (Error e) {
+            print ("I can't\n");
+        }
+        Gtk.init(ref args);
         NewPreviews.windowdeamon(args);
+        Gtk.main();
     }
 }
