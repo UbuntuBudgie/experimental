@@ -3,19 +3,6 @@ using Gtk;
 
 namespace create_previews {
 
-    // todo: write actual screenshot function, write cleanup, make new xid match preview window
-    // screenshot: wnck -> get all info, name and all, then create sreenshot after exist-check
-
-    /*
-    use Wnck.Screen.get_windows() for cycling, since we need it anyway
-    use Gdk.X11.Window to get window's workspace (name)
-    use ^ to get xid (name)
-
-    So:
-    - once per five seconds, refresh active
-    - once per 10 seconds, refresh- cycle windows
-    - new windows, check_exist after 6 seconds, refresh if so - done
-    */
 
     Wnck.Screen wnck_scr;
     Gdk.Screen gdk_scr;
