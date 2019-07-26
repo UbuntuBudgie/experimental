@@ -100,8 +100,8 @@ namespace NewPreviews {
 
 
         private Grid create_hspacer(int extend = 0) {
-            //last row needs to be positioned, add to all boxes,
-            //only set width > 0 on the last
+            // last row needs to be positioned, add to all boxes,
+            // only set width > 0 on the last
             var spacegrid = new Gtk.Grid();
             spacegrid.attach(new Gtk.Grid(), 0, 0, 1, 1);
             spacegrid.attach(new Gtk.Grid(), 1, 0, 1, 1);
@@ -110,9 +110,8 @@ namespace NewPreviews {
         }
 
         private void remove_button (Button button) {
-
-            //remove a button from the array of buttons
-            //to prevent browse errors
+            // remove a button from the array of buttons
+            // to prevent browse errors
             Button[] newbuttons = {};
             foreach (Button b in currbuttons) {
                 if (b != button) {
@@ -144,7 +143,7 @@ namespace NewPreviews {
             st_ct.remove_class("image-button");
             button.set_relief(Gtk.ReliefStyle.NONE);
             button.clicked.connect (() => {
-                //raise_win(s);
+                //raise_win(s)
                 uint now = get_now();
                 w.activate(now);
                 previews_window.destroy();
@@ -195,8 +194,6 @@ namespace NewPreviews {
             });
             actionbar.pack_end(closebutton, false, false, 0);
             closebutton.clicked.connect (() => {
-                // remove Button -button- from buttons!
-                //uint now = Gtk.get_current_event_time();
                 uint now = get_now();
                 w.close(now);
                 if (currbuttons.length == 1) {
@@ -212,7 +209,9 @@ namespace NewPreviews {
             return subgrid;
         }
 
-        private bool filter_wmclass (Wnck.Window w, Wnck.ClassGroup wm_class) {
+        private bool filter_wmclass (
+            Wnck.Window w, Wnck.ClassGroup wm_class
+        ) {
             // if set, only allow current wm_class
             if (allapps) {
                 return true;
@@ -297,8 +296,8 @@ namespace NewPreviews {
             maingrid.attach(new Label("\n"), 100, 100, 1, 1);
             maingrid.set_column_spacing(20);
             maingrid.set_row_spacing(20);
-            // create arrays from dirlist -> window_id arr, path arr (which is dirlist), workspace arr
-            //string previewspath = "/tmp/".concat(user, "_window-previews");
+            // create arrays from dirlist ->
+            // window_id arr, path arr (which is dirlist), workspace arr
             string[] currpreviews = previews(previewspath);
             num_ids_fromdir = {};
             foreach (string s in currpreviews) {
@@ -313,10 +312,8 @@ namespace NewPreviews {
             Wnck.ClassGroup wm_class = wnck_scr.get_active_window().get_class_group();
 
             foreach (Wnck.Window w in z_list) {
-
                 string z_intid = w.get_xid().to_string();
                 int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
-
                 if (
                     w.get_window_type() == Wnck.WindowType.NORMAL &&
                     dirlistindex != -1
@@ -336,11 +333,6 @@ namespace NewPreviews {
                         Grid newtile = makebuttongrid(img_path, img, wname, w);
                         subgrids += newtile;
                     }
-
-
-
-
-
                 }
             }
             // reverse buttons
@@ -495,8 +487,6 @@ namespace NewPreviews {
                     allapps = false;
                 }
                 previews_window = new PreviewsWindow();
-                //previews_window.destroy.connect
-
                 previews_window.destroy.connect(cleanup);
                 previews_window.key_release_event.connect(close_onrelease);
                 previews_window.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
@@ -518,7 +508,6 @@ namespace NewPreviews {
     }
 
     private void windowdeamon(string[]? args = null) {
-
         filepath = get_filepath (args[0]);
         GLib.Settings previews_settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.budgie-wpreviews"
@@ -542,7 +531,6 @@ namespace NewPreviews {
             "/tmp/".concat(user, "_prvtrigger_current")
         );
         // start the loop
-        //Gtk.init(ref args);
         // X11 stuff, non-dynamic part
         unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
         unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
@@ -567,7 +555,6 @@ namespace NewPreviews {
         // prevent cold start (no clue why, but it works)
         previews_window = new PreviewsWindow();
         previews_window.destroy();
-
         z_list = wnck_scr.get_windows_stacked();
         Gtk.main();
     }
@@ -575,12 +562,11 @@ namespace NewPreviews {
     public static void main (string[] args) {
         user = Environment.get_user_name();
         previewspath = "/tmp/".concat(user, "_window-previews");
-
         try {
             File file = File.new_for_commandline_arg (previewspath);
             file.make_directory ();
         } catch (Error e) {
-            print ("I can't\n");
+            // directory exists, nothing to do
         }
         Gtk.init(ref args);
         NewPreviews.windowdeamon(args);
