@@ -48,6 +48,7 @@ namespace NewPreviews {
 
 
     private uint get_now() {
+        // time stamp needs it
         return Gdk.X11.get_server_time(timestamp_window);
     }
 
@@ -162,7 +163,7 @@ namespace NewPreviews {
             var label_ct = wname.get_style_context();
             label_ct.add_class("label");
             actionbar.pack_start(wname, false, false, 10);
-            // close X button
+            // close X button and its behavior
             var closebutton = new Gtk.Button();
             set_closebuttonimg(closebutton, picspath.concat("/grey_x.png"));
             closebutton.set_relief(Gtk.ReliefStyle.NONE);
@@ -179,7 +180,6 @@ namespace NewPreviews {
                 ));
                 return false;
             });
-
             button.enter_notify_event.connect (() => {
                 set_closebuttonimg(closebutton, picspath.concat(
                     "/white_x.png"
@@ -258,7 +258,6 @@ namespace NewPreviews {
             }
         }
 
-
         public PreviewsWindow () {
             // if nothing to show
             no_windows = true;
@@ -279,7 +278,6 @@ namespace NewPreviews {
             this.set_visual(visual);
             this.draw.connect(on_draw);
             Gtk.CssProvider css_provider = new Gtk.CssProvider();
-
             try {
                 css_provider.load_from_data(newpv_css);
                 Gtk.StyleContext.add_provider_for_screen(
@@ -288,8 +286,6 @@ namespace NewPreviews {
             }
             catch (Error e) {
             }
-
-
             // create maingrid
             maingrid = new Gtk.Grid();
             maingrid.attach(new Label(""), 0, 0, 1, 1);
@@ -310,7 +306,6 @@ namespace NewPreviews {
             }
             z_list = wnck_scr.get_windows_stacked();
             Wnck.ClassGroup wm_class = wnck_scr.get_active_window().get_class_group();
-
             foreach (Wnck.Window w in z_list) {
                 string z_intid = w.get_xid().to_string();
                 int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
@@ -398,7 +393,9 @@ namespace NewPreviews {
                 var dr = Dir.open(directory);
                 string ? filename = null;
                 while ((filename = dr.read_name()) != null) {
-                    string addpic = GLib.Path.build_filename(directory, filename);
+                    string addpic = GLib.Path.build_filename(
+                        directory, filename
+                    );
                     somestrings += addpic;
                 }
             }
@@ -418,14 +415,15 @@ namespace NewPreviews {
     }
 
     private void cleanup () {
+        // remove trigger files
         delete_file(allappstrigger);
         delete_file(triggercurrent);
         ignore = false;
     }
 
     private bool close_onrelease(Gdk.EventKey k) {
-        // on releasing Alt_L, destroy previews, virtually click current button
-        // (connect is gone with destroying previews window)
+        // on releasing Alt_L, destroy previews, virtually click current
+        // button (connect is gone with destroying previews window)
         string key = Gdk.keyval_name(k.keyval);
         if (key == "Escape") {
             previews_window.destroy();
@@ -444,7 +442,6 @@ namespace NewPreviews {
     private void raise_previewswin(Wnck.Window newwin) {
         // make sure new previews window is activated on creation
         if (newwin.get_name() == "PreviewsWindow") {
-            //uint timestamp = Gtk.get_current_event_time();
             uint timestamp = get_now();
             newwin.activate(timestamp);
         }
@@ -516,7 +513,6 @@ namespace NewPreviews {
         previews_settings.changed.connect (() => {
             allworkspaces = previews_settings.get_boolean("allworkspaces");
         });
-        //user = Environment.get_user_name();
         triggerdir = File.new_for_path("/tmp");
         allappstrigger = File.new_for_path(
             "/tmp/".concat(user, "_prvtrigger_all")

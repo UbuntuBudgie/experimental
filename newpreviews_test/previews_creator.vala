@@ -15,9 +15,10 @@ namespace create_previews {
 
 
     public static void main (string[] args) {
-        // if idle exceeds 10 minutes (600 seconds), pauze refreshing
+        // all valid windows are in queue to be refreshed, starting index o
+        curr_refreshindex = 0;
+        // if idle exceeds 90 seconds, pauze refreshing
         idle_state = false;
-
         // decide if we should take xsize or ysize as a reference for resize
         threshold = 260.0/160.0;
         string user = Environment.get_user_name();
@@ -29,25 +30,20 @@ namespace create_previews {
             // directory exists, no action needed
         }
         Gtk.init(ref args);
-        // all valid windows are in queue to be refreshed, starting index o
-        curr_refreshindex = 0;
         // set sources
         wnck_scr = Wnck.Screen.get_default();
         gdk_scr = Gdk.Screen.get_default();
         gdkdisp = (Gdk.X11.Display)Gdk.Display.get_default();
-
         update_winlist();
-
         // for updating gdk window list / clean up
         wnck_scr.window_opened.connect(update_winlist);
-        wnck_scr.window_closed.connect(update_winlist); // u, oh, should include clean up
+        wnck_scr.window_closed.connect(update_winlist);
         // for maintaining new window (refresh after 6 seconds)
         wnck_scr.window_opened.connect(update_new);
         // immediate refresh active window?
         wnck_scr.active_window_changed.connect(() => {
             update_preview(wnck_scr.get_active_window());
         });
-
         // make phase so that they won't fall together all the time
         int refresh_cycle = 1;
         int refresh_active = 1;
@@ -95,6 +91,7 @@ namespace create_previews {
     }
 
     private bool get_idle () {
+        // see if idle exceeds 90 seconds
         string cmd = "xprintidle";
         string output;
         int curridle = 0;
@@ -108,22 +105,21 @@ namespace create_previews {
                 return false;
             }
         }
-        /* on an occasional exception, just don't run the command */
+        //on an occasional exception, return false
         catch (SpawnError e) {
             return false;
         }
     }
 
     private void update_winlist () {
+        // refresh wnck winlist, remove obsolete images
         gdk_winlist = gdk_scr.get_window_stack();
         cleanup();
     }
 
     private void update_new (Wnck.Window w) {
-        /*
-        create preview on creation of (valid) window,
-        refresh after 6 seconds
-        */
+        // create preview on creation of (valid) window,
+        // refresh after 6 seconds
         if (w.get_window_type() == Wnck.WindowType.NORMAL) {
             update_preview(w);
             GLib.Timeout.add_seconds(6, () => {
@@ -135,6 +131,7 @@ namespace create_previews {
 
     private Gdk.Window? get_gdkmatch_fromwnckwin (Wnck.Window curractive) {
         // given a wnck window, find its gdk representative
+        // for preview creation
         uint curractive_xid = (uint)curractive.get_xid();
         foreach (Gdk.Window w in gdk_winlist) {
             Gdk.X11.Window winsubj = (Gdk.X11.Window)w;
@@ -200,7 +197,6 @@ namespace create_previews {
                         ).save(previewspath.concat("/", name), "png");
                     }
                     catch (Error e) {
-
                     }
                 }
             }
@@ -225,7 +221,7 @@ namespace create_previews {
     }
 
     private bool get_stringindex (string f, string[] existing_xids) {
-        // get index of a string in an array
+        // see if string exists another string
         foreach (string xid in existing_xids) {
             if (f.contains(xid)) {
                 return true;
@@ -235,6 +231,7 @@ namespace create_previews {
     }
 
     private void cleanup () {
+        // look over existing images, remove if obsolete
         // get filenames
         string[] filenames = get_currpreviews();
         // get existing xids
@@ -254,7 +251,6 @@ namespace create_previews {
                     file.delete();
                 }
                 catch (Error e) {
-
                 }
             }
         }
