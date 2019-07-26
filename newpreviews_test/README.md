@@ -6,7 +6,9 @@
 - copy folder `pics` to the same location as the executable `alttab_runner.vala`
 - install the gschema
 
-Run both `previews_creator.vala` and `alttab_runner.vala`
+- Run both `previews_creator.vala` and `alttab_runner.vala`
+- Set previews to show windows from all workspaces or only current in the key `/org/ubuntubudgie/plugins/budgie-wpreviews/allworkspaces`
+
 
 Create shortcuts
 - all applications / browse forward: Alt + Tab -> `preview_triggers`
