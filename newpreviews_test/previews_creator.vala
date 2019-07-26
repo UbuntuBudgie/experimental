@@ -18,12 +18,11 @@ namespace create_previews {
         threshold = 260.0/160.0;
         string user = Environment.get_user_name();
         previewspath = "/tmp/".concat(user, "_window-previews");
-
         try {
             File file = File.new_for_commandline_arg (previewspath);
             file.make_directory ();
         } catch (Error e) {
-            print ("I can't\n");
+            // directory exists, no action needed
         }
         Gtk.init(ref args);
         // all valid windows are in queue to be refreshed, starting index o
@@ -35,7 +34,6 @@ namespace create_previews {
 
         update_winlist();
 
-        // connections ------------------------------------
         // for updating gdk window list / clean up
         wnck_scr.window_opened.connect(update_winlist);
         wnck_scr.window_closed.connect(update_winlist); // u, oh, should include clean up
@@ -46,24 +44,20 @@ namespace create_previews {
             update_preview(wnck_scr.get_active_window());
         });
 
-        /*
-        make phase of the two below so that they won't fall
-        together all the time
-        */
+        // make phase so that they won't fall together all the time
         int refresh_cycle = 1;
         int refresh_active = 1;
         GLib.Timeout.add_seconds(1, () => {
             gdkdisp.error_trap_push();
-            // [1] take care of active window
+            // take care of active window
             if (refresh_active == 1) {
-                update_preview(wnck_scr.get_active_window()); // active
-                //print("refresh active window\n");
+                update_preview(wnck_scr.get_active_window());
             }
             else if (refresh_active == 5) {
                 refresh_active = 0;
             }
             refresh_active += 1;
-            // take care of cycle; general refresh
+            // general refresh pool
             if (refresh_cycle == 1) {
                 unowned GLib.List<Wnck.Window> wnck_winlist = wnck_scr.get_windows();
                 uint n_wins = wnck_winlist.length();
@@ -71,7 +65,6 @@ namespace create_previews {
                 if (curr_refreshindex >= n_wins) {
                     curr_refreshindex = 0;
                 }
-                //////////////////////////////////////////////////////////////////////
                 // get matching Gdk.Window from Gdk stack
                 int current_check = 0;
                 foreach (Wnck.Window w in wnck_winlist) {
@@ -80,15 +73,12 @@ namespace create_previews {
                     if (valid && !active) {
                         if (current_check == curr_refreshindex) {
                             update_preview(w);
-                            string nm = w.get_name();
-                            //print(@"refreshing $curr_refreshindex, $nm\n");
                             break;
                         }
                         current_check += 1;
                     }
                 }
                 curr_refreshindex += 1;
-                ///////////////////////////////////////////////////////////////////////
             }
             else if (refresh_cycle == 11) {
                 refresh_cycle = 0;
@@ -96,7 +86,6 @@ namespace create_previews {
             refresh_cycle += 1;
             return true;
         });
-
         Gtk.main();
     }
 
@@ -112,21 +101,15 @@ namespace create_previews {
         */
         if (w.get_window_type() == Wnck.WindowType.NORMAL) {
             update_preview(w);
-            //print("creating new window screenshot\n");
             GLib.Timeout.add_seconds(6, () => {
                 update_preview(w);
-                //print("redoing new window preview\n");
                 return false;
             });
         }
     }
 
     private Gdk.Window? get_gdkmatch_fromwnckwin (Wnck.Window curractive) {
-        /*
-        given a wnck window, find its gdk representative
-        note that this calls the gdk_winlist on each and every Wnck.Window,
-        to prevent timerisk. let's see what it costs.
-        */
+        // given a wnck window, find its gdk representative
         uint curractive_xid = (uint)curractive.get_xid();
         foreach (Gdk.Window w in gdk_winlist) {
             Gdk.X11.Window winsubj = (Gdk.X11.Window)w;
@@ -135,7 +118,6 @@ namespace create_previews {
                 return w;
             }
         }
-        //("window has gone\n");
         return null;
     }
 
@@ -146,19 +128,14 @@ namespace create_previews {
         int targetx = 0;
         int targety = 0;
         double prop = (double)(xsize / ysize);
-        //print(@"$threshold, $prop\n");
         // see if we need to pick xsize or ysize as a reference
         if (prop >= threshold) {
-            //print("x is reference\n");
             targetx = 260;
             targety = (int)((260 / xsize) * ysize);
-            //print(@"$targetx, $targety\n");
         }
         else {
-            //print("y is reference\n");
             targety = 160;
             targetx = (int)((160 / ysize) * xsize);
-            //print(@"$targetx, $targety\n");
         }
         return {targetx, targety};
     }
@@ -166,8 +143,8 @@ namespace create_previews {
     private void update_preview (Wnck.Window? w) {
         /*
         [1] check existence (get_gdkmatch_fromwnckwin(w))
-        [2] create the pixbuf (the sensitive part)
-        [3] get the xid, workspace
+        [2] create the pixbuf
+        [3] get xid, workspace
         [4] scale, name and write do disc
         */
 
@@ -192,19 +169,18 @@ namespace create_previews {
                 //resize, write
                 string name = @"$name_xid.$name_workspace.png";
                 if (currpix != null) {
-                    currpix.scale_simple(
-                        sizes[0], sizes[1] , Gdk.InterpType.BILINEAR
-                    ).save(previewspath.concat("/", name), "png");
+                    try {
+                        currpix.scale_simple(
+                            sizes[0], sizes[1] , Gdk.InterpType.BILINEAR
+                        ).save(previewspath.concat("/", name), "png");
+                    }
+                    catch (Error e) {
+
+                    }
                 }
             }
         }
     }
-
-
-
-//////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////
-
 
     private string[] get_currpreviews () {
         // look up existing previews (files, full names)
@@ -215,7 +191,6 @@ namespace create_previews {
             while ((filename = dr.read_name()) != null) {
             string addpic = Path.build_filename(previewspath, filename);
             files += addpic;
-            //print(@"found file: $addpic\n");
             }
         }
         catch (FileError err) {
@@ -224,13 +199,9 @@ namespace create_previews {
         return files;
     }
 
-
-
-
     private bool get_stringindex (string f, string[] existing_xids) {
         // get index of a string in an array
         foreach (string xid in existing_xids) {
-            // print("item: " + arritem + "\n");
             if (f.contains(xid)) {
                 return true;
             }
@@ -238,20 +209,10 @@ namespace create_previews {
         return false;
     }
 
-
-
-
-
-
-
-
-
-
     private void cleanup () {
         // get filenames
         string[] filenames = get_currpreviews();
         // get existing xids
-        //wnck_scr.force_update();
         unowned GLib.List<Wnck.Window> latest_list = wnck_scr.get_windows();
         string[] latest_xids = {};
         foreach (Wnck.Window w in latest_list) {
@@ -260,17 +221,17 @@ namespace create_previews {
             string lookup = name_xid.to_string();
             latest_xids += lookup;
         }
-
-        /////////////////////////////////////////////////////
         foreach (string f in filenames) {
             bool keep = get_stringindex(f, latest_xids);
             if (!keep) {
-                print(f + ": remove!\n");
                 File file = File.new_for_path (f);
-                file.delete();
+                try {
+                    file.delete();
+                }
+                catch (Error e) {
+
+                }
             }
         }
-        /////////////////////////////////////////////////////
-
     }
 }
