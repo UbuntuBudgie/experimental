@@ -11,9 +11,13 @@ namespace create_previews {
     Gdk.X11.Display gdkdisp;
     GLib.List<Gdk.Window> gdk_winlist;
     string previewspath;
+    bool idle_state;
 
 
     public static void main (string[] args) {
+        // if idle exceeds 10 minutes (600 seconds), pauze refreshing
+        idle_state = false;
+
         // decide if we should take xsize or ysize as a reference for resize
         threshold = 260.0/160.0;
         string user = Environment.get_user_name();
@@ -54,6 +58,7 @@ namespace create_previews {
                 update_preview(wnck_scr.get_active_window());
             }
             else if (refresh_active == 5) {
+                idle_state = get_idle();
                 refresh_active = 0;
             }
             refresh_active += 1;
@@ -87,6 +92,26 @@ namespace create_previews {
             return true;
         });
         Gtk.main();
+    }
+
+    private bool get_idle () {
+        string cmd = "xprintidle";
+        string output;
+        int curridle = 0;
+        try {
+            GLib.Process.spawn_command_line_sync(cmd, out output);
+            curridle = int.parse(output) / 1000;
+            if (curridle > 90) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        /* on an occasional exception, just don't run the command */
+        catch (SpawnError e) {
+            return false;
+        }
     }
 
     private void update_winlist () {
@@ -148,7 +173,7 @@ namespace create_previews {
         [4] scale, name and write do disc
         */
 
-        if (w != null) {
+        if (w != null && !idle_state) {
             Gdk.Window? gdk_match = get_gdkmatch_fromwnckwin(w);
             if (
                 // [1] check existence (get_gdkmatch_fromwnckwin(w))
