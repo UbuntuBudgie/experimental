@@ -7,5 +7,10 @@
             <description>Whether to show windows from all workspaces</description>
             <default>false</default>
         </key>
+        <key type="b" name="enable-previews">
+            <summary>Enable Previews</summary>
+            <description>Whether to enable window previews</description>
+            <default>true</default>
+        </key>
     </schema>
 </schemalist>
