@@ -378,6 +378,10 @@ namespace NewPreviews {
                 int add = tofix * 300 / 2;
                 currlast_startspacer.set_column_spacing (add);
             }
+            if (reversed_buttons.length > 1) {
+                currtilindex = 1;
+                reversed_buttons[1].grab_focus();
+            }
             this.title = "PreviewsWindow";
             this.add(maingrid);
         }
