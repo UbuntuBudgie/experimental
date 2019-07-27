@@ -210,10 +210,10 @@ namespace NewPreviews {
         }
 
         private bool filter_wmclass (
-            Wnck.Window w, Wnck.ClassGroup wm_class
+            Wnck.Window w, Wnck.ClassGroup? wm_class
         ) {
-            // if set, only allow current wm_class
-            if (allapps) {
+            // if set, only allow current wm_class      // check, what if window == null?
+            if (allapps || wm_class == null) { // edited: Wnck.ClassGroup? and || wm_class == null
                 return true;
             }
             else {
@@ -305,7 +305,12 @@ namespace NewPreviews {
                 num_ids_fromdir += found_xid;
             }
             z_list = wnck_scr.get_windows_stacked();
-            Wnck.ClassGroup wm_class = wnck_scr.get_active_window().get_class_group();
+            // watch out! window can be null -> wm_class can be null
+            Wnck.ClassGroup? wm_class = null;
+            Wnck.Window? curr_active = wnck_scr.get_active_window();
+            if (curr_active != null) {
+                wm_class = curr_active.get_class_group();
+            }
             foreach (Wnck.Window w in z_list) {
                 string z_intid = w.get_xid().to_string();
                 int dirlistindex = get_stringindex(num_ids_fromdir, z_intid);
