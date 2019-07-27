@@ -1,12 +1,12 @@
 # Setup
 
-- compile `preview_triggers.vala `
-- compile `alttab_runner.vala`
+- compile `previews_triggers.vala `
+- compile `window_daemon.vala`
 - compile `previews_creator.vala`
 - copy folder `pics` to the same location as the executable `alttab_runner.vala`
 - install the gschema
 
-- Run both `previews_creator.vala` and `alttab_runner.vala`
+- Run both `window_daemon` and `previews_creator`
 - Set previews to show windows from all workspaces or only current in the key `/org/ubuntubudgie/plugins/budgie-wpreviews/allworkspaces`
 
 
