@@ -437,7 +437,7 @@ namespace NewPreviews {
         if (key == "Escape") {
             previews_window.destroy();
         }
-        if (key == "Alt_L") {
+        if (key == "Alt_L" || key == "Shift_L") {
             if (!no_windows) {
                 currbuttons[currtilindex].clicked();
             }
