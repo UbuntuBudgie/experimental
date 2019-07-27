@@ -212,8 +212,8 @@ namespace NewPreviews {
         private bool filter_wmclass (
             Wnck.Window w, Wnck.ClassGroup? wm_class
         ) {
-            // if set, only allow current wm_class      // check, what if window == null?
-            if (allapps || wm_class == null) { // edited: Wnck.ClassGroup? and || wm_class == null
+            // if set, only allow current wm_class
+            if (allapps || wm_class == null) {
                 return true;
             }
             else {
