@@ -1,0 +1,15 @@
+# List of files installed by Meson
+# Does not contain files installed by custom scripts.
+/usr/lib/budgie-previews/previews_creator
+/usr/lib/budgie-previews/previews_daemon
+/usr/lib/budgie-previews/previews_triggers
+/usr/share/budgie-extras-daemon/preview_allbackward.bde
+/usr/share/budgie-extras-daemon/preview_allforward.bde
+/usr/share/budgie-extras-daemon/preview_curentbackward.bde
+/usr/share/budgie-extras-daemon/preview_currentforward.bde
+/usr/lib/budgie-previews/pics/grey_x.png
+/usr/lib/budgie-previews/pics/prv_grey.png
+/usr/lib/budgie-previews/pics/prv_white.png
+/usr/lib/budgie-previews/pics/white2_x.png
+/usr/lib/budgie-previews/pics/white_x.png
+/usr/share/glib-2.0/schemas/org.ubuntubudgie.plugins.budgie-wpreviews.gschema.xml
