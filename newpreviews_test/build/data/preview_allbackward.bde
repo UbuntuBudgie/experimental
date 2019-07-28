@@ -1,6 +1,0 @@
-[Daemon]
-shortcut=<Shift><Alt>Tab
-command=/usr/share/budgie-extras-daemon/previews_triggers previous
-name='all applications / browse backward'
-overlay=GSettings org.gnome.desktop.wm.keybindings switch-applications-backward
-onlyactivate=GSettings org.ubuntubudgie.plugins.budgie-wpreviews enable-previews

@@ -1,14 +1,3 @@
-#install_data(
-#    'chardata',
-#    install_dir: join_paths(datadir, application_id)
-#)
-
-
-#install_data(
-#    'quickchar-autostart.desktop',
-#    install_dir: join_paths(sysconfdir, 'xdg', 'autostart')
-#)
-
 BDE_LOC=join_paths(datadir, 'budgie-extras-daemon')
 substprog = find_program('subst.py')
 
@@ -42,4 +31,22 @@ mytarget4 = custom_target('preview_currentforward',
   command : [substprog, '@INPUT@', BDE_LOC, '@OUTPUT@'],
   install : true,
   install_dir : BDE_LOC
+)
+
+AUTOSTART_LOC=join_paths(sysconfdir, 'xdg', 'autostart')
+
+mytarget5 = custom_target('preview_creator',
+  output : 'preview-creator-autostart.desktop',
+  input : 'preview-creator-autostart.desktop.in',
+  command : [substprog, '@INPUT@', LIB_INSTALL_DIR, '@OUTPUT@'],
+  install : true,
+  install_dir : AUTOSTART_LOC
+)
+
+mytarget6 = custom_target('preview-daemon',
+  output : 'preview-daemon-autostart.desktop',
+  input : 'preview-daemon-autostart.desktop.in',
+  command : [substprog, '@INPUT@', LIB_INSTALL_DIR, '@OUTPUT@'],
+  install : true,
+  install_dir : AUTOSTART_LOC
 )
