@@ -433,11 +433,12 @@ namespace NewPreviews {
     private bool close_onrelease(Gdk.EventKey k) {
         // on releasing Alt_L, destroy previews, virtually click current
         // button (connect is gone with destroying previews window)
+        //get_altpressed();
         string key = Gdk.keyval_name(k.keyval);
         if (key == "Escape") {
             previews_window.destroy();
         }
-        if (key == "Alt_L" || key == "Shift_L") {
+        if (key == "Alt_L" || key == "Meta_L") {
             if (!no_windows) {
                 currbuttons[currtilindex].clicked();
             }
