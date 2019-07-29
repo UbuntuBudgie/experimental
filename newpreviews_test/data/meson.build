@@ -36,16 +36,16 @@ mytarget4 = custom_target('preview_currentforward',
 AUTOSTART_LOC=join_paths(sysconfdir, 'xdg', 'autostart')
 
 mytarget5 = custom_target('preview_creator',
-  output : 'preview-creator-autostart.desktop',
-  input : 'preview-creator-autostart.desktop.in',
+  output : 'previews-creator-autostart.desktop',
+  input : 'previews-creator-autostart.desktop.in',
   command : [substprog, '@INPUT@', LIB_INSTALL_DIR, '@OUTPUT@'],
   install : true,
   install_dir : AUTOSTART_LOC
 )
 
-mytarget6 = custom_target('preview-daemon',
-  output : 'preview-daemon-autostart.desktop',
-  input : 'preview-daemon-autostart.desktop.in',
+mytarget6 = custom_target('previews_daemon',
+  output : 'previews-daemon-autostart.desktop',
+  input : 'previews-daemon-autostart.desktop.in',
   command : [substprog, '@INPUT@', LIB_INSTALL_DIR, '@OUTPUT@'],
   install : true,
   install_dir : AUTOSTART_LOC

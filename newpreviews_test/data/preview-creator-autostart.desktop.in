@@ -2,7 +2,7 @@
 [Desktop Entry]
 Type=Application
 Name=Preview Creator
-Exec=PATH_LOC/preview-creator
+Exec=PATH_LOC/previews_creator
 NoDisplay=true
 AutostartCondition=GSettings org.ubuntubudgie.plugins.budgie-wpreviews enable-previews
 X-MATE-AutoRestart=true
