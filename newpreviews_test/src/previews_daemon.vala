@@ -513,7 +513,7 @@ namespace NewPreviews {
         return string.joinv("/", trim_filename);
     }
 
-    private void windowdeamon(string[]? args = null) {
+    private void windowdaemon(string[]? args = null) {
         filepath = get_filepath (args[0]);
         GLib.Settings previews_settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.budgie-wpreviews"
@@ -574,7 +574,7 @@ namespace NewPreviews {
             // directory exists, nothing to do
         }
         Gtk.init(ref args);
-        NewPreviews.windowdeamon(args);
+        NewPreviews.windowdaemon(args);
         Gtk.main();
     }
 }
