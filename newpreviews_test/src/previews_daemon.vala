@@ -513,7 +513,7 @@ namespace NewPreviews {
         return string.joinv("/", trim_filename);
     }
 
-    private void windowdaemon(string[]? args = null) {
+    private void windowdaemon(string[] args) {
         filepath = get_filepath (args[0]);
         GLib.Settings previews_settings = new GLib.Settings(
             "org.ubuntubudgie.plugins.budgie-wpreviews"
