@@ -137,6 +137,10 @@ namespace create_previews {
         // create preview on creation of (valid) window,
         // refresh after 6 seconds
         if (w.get_window_type() == Wnck.WindowType.NORMAL) {
+            GLib.Timeout.add(500, () => {
+                update_preview(w);
+                return false;
+            });
             update_preview(w);
             GLib.Timeout.add_seconds(6, () => {
                 update_preview(w);
