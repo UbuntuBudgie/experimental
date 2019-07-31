@@ -141,7 +141,6 @@ namespace create_previews {
                 update_preview(w);
                 return false;
             });
-            update_preview(w);
             GLib.Timeout.add_seconds(6, () => {
                 update_preview(w);
                 return false;
