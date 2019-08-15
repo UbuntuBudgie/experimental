@@ -535,6 +535,8 @@ namespace NewPreviews {
         triggercurrent = File.new_for_path(
             "/tmp/".concat(user, "_prvtrigger_current")
         );
+        // start with a clean plate please
+        cleanup();
         // start the loop
         // X11 stuff, non-dynamic part
         unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
