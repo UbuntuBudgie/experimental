@@ -35,7 +35,7 @@ BudgiePreviewCArgs = [
 LIB_INSTALL_DIR = join_paths(prefix, libdir, application_id)
 
 executable(
-    'previews_creator', BudgiePreviewControlSources,
+    'previews_creator', BudgiePreviewCreatorSources,
     dependencies: BudgiePreviewDependencies,
     install: true,
     vala_args: BudgiePreviewValaArgs,
@@ -44,7 +44,7 @@ executable(
 )
 
 executable(
-    'previews_controls', BudgiePreviewCreatorSources,
+    'previews_controls', BudgiePreviewControlSources,
     dependencies: BudgiePreviewDependencies,
     install: true,
     vala_args: BudgiePreviewValaArgs,
