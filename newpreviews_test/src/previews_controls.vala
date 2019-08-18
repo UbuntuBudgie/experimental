@@ -31,7 +31,6 @@ namespace PreviewsControls {
             var toggle_previews = new Gtk.CheckButton.with_label(
                 "Run Previews"
             );
-            toggle_previews.set_relief(Gtk.ReliefStyle.NONE);
             var toggle_allworkspaces = new Gtk.CheckButton.with_label(
                 "Show windows of all workspaces"
             );
