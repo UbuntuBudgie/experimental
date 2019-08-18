@@ -11,6 +11,9 @@ BudgiePreviewTriggerSources = [
 'previews_triggers.vala'
 ]
 
+BudgiePreviewControlSources = [
+'previews_controls.vala'
+]
 
 BudgiePreviewDependencies = [
 dependency('gtk+-3.0'),
@@ -32,7 +35,16 @@ BudgiePreviewCArgs = [
 LIB_INSTALL_DIR = join_paths(prefix, libdir, application_id)
 
 executable(
-    'previews_creator', BudgiePreviewCreatorSources,
+    'previews_creator', BudgiePreviewControlSources,
+    dependencies: BudgiePreviewDependencies,
+    install: true,
+    vala_args: BudgiePreviewValaArgs,
+    c_args: BudgiePreviewCArgs,
+    install_dir: LIB_INSTALL_DIR,
+)
+
+executable(
+    'previews_controls', BudgiePreviewCreatorSources,
     dependencies: BudgiePreviewDependencies,
     install: true,
     vala_args: BudgiePreviewValaArgs,

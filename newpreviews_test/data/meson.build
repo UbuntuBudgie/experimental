@@ -50,3 +50,18 @@ mytarget6 = custom_target('previews_daemon',
   install : true,
   install_dir : AUTOSTART_LOC
 )
+
+APP_LOC=join_paths(datadir, 'applications')
+
+mytarget7 = custom_target('previewscontrols',
+  output : 'previewscontrols.desktop',
+  input : 'previewscontrols.desktop.in',
+  command : [substprog, '@INPUT@', LIB_INSTALL_DIR, '@OUTPUT@'],
+  install : true,
+  install_dir : APP_LOC
+)
+
+PIXMAP=join_paths(datadir, 'pixmaps')
+install_data('budgiewprviews.svg',
+    install_dir: PIXMAP
+)
