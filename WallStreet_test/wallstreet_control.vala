@@ -187,7 +187,6 @@ namespace WallpaperRunner {
                 if (chooser.run () == Gtk.ResponseType.ACCEPT) {
                     string newpath = chooser.get_uri ().replace("file://", "");
                     wallstreet_settings.set_string("wallpaperfolder", newpath);
-                    print(newpath + "\n");
                     dir_entry.set_text(newpath);
                 }
 		    chooser.close ();

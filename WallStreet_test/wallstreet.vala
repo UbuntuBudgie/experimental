@@ -51,7 +51,6 @@ namespace wallstreet {
                     wallpapersettings.set_string(
                         "picture-uri", "file:///" + currwall
                     );
-                    print("changed folder\n");
                 }
             }
             // check every n-seconds (5)
@@ -66,7 +65,6 @@ namespace wallstreet {
                     "picture-uri", "file:///" + currwall
                 );
                 currindex += 1;
-                print("switch_wall\n");
                 curr_seconds = 0;
             }
             // after loop cycle, refresh list and start over
