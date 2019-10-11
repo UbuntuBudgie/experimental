@@ -6,7 +6,7 @@ import sys
 import subprocess
 
 """
-Notifictions-test
+notifythesecond
 Author: Jacob Vlijm
 Copyright ©2019 Ubuntu Budgie Developers
 Website=https://ubuntubudgie.org
@@ -20,44 +20,31 @@ should have received a copy of the GNU General Public License along with this
 program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
-
-
-"""
-This snippet was written as an example of how a clickable notification could
-be made.
-(possible) args:
-- title
-- body
-- icon (from icon name as it is currently)
-- command
-args are applied if set, else pass
-example call:
-<script> title="Important warning" body="This is some unimportant text. Please read carefully."  icon="budgie-hotcorners-symbolic" command="gedit
-
-"""
-
 class NotifyWindow(Gtk.Window):
 
     def __init__(self):
         Gtk.Window.__init__(self)
         self.set_decorated(False)
-        distance = 80 # gsettings?
-        winwidth = 300 # gsettings?
-        winheight = 80 # gsettings?
+        distance = 80 # gsettings
+        winwidth = 300 # gsettings
+        winheight = 80 # gsettings
         self.set_default_size(winwidth, winheight)
         self.maingrid = Gtk.Grid()
         self.add(self.maingrid)  
         self.set_space()
+        self.winpos = 4 # gsettings? default = SE
         self.get_args()
-        winpos = 4 # gsettings?, 1 = topleft, 2, 3, 4
         self.currage = 0
-        self.targetage = 10 # gsettings?,life seconds
+        self.targetage = 10 # gsettings,life seconds
         GLib.timeout_add_seconds(1, self.limit_windowlife) 
         self.maingrid.show_all()
-        self.position_popup(winpos, winwidth, winheight, distance)
+        self.position_popup(self.winpos, winwidth, winheight, distance)
         self.show_all()
         Gtk.main()
 
+    def get_winpos(self, arg):
+        self.winpos = int(arg)
+        
     def limit_windowlife(self):
         if self.currage >= self.targetage:
             Gtk.main_quit()
@@ -97,9 +84,7 @@ class NotifyWindow(Gtk.Window):
         return width, height, screen_xpos, screen_ypos
         
     def show_title(self, title):
-        title_label = Gtk.Label(
-             label=title.replace("title=", "")
-        )
+        title_label = Gtk.Label(label=title)
         self.maingrid.attach(title_label, 3, 1, 1, 1)
         title_label.set_xalign(0)
         # set title bold
@@ -110,7 +95,7 @@ class NotifyWindow(Gtk.Window):
 
     def set_body(self, body):
         body_label = Gtk.Label(
-            label=body.replace("body=", "")
+            label=body
         )
         self.maingrid.attach(body_label, 3, 2, 1, 1)
         body_label.set_xalign(0)
@@ -118,7 +103,6 @@ class NotifyWindow(Gtk.Window):
         body_label.set_line_wrap(True)
 
     def set_icon(self, icon):
-        icon = icon.replace("icon=", "")
         self.maingrid.attach(Gtk.Label(label="\t"), 2, 0, 1, 1)
         if not "/" in icon:
             newicon = Gtk.Image.new_from_icon_name(
@@ -130,12 +114,16 @@ class NotifyWindow(Gtk.Window):
     def get_args(self):
         args = sys.argv[1:]
         funcs = [
-            self.show_title, self.set_body, self.set_icon, self.connect_action,
+            self.show_title, self.set_body, self.set_icon,
+            self.connect_action, self.get_winpos,
         ]
-        argnames = ["title", "body", "icon", "command"]
+        argnames = ["title", "body", "icon", "command", "position"]
         for arg in args:
+            argdata = arg.split("=")
+            argname = argdata[0]
+            arg = argdata[1]
             try:
-                i = argnames.index(arg.split("=")[0])
+                i = argnames.index(argname)
                 funcs[i](arg)
             except ValueError:
                 print("invalid argument:", arg)             
@@ -155,10 +143,7 @@ class NotifyWindow(Gtk.Window):
                 
     def run_command(self, event, key, command):
         if key.get_button()[1] == 1:
-            cmd = command.replace("command=", "")
-            subprocess.Popen(
-                ["/bin/bash", "-c", cmd]
-            )
+            subprocess.Popen(["/bin/bash", "-c", command])
 
     def set_space(self):
         for cell in [[0, 0], [100, 0], [0, 100], [100, 100]]:
