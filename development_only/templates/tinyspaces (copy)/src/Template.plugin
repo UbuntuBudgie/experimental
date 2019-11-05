@@ -1,9 +1,0 @@
-[Plugin]
-Module=template.so
-Name=Template
-Description=Just a template
-Description[nl_NL]=Een leeg voorbeeldbestand
-Authors=Jacob Vlijm
-Copyright=© 2017-2018 Ubuntu Budgie Developers
-Website=https://ubuntubudgie.org
-Icon=templateicon-symbolic
