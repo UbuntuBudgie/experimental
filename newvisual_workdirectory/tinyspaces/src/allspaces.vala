@@ -6,7 +6,8 @@ namespace ShowAllSpaces {
     unowned Wnck.Screen wnckscr;
     private ScrolledWindow scrollwin;
     Gdk.X11.Window timestamp_window;
-   
+    Grid maingrid;
+
 
     class AllSpacesOverview : Gtk.Window {
 
@@ -29,22 +30,11 @@ namespace ShowAllSpaces {
                 s = s + add;
             }
             l.set_text(s);
-
-            //  spaceheader.clicked.connect (() => {
-            //      //raise_win(s)
-            //      Wnck.Workspace ws = wnckspaces.nth((uint)currsubj);
-            //      uint now = get_now();
-            //      ws.activate(now);
-            //  });
-
-
             return spaceheader;
         }
 
-        public AllSpacesOverview () {
-            // window basics
-            this.set_decorated(false);
-            Grid maingrid = new Gtk.Grid();
+        private void produce_content () {
+
             // topleft / botomrignt space
             maingrid.attach(new Label("\t"), 0, 0, 1, 1);
             maingrid.attach(new Label("\t"), 100, 100, 1, 1);
@@ -52,17 +42,14 @@ namespace ShowAllSpaces {
             unowned GLib.List<Wnck.Window> wnckstack = wnckscr.get_windows ();
             unowned GLib.List<Wnck.Workspace> wnckspaces = wnckscr.get_workspaces ();
             uint n_spaces = wnckspaces.length ();
-            
             // create blocks per space
             Grid[] spacegrids = {};
             int[] grids_rows = {}; // <- to keep track of row while adding buttons
+
             for (int i=0; i < n_spaces; i++) {
                 Grid spacegrid = new Grid();
                 Button header = create_spacebutton (i, n_spaces);
-
-
-
-                ////////////////////////////////////////////////////////////////////////////////////////
+                // set spacebutton action
                 Wnck.Workspace ws = null;
                 int wsindex = 0;
                 foreach (Wnck.Workspace w in wnckspaces) {
@@ -75,13 +62,9 @@ namespace ShowAllSpaces {
                             ws.activate(now);
                         });
                         break;
-
                     }
                     wsindex += 1;
                 }
-                ////////////////////////////////////////////////////////////////////////////////////////
-
-
 
                 header.set_relief(Gtk.ReliefStyle.NONE);
                 header.set_size_request(260, 0);
@@ -109,33 +92,27 @@ namespace ShowAllSpaces {
                     }
                     i += 1;
                 }
-                // type 
+                // type
                 Wnck.WindowType type = w.get_window_type ();
                 bool normalwindow = type == Wnck.WindowType.NORMAL;
                 // icon
                 Gdk.Pixbuf app_pixbuf = w.get_mini_icon ();
                 Gtk.Image app_image = new Gtk.Image.from_pixbuf(app_pixbuf);
-                // name 
+                // name
                 string wname = w.get_name ();
-                print(@"window found: $xid $currspaceindex $type $normalwindow $wname\n");
                 // add to grid
                 if (normalwindow) {
                     // fetch the corresponding grid from array & add button
                     Grid editgrid = spacegrids[currspaceindex];
                     int row = grids_rows[currspaceindex];
                     Button windownamebutton = new Gtk.Button.with_label(wname);
-
-
-                    ////////////////////////////////////////////////////////////
-
+                    // set window button action
                     windownamebutton.clicked.connect (() => {
                         //raise_win(s)
                         uint now = get_now();
                         w.activate(now);
                     });
 
-
-                    ////////////////////////////////////////////////////////////
                     windownamebutton.set_relief(Gtk.ReliefStyle.NONE);
                     Gtk.Label wbuttonlabel = (Gtk.Label)windownamebutton.get_child();
                     wbuttonlabel.set_ellipsize(Pango.EllipsizeMode.END);
@@ -146,7 +123,6 @@ namespace ShowAllSpaces {
                     grids_rows[currspaceindex] = row + 1;
                 }
             }
-
             int blockrow = 0;
             foreach (Grid g in spacegrids) {
                 if (grids_rows[blockrow] != 0) {
@@ -157,27 +133,51 @@ namespace ShowAllSpaces {
             scrollwin = new Gtk.ScrolledWindow (null, null);
             scrollwin.set_min_content_height(350);
             scrollwin.set_min_content_width(380);
+            //return maingrid;
+        }
+
+        private void update_interface () {
+            GLib.List<weak Gtk.Widget> widgets = maingrid.get_children();
+            foreach (Gtk.Widget wdg in widgets) {
+                GLib.Idle.add( () => {
+                    wdg.destroy();
+                    return false;
+                });
+            }
+            GLib.Idle.add( () => {
+                produce_content ();
+                maingrid.show_all();
+                scrollwin.show_all();
+                this.show_all();
+                return false;
+            });
+        }
+
+        public AllSpacesOverview () {
+            // window basics
+            this.set_decorated(false);                          // * out
+            maingrid = new Gtk.Grid();
+            maingrid.show_all();
+            produce_content ();
             scrollwin.add(maingrid);
             this.add(scrollwin);
             this.show_all();
+            wnckscr.window_closed.connect(update_interface);
+            wnckscr.window_opened.connect(update_interface);
         }
     }
 
     public static int main (string[] args) {
         Gtk.init(ref args);
-
         // X11 stuff, non-dynamic part
         unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
         unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
         Gdk.X11.Display display = Gdk.X11.Display.lookup_for_xdisplay(xdisplay);
         timestamp_window = new Gdk.X11.Window.foreign_for_display(display, xwindow);
-
-
         wnckscr =  Wnck.Screen.get_default();
         wnckscr.force_update();
         new AllSpacesOverview();
         Gtk.main ();
         return 0;
-        
     }
 }
