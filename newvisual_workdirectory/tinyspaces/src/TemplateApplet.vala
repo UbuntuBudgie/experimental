@@ -21,17 +21,27 @@ using Gdk.X11;
 
 namespace TemplateApplet {
 
+    private unowned Wnck.Screen wnckscr;
+    private GLib.Settings mutter_ws_settings;
+    private GLib.Settings visualspace_settings;
+    private Gdk.Screen gdkscreen;
+    private string fontspacing_css;
+
     public class TemplatePopover : Budgie.Popover {
 
         Gdk.X11.Window timestamp_window;
-        unowned Wnck.Screen wnckscr;
         private ScrolledWindow scrollwin;
         private Gtk.EventBox indicatorBox;
         private Grid maingrid;
+        private Label nspaces_show;
+        Button nspaces_down;
+        Button nspaces_up;
+        
 
         public TemplatePopover(Gtk.EventBox indicatorBox) {
             GLib.Object(relative_to: indicatorBox);
             this.indicatorBox = indicatorBox;
+            mutter_ws_settings.changed.connect(set_nspaces_show);
 
             // X11 stuff, non-dynamic part
             unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
@@ -44,11 +54,93 @@ namespace TemplateApplet {
             maingrid = new Gtk.Grid();
             maingrid.show_all();
             produce_content ();
+            // supergrid, including maingrid
+            Grid supergrid = new Gtk.Grid();
+            // buttonbox & elements, holding top section
+            ButtonBox ws_managebox = new ButtonBox(Gtk.Orientation.HORIZONTAL);
+            ws_managebox.set_layout(Gtk.ButtonBoxStyle.CENTER);
+            CheckButton autobutton = new CheckButton.with_label("Auto");
+            bool autospace = visualspace_settings.get_boolean("autospaces");
+            autobutton.set_active(autospace);
+            autobutton.toggled.connect(toggle_auto);
+
+            // connect please
+
+
+
+            autobutton.set_relief(Gtk.ReliefStyle.NONE);
+            nspaces_down = new Button.from_icon_name(
+                "pan-down-symbolic", Gtk.IconSize.MENU
+            );
+            nspaces_down.set_relief(Gtk.ReliefStyle.NONE);
+            nspaces_up = new Button.from_icon_name(
+                "pan-up-symbolic", Gtk.IconSize.MENU
+            );
+            nspaces_up.set_relief(Gtk.ReliefStyle.NONE);
+            nspaces_show = new Label("");
+            nspaces_show.set_xalign(0);
+            // fetch n-spaces, set label
+            set_nspaces_show();
+            
+
+            nspaces_show.set_width_chars(2);
+            Box fakespin = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            fakespin.set_baseline_position(Gtk.BaselinePosition.BOTTOM);
+            fakespin.pack_start(nspaces_down, false, false, 0);
+            fakespin.pack_start(nspaces_show, false, false, 0);
+            fakespin.pack_start(nspaces_up, false, false, 0);
+            nspaces_up.clicked.connect(() => {
+                add_onespace("add");
+            });
+            nspaces_down.clicked.connect(() => {
+                add_onespace("remove");
+            });
+            ws_managebox.pack_start(fakespin, false, false, 0);
+            ws_managebox.pack_start(autobutton, false, false, 0);
+            // linespacing_topspacelabel
+            Label topspace1 = new Gtk.Label("");
+            Label topspace2 = new Gtk.Label("");
+            set_spacing(gdkscreen, topspace1, "linespacing_top");
+            set_spacing(gdkscreen, topspace2, "linespacing_bottom");
+            supergrid.attach(scrollwin, 0, 10, 1, 1);
+            supergrid.attach(ws_managebox, 0, 1, 1, 1);
+            supergrid.attach(topspace1, 0, 0, 1, 1);
+            supergrid.attach(topspace2, 0, 3, 1, 1);
+            // throw all stuff at each other
             scrollwin.add(maingrid);
-            this.add(scrollwin);
-            //this.show_all();
+            this.add(supergrid);
+            // refresh on signals
             wnckscr.window_closed.connect(update_interface);
             wnckscr.window_opened.connect(update_interface);
+            wnckscr.workspace_created.connect(update_interface);
+            wnckscr.workspace_destroyed.connect(update_interface);
+        }
+
+        private void toggle_auto (ToggleButton button) {
+            bool newval = button.get_active();
+            nspaces_show.set_sensitive(!newval);
+            nspaces_down.set_sensitive(!newval);
+            nspaces_up.set_sensitive(!newval);
+            print(@"$newval\n");
+        }
+
+        private void add_onespace (string edit) {
+            int n_currentworkspaces = mutter_ws_settings.get_int("num-workspaces");
+            int add = 0;
+            if (edit == "add") {
+                add = 1;
+            }
+            else if (edit == "remove" && n_currentworkspaces > 1) {
+                add = -1;
+            }
+            mutter_ws_settings.set_int("num-workspaces", n_currentworkspaces + add);
+        }
+
+        private void set_nspaces_show (string? subj = null) {
+            if (subj == "num-workspaces" || subj == null) {
+                int new_nspaces = mutter_ws_settings.get_int("num-workspaces");
+                nspaces_show.set_text(@"$new_nspaces");
+            }
         }
 
         private uint get_now() {
@@ -74,8 +166,7 @@ namespace TemplateApplet {
         }
 
         private void produce_content () {
-
-            // topleft / botomrignt space
+            // topleft / botomright space
             maingrid.attach(new Label("\t"), 0, 0, 1, 1);
             maingrid.attach(new Label("\t"), 100, 100, 1, 1);
 
@@ -111,7 +202,10 @@ namespace TemplateApplet {
                 // lazy layout
                 spacegrid.attach(header, 2, 0, 10, 1);
                 spacegrid.attach(new Label(" "), 1, 1, 1, 1);
-                spacegrid.attach(new Label(""), 0, 1, 1, 1);
+
+                if (i > 0) {
+                    spacegrid.attach(new Label(""), 0, 1, 1, 1);
+                }
                 spacegrid.attach(new Label(""), 0, 100, 1, 1);
 
                 spacegrids += spacegrid;
@@ -173,7 +267,7 @@ namespace TemplateApplet {
             }
             scrollwin = new Gtk.ScrolledWindow (null, null);
             scrollwin.set_min_content_height(350);
-            scrollwin.set_min_content_width(380);
+            scrollwin.set_min_content_width(365);
             //return maingrid;
         }
 
@@ -207,32 +301,10 @@ namespace TemplateApplet {
         private Gtk.EventBox indicatorBox;
         private TemplatePopover popover = null;
         private unowned Budgie.PopoverManager? manager = null;
-
         public string uuid { public set; public get; }
         ButtonBox? spacebox = null;
         Label label = new Label("");
         bool usevertical;
-        unowned Wnck.Screen wnck_scr;
-
-        public void set_spacing (Gdk.Screen screen) {
-            string fontspacing_css = """
-            .fontspacing {letter-spacing: 3px; font-size: 12px;}
-            .fontspacing_vertical {font-size: 10px;}
-            """;
-
-            Gtk.CssProvider css_provider = new Gtk.CssProvider();
-            try {
-                css_provider.load_from_data(fontspacing_css);
-                Gtk.StyleContext.add_provider_for_screen(
-                    screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
-                );
-                label.get_style_context().add_class("fontspacing");
-            }
-            catch (Error e) {
-                // not much to be done
-                print("Error loading css data\n");
-            }
-        }
 
         public override void panel_position_changed(Budgie.PanelPosition position) {
             if (
@@ -248,8 +320,8 @@ namespace TemplateApplet {
             string s = "";
             string charc = "";
             spacebox = new Gtk.ButtonBox(Gtk.Orientation.HORIZONTAL);
-            unowned GLib.List<Wnck.Workspace> spaces = wnck_scr.get_workspaces();
-            Wnck.Workspace curractive = wnck_scr.get_active_workspace();
+            unowned GLib.List<Wnck.Workspace> spaces = wnckscr.get_workspaces();
+            Wnck.Workspace curractive = wnckscr.get_active_workspace();
             foreach (Wnck.Workspace w in spaces) {
                 if (w == curractive) {
                     charc = "●";
@@ -263,18 +335,49 @@ namespace TemplateApplet {
                 }
             }
             label.set_text(s);
-            set_spacing(this.get_screen());
+            set_spacing(gdkscreen, label, "fontspacing");
             indicatorBox.show_all();
             spacebox.show_all();
         }
 
+        //  private void add_onespace (string edit) {
+        //      int n_currentworkspaces = mutter_ws_settings.get_int("num-workspaces");
+        //      int add = 0;
+        //      if (edit == "add") {
+        //          add = 1;
+        //      }
+        //      else if (edit == "remove" && n_currentworkspaces > 1) {
+        //          add = -1;
+        //      }
+        //      mutter_ws_settings.set_int("num-workspaces", n_currentworkspaces + add);
+        //  }
+
         public Applet() {
+
+            // misc stuff we are using
+            fontspacing_css = """
+            .fontspacing {letter-spacing: 3px; font-size: 12px;}
+            .fontspacing_vertical {font-size: 12px;}
+            .linespacing_top {margin-top: -12px;}
+            .linespacing_bottom {margin-top: -12px;}
+            .plusminus {font-size: 24px; font-weight: bold;}
+            """;
+            gdkscreen = this.get_screen();
+            wnckscr = Wnck.Screen.get_default();
+            mutter_ws_settings =  new GLib.Settings(
+                "org.gnome.desktop.wm.preferences"
+            );
+            ////////////////////////////////////////////////////////////////
+            visualspace_settings =  new GLib.Settings(
+                "org.ubuntubudgie.plugins.budgie-visualspace"
+            );
+            ///////////////////////////////////////////////////////////////
             initialiseLocaleLanguageSupport();
-            /* box */
+            // Box
             indicatorBox = new Gtk.EventBox();
-            /* Popover */
+            // Popover
             popover = new TemplatePopover(indicatorBox);
-            /* On Press indicatorBox */
+            // On Press indicatorBox
             indicatorBox.button_press_event.connect((e)=> {
                 if (e.button != 1) {
                     return Gdk.EVENT_PROPAGATE;
@@ -287,14 +390,13 @@ namespace TemplateApplet {
                 return Gdk.EVENT_STOP;
             });
             popover.get_child().show_all();
-
             add(indicatorBox);
             indicatorBox.add(label);
-            wnck_scr = Wnck.Screen.get_default();
+
             update_appearance();
-            wnck_scr.active_workspace_changed.connect(() => {
-                update_appearance();
-            });
+            wnckscr.active_workspace_changed.connect(update_appearance);
+            wnckscr.workspace_created.connect(update_appearance);
+            wnckscr.workspace_destroyed.connect(update_appearance);
             show_all();
         }
 
@@ -316,6 +418,22 @@ namespace TemplateApplet {
             GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
         }
     }
+
+    public void set_spacing (Gdk.Screen screen, Label label, string st) {
+        Gtk.CssProvider css_provider = new Gtk.CssProvider();
+        try {
+            css_provider.load_from_data(fontspacing_css);
+            Gtk.StyleContext.add_provider_for_screen(
+                gdkscreen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+            );
+            label.get_style_context().add_class(st);
+        }
+        catch (Error e) {
+            // not much to be done
+            print("Error loading css data\n");
+        }
+    }
+
 }
 
 

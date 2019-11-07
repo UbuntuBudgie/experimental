@@ -3,7 +3,7 @@ using Gdk;
 using GLib.Math;
 using Json;
 
-/* 
+/*
 * Template
 * Author: Jacob Vlijm
 * Copyright © 2017-2018 Ubuntu Budgie Developers
