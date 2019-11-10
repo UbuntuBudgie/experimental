@@ -3,9 +3,9 @@ using Gdk;
 using Gdk.X11;
 
 /*
-* Template
+* VisualSpace
 * Author: Jacob Vlijm
-* Copyright © 2017-2018 Ubuntu Budgie Developers
+* Copyright © 2017-2019 Ubuntu Budgie Developers
 * Website=https://ubuntubudgie.org
 * This program is free software: you can redistribute it and/or modify it
 * under the terms of the GNU General Public License as published by the Free
@@ -19,15 +19,16 @@ using Gdk.X11;
 */
 
 
-namespace TemplateApplet {
+namespace VisualSpaceApplet {
 
     private unowned Wnck.Screen wnckscr;
     private GLib.Settings mutter_ws_settings;
+    // related to optional auto-workspaces
     private GLib.Settings visualspace_settings;
     private Gdk.Screen gdkscreen;
     private string fontspacing_css;
 
-    public class TemplatePopover : Budgie.Popover {
+    public class VisualSpacePopover : Budgie.Popover {
 
         Gdk.X11.Window timestamp_window;
         private ScrolledWindow scrollwin;
@@ -36,13 +37,11 @@ namespace TemplateApplet {
         private Label nspaces_show;
         Button nspaces_down;
         Button nspaces_up;
-        
 
-        public TemplatePopover(Gtk.EventBox indicatorBox) {
+        public VisualSpacePopover(Gtk.EventBox indicatorBox) {
             GLib.Object(relative_to: indicatorBox);
             this.indicatorBox = indicatorBox;
             mutter_ws_settings.changed.connect(set_nspaces_show);
-
             // X11 stuff, non-dynamic part
             unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
             unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
@@ -58,17 +57,13 @@ namespace TemplateApplet {
             Grid supergrid = new Gtk.Grid();
             // buttonbox & elements, holding top section
             ButtonBox ws_managebox = new ButtonBox(Gtk.Orientation.HORIZONTAL);
+
+            // related to optional auto-workspaces
             ws_managebox.set_layout(Gtk.ButtonBoxStyle.CENTER);
             CheckButton autobutton = new CheckButton.with_label("Auto");
             bool autospace = visualspace_settings.get_boolean("autospaces");
             autobutton.set_active(autospace);
-            autobutton.toggled.connect(toggle_auto);
 
-            // connect please
-
-
-
-            autobutton.set_relief(Gtk.ReliefStyle.NONE);
             nspaces_down = new Button.from_icon_name(
                 "pan-down-symbolic", Gtk.IconSize.MENU
             );
@@ -79,10 +74,7 @@ namespace TemplateApplet {
             nspaces_up.set_relief(Gtk.ReliefStyle.NONE);
             nspaces_show = new Label("");
             nspaces_show.set_xalign(0);
-            // fetch n-spaces, set label
             set_nspaces_show();
-            
-
             nspaces_show.set_width_chars(2);
             Box fakespin = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             fakespin.set_baseline_position(Gtk.BaselinePosition.BOTTOM);
@@ -96,7 +88,12 @@ namespace TemplateApplet {
                 add_onespace("remove");
             });
             ws_managebox.pack_start(fakespin, false, false, 0);
-            ws_managebox.pack_start(autobutton, false, false, 0);
+
+            // related to optional auto-workspaces, uncomment to apply
+            // ws_managebox.pack_start(autobutton, false, false, 0);
+            // autobutton.toggled.connect(toggle_auto);
+            // set_widgets_sensitive(!autospace);
+
             // linespacing_topspacelabel
             Label topspace1 = new Gtk.Label("");
             Label topspace2 = new Gtk.Label("");
@@ -116,24 +113,48 @@ namespace TemplateApplet {
             wnckscr.workspace_destroyed.connect(update_interface);
         }
 
-        private void toggle_auto (ToggleButton button) {
-            bool newval = button.get_active();
-            nspaces_show.set_sensitive(!newval);
-            nspaces_down.set_sensitive(!newval);
-            nspaces_up.set_sensitive(!newval);
-            print(@"$newval\n");
-        }
+        //  private void set_widgets_sensitive (bool opposite_active) {
+        //      // related to optional auto-workspaces
+        //      nspaces_show.set_sensitive(opposite_active);
+        //      nspaces_down.set_sensitive(opposite_active);
+        //      nspaces_up.set_sensitive(opposite_active);
+        //  }
+
+        //  private void toggle_auto (ToggleButton button) {
+        //      // related to optional auto-workspaces
+        //      bool newval = button.get_active();
+        //      visualspace_settings.set_boolean("autospaces", newval);
+        //      set_widgets_sensitive(!newval);
+        //  }
+
+
+
+
+
 
         private void add_onespace (string edit) {
-            int n_currentworkspaces = mutter_ws_settings.get_int("num-workspaces");
+            // prevent exceeding 8, due to hardcoded max- nspaces in budgie-wm
+            // wm crashes if > 8
+            bool act = true;
+            int max_nspace = 8;
+            int n_currentworkspaces = mutter_ws_settings.get_int(
+                "num-workspaces"
+            );
             int add = 0;
-            if (edit == "add") {
+            if (edit == "add" && n_currentworkspaces < max_nspace) {
                 add = 1;
             }
             else if (edit == "remove" && n_currentworkspaces > 1) {
                 add = -1;
             }
-            mutter_ws_settings.set_int("num-workspaces", n_currentworkspaces + add);
+            else {
+                act = false;
+            }
+            if (act) {
+                mutter_ws_settings.set_int(
+                    "num-workspaces", n_currentworkspaces + add
+                );
+            }
         }
 
         private void set_nspaces_show (string? subj = null) {
@@ -148,7 +169,7 @@ namespace TemplateApplet {
             return Gdk.X11.get_server_time(timestamp_window);
         }
 
-        private Button create_spacebutton (int currsubj, uint n_spaces) {
+        private Button create_spacebutton (int currsubj, int n_spaces) {
             // creates the header-per-workspace button
             Button spaceheader = new Button.with_label("");
             Gtk.Label l = (Gtk.Label)spaceheader.get_child();
@@ -172,7 +193,7 @@ namespace TemplateApplet {
 
             unowned GLib.List<Wnck.Window> wnckstack = wnckscr.get_windows ();
             unowned GLib.List<Wnck.Workspace> wnckspaces = wnckscr.get_workspaces ();
-            uint n_spaces = wnckspaces.length ();
+            int n_spaces = (int)wnckspaces.length ();
             // create blocks per space
             Grid[] spacegrids = {};
             int[] grids_rows = {}; // <- to keep track of row while adding buttons
@@ -213,8 +234,6 @@ namespace TemplateApplet {
             }
             // collect window data & create windowname-buttons
             foreach (Wnck.Window w in wnckstack) {
-                // get xid
-                ulong xid = w.get_xid();
                 // get desktop (workspace)
                 Wnck.Workspace currspace = w.get_workspace ();
                 int currspaceindex = 0;
@@ -247,7 +266,6 @@ namespace TemplateApplet {
                         w.activate(now);
                         this.hide();
                     });
-
                     windownamebutton.set_relief(Gtk.ReliefStyle.NONE);
                     Gtk.Label wbuttonlabel = (Gtk.Label)windownamebutton.get_child();
                     wbuttonlabel.set_ellipsize(Pango.EllipsizeMode.END);
@@ -268,7 +286,6 @@ namespace TemplateApplet {
             scrollwin = new Gtk.ScrolledWindow (null, null);
             scrollwin.set_min_content_height(350);
             scrollwin.set_min_content_width(365);
-            //return maingrid;
         }
 
         private void update_interface () {
@@ -299,7 +316,7 @@ namespace TemplateApplet {
     public class Applet : Budgie.Applet {
 
         private Gtk.EventBox indicatorBox;
-        private TemplatePopover popover = null;
+        private VisualSpacePopover popover = null;
         private unowned Budgie.PopoverManager? manager = null;
         public string uuid { public set; public get; }
         ButtonBox? spacebox = null;
@@ -340,18 +357,6 @@ namespace TemplateApplet {
             spacebox.show_all();
         }
 
-        //  private void add_onespace (string edit) {
-        //      int n_currentworkspaces = mutter_ws_settings.get_int("num-workspaces");
-        //      int add = 0;
-        //      if (edit == "add") {
-        //          add = 1;
-        //      }
-        //      else if (edit == "remove" && n_currentworkspaces > 1) {
-        //          add = -1;
-        //      }
-        //      mutter_ws_settings.set_int("num-workspaces", n_currentworkspaces + add);
-        //  }
-
         public Applet() {
 
             // misc stuff we are using
@@ -367,16 +372,17 @@ namespace TemplateApplet {
             mutter_ws_settings =  new GLib.Settings(
                 "org.gnome.desktop.wm.preferences"
             );
-            ////////////////////////////////////////////////////////////////
+
+            ////////////////////////////////////////////////////////////////////
             visualspace_settings =  new GLib.Settings(
                 "org.ubuntubudgie.plugins.budgie-visualspace"
             );
-            ///////////////////////////////////////////////////////////////
+            ////////////////////////////////////////////////////////////////////
             initialiseLocaleLanguageSupport();
             // Box
             indicatorBox = new Gtk.EventBox();
             // Popover
-            popover = new TemplatePopover(indicatorBox);
+            popover = new VisualSpacePopover(indicatorBox);
             // On Press indicatorBox
             indicatorBox.button_press_event.connect((e)=> {
                 if (e.button != 1) {
@@ -392,7 +398,6 @@ namespace TemplateApplet {
             popover.get_child().show_all();
             add(indicatorBox);
             indicatorBox.add(label);
-
             update_appearance();
             wnckscr.active_workspace_changed.connect(update_appearance);
             wnckscr.workspace_created.connect(update_appearance);
@@ -433,7 +438,6 @@ namespace TemplateApplet {
             print("Error loading css data\n");
         }
     }
-
 }
 
 
@@ -442,6 +446,6 @@ public void peas_register_types(TypeModule module){
     /* boilerplate - all modules need this */
     var objmodule = module as Peas.ObjectModule;
     objmodule.register_extension_type(typeof(
-        Budgie.Plugin), typeof(TemplateApplet.Plugin)
+        Budgie.Plugin), typeof(VisualSpaceApplet.Plugin)
     );
 }
