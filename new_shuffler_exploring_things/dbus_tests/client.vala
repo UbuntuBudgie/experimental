@@ -7,7 +7,7 @@ interface ShufflerInfoClient : Object {
     public abstract int mutiply (int n1, int n2) throws Error;
     public abstract string defaultmon_name () throws Error;
     public abstract GLib.HashTable<string, Variant> get_mondata () throws Error;
-    public abstract GLib.HashTable<string, Variant> get_windata () throws Error;
+    public abstract GLib.HashTable<string, Variant> get_winsdata () throws Error;
     public abstract string get_activewin () throws Error;
 }
 
@@ -38,7 +38,7 @@ void main () {
             ////
             ////
             string activewin = client.get_activewin();
-            GLib.HashTable<string, Variant> windata = client.get_windata();
+            GLib.HashTable<string, Variant> windata = client.get_winsdata();
             GLib.List<unowned string> windata_keys = windata.get_keys();
             foreach (string s in windata_keys) {
                 if (s == activewin) {
@@ -64,34 +64,7 @@ void main () {
 
                     print(@"data: $name, $isonws, $winsmonitor, $x, $y, $wdth, $hght\n");
                 }
-
-
-                //////////////////////////////////////////////////////////////////////////////////////////////
-
-                //name, @"$onthisws", winsmonitor, x, y, width, height
-
-                //  GLib.HashTable<string, Variant>tab = client.get_mondata();
-                //  Variant var1 = tab["1"];
-                //  int val1 = -1;
-                //  int val2 = -1;
-                //  int val3 = -1;
-                //  int val4 = -1;
-                //  VariantIter iter = var1.iterator ();
-                //  iter.next ("i", &val1);
-                //  iter.next ("i", &val2);
-                //  iter.next ("i", &val3);
-                //  iter.next ("i", &val4);
-                //  print("%d %d %d %d\n", val1, val2, val3, val4);
-
-                //////////////////////////////////////////////////////////////////////////////////////////////
-
-                //  Variant wingeo = windata[s];
-                //  VariantIter iter = wingeo.iterator();
-                //  var something = iter.next ("s", &iter);
-                //  bool monname = iter.next (@"something: $something\n");
-                //  print(@"something: $something\n");
             }
-            ////
         }
 
         catch (Error e) {

@@ -8,6 +8,7 @@ namespace ShufflerEssentialInfo {
     string defmonname;
     HashTable<string, Variant> monitorgeo;
     unowned Wnck.Screen wnckscr;
+    HashTable<string, Variant> window_essentials;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -25,42 +26,55 @@ namespace ShufflerEssentialInfo {
             return monitorgeo;
         }
 
+        public HashTable<string, Variant> get_winsdata () throws Error {
+            return window_essentials;
+        }
+
+
         public string get_activewin () throws Error {
             // directly called, occasional function
             ulong activewin = wnckscr.get_active_window().get_xid();
             return activewin.to_string();
         }
-
-        public HashTable<string, Variant> get_windata() throws Error {
-            /*
-            / directly called, occasional function
-            / get windowlist, per window:
-            / xid = key, name, onthisworspace, monitor-of window, geometry
-            */
-            var winsdata = new HashTable<string, Variant> (str_hash, str_equal);
-            unowned GLib.List<Wnck.Window> wlist = wnckscr.get_windows();
-            foreach (Wnck.Window w in wlist) {
-                Wnck.WindowType type = w.get_window_type ();
-                if (type == Wnck.WindowType.NORMAL) {
-                    string name = w.get_name(); // needed?
-                    bool onthisws = wnckscr.get_active_workspace() == w.get_workspace ();
-                    int x;
-                    int y;
-                    int width;
-                    int height;
-                    w.get_geometry(out x, out y, out width, out height);
-                    string winsmonitor = gdkdisplay.get_monitor_at_point(x, y).get_model();
-                    ulong xid = w.get_xid();
-                    Variant windowdata = new Variant(
-                        "(sssiiii)", name, @"$onthisws", winsmonitor,
-                        x, y, width, height
-                    );
-                    winsdata.insert(@"$xid", windowdata);
-                }
-            }
-            return winsdata;
-        }
     }
+
+
+
+
+    private void get_windata() {
+        /*
+        / maintaining function
+        / get windowlist, per window:
+        / xid = key, name, onthisworspace, monitor-of window, geometry
+        */
+        var winsdata = new HashTable<string, Variant> (str_hash, str_equal);
+        unowned GLib.List<Wnck.Window> wlist = wnckscr.get_windows();
+        foreach (Wnck.Window w in wlist) {
+            Wnck.WindowType type = w.get_window_type ();
+            if (type == Wnck.WindowType.NORMAL) {
+                string name = w.get_name(); // needed?
+                bool onthisws = wnckscr.get_active_workspace() == w.get_workspace ();
+                int x;
+                int y;
+                int width;
+                int height;
+                w.get_geometry(out x, out y, out width, out height);
+                string winsmonitor = gdkdisplay.get_monitor_at_point(x, y).get_model();
+                ulong xid = w.get_xid();
+                Variant windowdata = new Variant(
+                    "(sssiiii)", name, @"$onthisws", winsmonitor,
+                    x, y, width, height
+                );
+                winsdata.insert(@"$xid", windowdata);
+            }
+        }
+        window_essentials = winsdata;
+        print("updated\n");
+        // return winsdata;
+    }
+
+
+
 
 
 
@@ -107,15 +121,19 @@ namespace ShufflerEssentialInfo {
         wnckscr = Wnck.Screen.get_default();
         wnckscr.force_update();
         monitorgeo = new HashTable<string, Variant> (str_hash, str_equal); //++
+        window_essentials = new HashTable<string, Variant> (str_hash, str_equal);
+
         Gtk.init(ref args);
         gdkdisplay = Gdk.Display.get_default();
         Gdk.Screen gdkscreen = Gdk.Screen.get_default();
         get_monitors();
         gdkscreen.monitors_changed.connect(get_monitors);
+
+        wnckscr.window_opened.connect(get_windata);
         setup_dbus();
 
         ///////////////////////////////////////////////
-        //get_windata();
+        get_windata();
         ///////////////////////////////////////////////
 
         Gtk.main();
