@@ -61,7 +61,6 @@ void main () {
                     iter.next("i", &y);
                     iter.next("i", &wdth);
                     iter.next("i", &hght);
-
                     print(@"data: $name, $isonws, $winsmonitor, $x, $y, $wdth, $hght\n");
                 }
             }

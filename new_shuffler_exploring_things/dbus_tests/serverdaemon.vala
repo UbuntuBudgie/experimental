@@ -38,9 +38,6 @@ namespace ShufflerEssentialInfo {
         }
     }
 
-
-
-
     private void get_windata() {
         /*
         / maintaining function
@@ -73,11 +70,6 @@ namespace ShufflerEssentialInfo {
         // return winsdata;
     }
 
-
-
-
-
-
     private void get_monitors () {
         // maintaining function
         // collect data on connected monitors: real numbers! (unscaled)
@@ -86,13 +78,13 @@ namespace ShufflerEssentialInfo {
         for (int i=0; i < n_monitors; i++) {
             Gdk.Monitor newmonitor = gdkdisplay.get_monitor(i);
             string mon_name = newmonitor.get_model();
-            Gdk.Rectangle mon_geo = newmonitor.get_geometry();
-            int scalefactor = newmonitor.get_scale_factor ();
-            int x = mon_geo.x * scalefactor;
-            int y = mon_geo.y * scalefactor;
-            int width = mon_geo.width * scalefactor;
-            int height = mon_geo.height * scalefactor;
-            Variant geodata = new Variant("(iiii)", x, y, width, height);
+            Gdk.Rectangle mon_geo = newmonitor.get_workarea();
+            int sf = newmonitor.get_scale_factor ();
+            int x = mon_geo.x * sf;
+            int y = mon_geo.y * sf;
+            int width = mon_geo.width * sf;
+            int height = mon_geo.height * sf;
+            Variant geodata = new Variant("(iiii)", x , y, width, height);
             monitorgeo.insert(mon_name, geodata);
         }
     }
@@ -115,6 +107,24 @@ namespace ShufflerEssentialInfo {
             () => {}, () => stderr.printf ("Could not aquire name\n"));
     }
 
+    /////////////////////////////////////////////////////////////////////
+
+    private void newwin (
+        Wnck.Window winsubj, int x, int y, int width, int height
+    ) {
+        winsubj.unmaximize();
+        winsubj.set_geometry(
+            Wnck.WindowGravity.NORTHWEST,
+            Wnck.WindowMoveResizeMask.X |
+            Wnck.WindowMoveResizeMask.Y |
+            Wnck.WindowMoveResizeMask.WIDTH |
+            Wnck.WindowMoveResizeMask.HEIGHT,
+            x, y, width, height
+        );
+    }
+
+    /////////////////////////////////////////////////////////////////////
+
     public static int main (string[] args) {
         Gtk.init(ref args);
         defmonname = "unknown";
@@ -130,6 +140,7 @@ namespace ShufflerEssentialInfo {
         gdkscreen.monitors_changed.connect(get_monitors);
 
         wnckscr.window_opened.connect(get_windata);
+        wnckscr.window_closed.connect(get_windata);
         setup_dbus();
 
         ///////////////////////////////////////////////
