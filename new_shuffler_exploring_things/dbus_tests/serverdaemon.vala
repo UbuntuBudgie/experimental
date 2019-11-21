@@ -8,34 +8,68 @@ namespace ShufflerEssentialInfo {
     string defmonname;
     HashTable<string, Variant> monitorgeo;
     unowned Wnck.Screen wnckscr;
+    unowned GLib.List<Wnck.Window> wlist;
     HashTable<string, Variant> window_essentials;
+    ulong? activewin;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
     public class ShufflerInfoServer : Object {
 
         public int mutiply (int n1, int n2) throws Error {
+            // just a test
             return n1 * n2;
         }
 
         public string defaultmon_name () throws Error {
+            // default (primary) monitor name
             return defmonname;
         }
 
         public HashTable<string, Variant> get_mondata () throws Error {
+            // data on monitors
             return monitorgeo;
         }
 
         public HashTable<string, Variant> get_winsdata () throws Error {
+            // window data
             return window_essentials;
         }
 
 
-        public string get_activewin () throws Error {
-            // directly called, occasional function
-            ulong activewin = wnckscr.get_active_window().get_xid();
-            return activewin.to_string();
+        public int getactivewin () throws Error {
+            // window data
+            if (activewin != null) {
+                return (int)activewin;
+            }
+            return -1;
         }
+        
+
+        public void window_move (int w_id) throws Error {
+            // move window
+            foreach (Wnck.Window w in wlist) {
+                if ((ulong) w_id == w.get_xid()) {
+                    print(w.get_name() + "\n");
+                }
+            }
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////
+    // internal stuff
+    ///////////////////////////////////////////////////////////////
+
+    private void get_activewin () {
+        // maintaining function. active window can be null!
+        Wnck.Window? curr_activewin = wnckscr.get_active_window();
+        if (curr_activewin != null) {
+            activewin = curr_activewin.get_xid();
+        }
+        else {
+            activewin = null;
+        }
+        print(@"activewin: $activewin\n");
     }
 
     private void get_windata() {
@@ -45,7 +79,7 @@ namespace ShufflerEssentialInfo {
         / xid = key, name, onthisworspace, monitor-of window, geometry
         */
         var winsdata = new HashTable<string, Variant> (str_hash, str_equal);
-        unowned GLib.List<Wnck.Window> wlist = wnckscr.get_windows();
+        wlist = wnckscr.get_windows();
         foreach (Wnck.Window w in wlist) {
             Wnck.WindowType type = w.get_window_type ();
             if (type == Wnck.WindowType.NORMAL) {
@@ -109,7 +143,7 @@ namespace ShufflerEssentialInfo {
 
     /////////////////////////////////////////////////////////////////////
 
-    private void newwin (
+    private void movewindow (
         Wnck.Window winsubj, int x, int y, int width, int height
     ) {
         winsubj.unmaximize();
@@ -141,11 +175,16 @@ namespace ShufflerEssentialInfo {
 
         wnckscr.window_opened.connect(get_windata);
         wnckscr.window_closed.connect(get_windata);
+        wnckscr.active_window_changed.connect(get_activewin);
         setup_dbus();
+
 
         ///////////////////////////////////////////////
         get_windata();
+        //ulong? activewin = null;
+        get_activewin();
         ///////////////////////////////////////////////
+
 
         Gtk.main();
         return 0;
