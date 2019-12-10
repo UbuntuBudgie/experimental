@@ -47,17 +47,13 @@ namespace GridAll {
         } return -1;
     }
 
-
-
-
-
     ////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////
 
     private string[] make_tilekeys (int cols, int rows) {
         /*
         / we receieve the hastable keys in an unordered manner
-        / so we need to reconstruc an ardered one to work with
+        / so we need to reconstruc an ordered one to work with
         */
         string[] key_arr = {};
 
@@ -109,7 +105,7 @@ namespace GridAll {
         }
 
         // 1. get valid windows, populate id_array
-        string[] id_array = {};
+        string[] id_array = {}; /////////////////////////////////// work with this as window array
         try {
             print("here we are now\n");
             wins = client.get_winsdata();
@@ -128,35 +124,63 @@ namespace GridAll {
         catch (Error e) {
         }
         // 2. create sorted tile list
-        string[] ordered_keyarray = make_tilekeys(geo_args[0], geo_args[1]);
+        string[] ordered_keyarray = make_tilekeys(geo_args[0], geo_args[1]);  /////////////////////////////////// work with this as tile keys
         // 2a. fetch unordered tiles-hashtable to look up from
         if (tiles != null) {
-            string s1 = "";
-            string s2 = "";
-            string s3 = "";
-            int x = 0;
-            int y = 0;
-            int width;
-            int height;
-            foreach (string k in tiles.get_keys()) {
-                //print(@"$k\n");
-                Variant var1 = tiles[k];
-                VariantIter iter = var1.iterator ();
 
-                iter.next("i", &x);
-                iter.next("i", &y);
-                iter.next("i", &width);
-                iter.next("i", &height);
+        //////////////////////////////////// here we go!
+        ////////////////////////////////////////////////
+
+        // insert from test
+        int ntiles = ordered_keyarray.length;
+        int i_tile = 0;
+
+        while (id_array.length > 0) {
+            string currtile = tiles[i_tile];
+            //
+
+            string window_id = id_array[0]; // NB index is calculated nearest
+
+            //
+            print(@"tile/window: $currtile, $window\n");
+            id_array = remove_arritem(window_id, id_array);
+            i_tile += 1;
+            if (i_tile == ntiles) {
+                i_tile = 0;
             }
         }
 
+        ////////////////////////////////////////////////
+        ////////////////////////////////////////////////
 
-        int tile_index = 0;
-        while (id_array.length != 0) {
-            string s = id_array[0]; // index is calculated nearest by from tile
-            print(@"currently moving: $s\n");
-            id_array = remove_arritem(s, id_array);
+
+
+
+
+
+
+
+
+
+            //  string s1 = "";
+            //  string s2 = "";
+            //  string s3 = "";
+            //  int x = 0;
+            //  int y = 0;
+            //  int width;
+            //  int height;
+            //  foreach (string k in tiles.get_keys()) {
+            //      //print(@"$k\n");
+            //      Variant var1 = tiles[k];
+            //      VariantIter iter = var1.iterator ();
+
+            //      iter.next("i", &x);
+            //      iter.next("i", &y);
+            //      iter.next("i", &width);
+            //      iter.next("i", &height);
+            //  }
         }
+
 
         ////////////************************** */ */
     }
