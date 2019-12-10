@@ -1,4 +1,29 @@
+/* 
+* ShufflerII
+* Author: Jacob Vlijm
+* Copyright © 2017-2019 Ubuntu Budgie Developers
+* Website=https://ubuntubudgie.org
+* This program is free software: you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 3 of the License, or any later version.
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details. You should have received a copy of the GNU General Public
+* License along with this program.  If not, see
+* <https://www.gnu.org/licenses/>.
+*/
+
 // valac --pkg gio-2.0 --pkg gtk+-3.0
+
+/*
+/ args:
+/ |--x/y--| |--w/h--|
+/  int int   int int
+/ or:
+/ |--x/y--| |--w/h--| |--xspan/yspan--|
+/  int int   int int       int int
+*/
 
 namespace TileActive {
 
@@ -13,19 +38,35 @@ namespace TileActive {
     }
 
     void main (string[] args) {
+
         // check args; incorrect args make the daemon crash (or fix in daemon?)
-        if (args.length == 5 &&
-        int.parse(args[1]) < int.parse(args[3]) &&
-        int.parse(args[2]) < int.parse(args[4])
-        ) {
-            grid_window(args);
+        if (args.length == 5) {
+            if (
+                int.parse(args[1]) < int.parse(args[3]) &&
+                int.parse(args[2]) < int.parse(args[4])
+            ) {
+                grid_window(args, 1, 1);
+            }
+            else {
+                print("position is outside monitor\n");
+            }
         }
-        else {
-            print("incorrect arguments\n");
+        else if (args.length == 7) {
+            int ntiles_x = int.parse(args[5]);
+            int ntiles_y = int.parse(args[6]);
+            if (
+                int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
+                int.parse(args[2]) + ntiles_y <= int.parse(args[4])
+            ) {
+                grid_window(args, ntiles_x, ntiles_y);
+            }
+            else {
+                print("size exceeds monitor size\n");
+            }
         }
     }
 
-    void grid_window (string[] args) {
+    void grid_window (string[] args, int ntiles_x, int ntiles_y) {
         // fetch info from daemon, do the job with it
         try {
             ShufflerInfoClient client = Bus.get_proxy_sync (
@@ -58,15 +99,14 @@ namespace TileActive {
                     Variant currtile = tiles[tilename];
                     int tile_x = (int)currtile.get_child_value(0);
                     int tile_y = (int)currtile.get_child_value(1);
-                    int tile_wdth = (int)currtile.get_child_value(2);
-                    int tile_hght = (int)currtile.get_child_value(3);
+                    int tile_wdth = (int)currtile.get_child_value(2) * ntiles_x;
+                    int tile_hght = (int)currtile.get_child_value(3) * ntiles_y;
                     client.move_window(
                         activewin, tile_x, tile_y - yshift, tile_wdth, tile_hght
                     );
                 }
             }
         }
-
         catch (Error e) {
                 stderr.printf ("%s\n", e.message);
         }
