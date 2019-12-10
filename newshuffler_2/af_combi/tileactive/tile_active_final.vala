@@ -18,11 +18,11 @@
 
 /*
 / args:
-/ |--x/y--| |--w/h--|
-/  int int   int int
+/ |--x/y--| |--cols/rows--|
+/  int int      int int
 / or:
-/ |--x/y--| |--w/h--| |--xspan/yspan--|
-/  int int   int int       int int
+/ |--x/y--| |--cols/rows--| |--xspan/yspan--|
+/  int int      int int          int int
 */
 
 namespace TileActive {
