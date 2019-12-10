@@ -1,4 +1,4 @@
-/* 
+/*
 * ShufflerII
 * Author: Jacob Vlijm
 * Copyright © 2017-2019 Ubuntu Budgie Developers

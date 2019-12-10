@@ -1,4 +1,4 @@
-/* 
+/*
 * ShufflerII
 * Author: Jacob Vlijm
 * Copyright © 2017-2019 Ubuntu Budgie Developers
@@ -83,20 +83,23 @@ namespace GridAll {
     private void grid_allwindows (int[] geo_args) {
         // split args for readability please
 
-        /* make array of window ids. then:
-        / - create sorted key list from args ***************************************************
-        / - per tile, see what window is closest (lookup distance -from- id-array -in- hashtable)
+        /*
+        / 1. make array of window ids. then:
+        / 2. create sorted key list from args
+        / 3. per tile, see what window is closest (lookup distance -from- id-array -in- hashtable)
         / - move window, remove id from array
-        / - repeat until out of windows (id array is empty, cycle through tiles if needed)
-        / - N.B. change order in creating tiles! row per row. not col for col...
+        /
+        / repeat until out of windows (id array is empty, cycle through tiles if needed)
+        / N.B. change order in creating tiles! row per row. not col for col...
         */
         HashTable<string, Variant>? tiles = null;
         HashTable<string, Variant>? wins = null;
-        string[] id_array = {};
-        string[] ordered_keyarray = make_tilekeys(geo_args[0], geo_args[1]);
-        // get active monitorname by active window ("" if null)
+
+        // get monitor name
+        string mon_name = "none";
         try {
-            string mon_name = client.getactivemon_name();
+            // get active monitorname by active window ("" if null)
+            mon_name = client.getactivemon_name();
             tiles = client.get_tiles(
                 mon_name, geo_args[0], geo_args[1]
             );
@@ -105,34 +108,28 @@ namespace GridAll {
         catch (Error e) {
         }
 
-
-
-
-        //  print("args:\n");
-        //  foreach (int n in geo_args) {
-        //      print(@"$n\n");
-        //  }
-
-
-        /////////////////////////////////////////////////////////////////////
-        // 1. get windows, populate id_array
-        /********************* select only valid ones!!! (monitor/workspace)************ */
+        // 1. get valid windows, populate id_array
+        string[] id_array = {};
         try {
-            print("here we are\n");
+            print("here we are now\n");
             wins = client.get_winsdata();
             foreach (string k in wins.get_keys()) {
                 Variant got_data = wins[k];
-                string yay = (string)got_data.get_child_value(2);
-
-                id_array += k;
-                print(@"$k, $yay\n");
+                // on current workspace?
+                bool onthisws = (string)got_data.get_child_value(1) == "true";
+                // on active monitor?
+                bool onthismon = (string)got_data.get_child_value(2) == mon_name;
+                if (onthisws && onthismon) {
+                    id_array += k;
+                }
+                print(@"$k, on this mon / ws: $onthismon $onthisws\n");
             }
         }
         catch (Error e) {
         }
-
-        /////////////////////////////////////////////////////////////////////
-
+        // 2. create sorted tile list
+        string[] ordered_keyarray = make_tilekeys(geo_args[0], geo_args[1]);
+        // 2a. fetch unordered tiles-hashtable to look up from
         if (tiles != null) {
             string s1 = "";
             string s2 = "";
@@ -141,11 +138,11 @@ namespace GridAll {
             int y = 0;
             int width;
             int height;
-
             foreach (string k in tiles.get_keys()) {
                 //print(@"$k\n");
                 Variant var1 = tiles[k];
                 VariantIter iter = var1.iterator ();
+
                 iter.next("i", &x);
                 iter.next("i", &y);
                 iter.next("i", &width);
@@ -154,7 +151,14 @@ namespace GridAll {
         }
 
 
+        int tile_index = 0;
+        while (id_array.length != 0) {
+            string s = id_array[0]; // index is calculated nearest by from tile
+            print(@"currently moving: $s\n");
+            id_array = remove_arritem(s, id_array);
+        }
 
+        ////////////************************** */ */
     }
     ////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////

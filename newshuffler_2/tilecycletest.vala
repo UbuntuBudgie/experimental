@@ -14,17 +14,6 @@
 * <https://www.gnu.org/licenses/>.
 */
 
-public static void main (string[] args) {
-    string[] arr = {"a", "b", "c"};
-    string arg = args[1];
-    arr = remove_arritem(arg, arr);
-
-    foreach (string s in arr) {
-        print(@"$s\n");
-    }
-
-}
-
 private string[] remove_arritem (string s, string[] arr) {
     string[] newarr = {};
     foreach (string item in arr) {
@@ -33,4 +22,24 @@ private string[] remove_arritem (string s, string[] arr) {
         }
     }
     return newarr;
+}
+
+public static void main(string[] args) {
+    // fake windowid_list
+    string[] windows = {"a", "b", "c", "d", "e", "f"};
+    string[] tiles = {"tile1", "tile2", "tile3", "tile4"};
+
+    int ntiles = 4;
+    int i_tile = 0;
+
+    while (windows.length > 0) {
+        string currtile = tiles[i_tile];
+        string window = windows[0]; // NB index is calculated nearest
+        print(@"tile/window: $currtile, $window\n");
+        windows = remove_arritem(window, windows);
+        i_tile += 1;
+        if (i_tile == ntiles) {
+            i_tile = 0;
+        }
+    }
 }
