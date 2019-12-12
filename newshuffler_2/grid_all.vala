@@ -1,3 +1,4 @@
+
 /*
 * ShufflerII
 * Author: Jacob Vlijm
@@ -14,17 +15,12 @@
 * <https://www.gnu.org/licenses/>.
 */
 
-// valac --pkg gio-2.0 --pkg gtk+-3.0
-
-// simplify variant-get:
-//  Variant got_data = wins[k];
-//  string yay = (string)got_data.get_child_value(2);
+// valac --pkg gio-2.0 --pkg gdk-x11-3.0 --pkg gtk+-3.0 -X -lm
 
 
 namespace GridAll {
 
     ShufflerInfoClient client;
-    //  string[] id_array;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -35,9 +31,6 @@ namespace GridAll {
         public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
         public abstract int get_yshift (int w_id) throws Error;
         public abstract string getactivemon_name () throws Error;
-        //  public abstract void grid_allwindows (
-        //      int cols, int rows, int left, int right, int top, int bottom
-        //  ) throws Error;
     }
 
     private int get_stringindex (string s, string[] arr) {
@@ -46,9 +39,6 @@ namespace GridAll {
             if(s == arr[i]) return i;
         } return -1;
     }
-
-    ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////
 
     private string[] make_tilekeys (int cols, int rows) {
         /*
@@ -60,13 +50,14 @@ namespace GridAll {
         for (int r=0; r< rows; r++) {
             for (int c=0; c < cols; c++) {
                 key_arr += @"$c*$r";
-                // print( @"key: $c*$r\n");
+                print( @"key: $c*$r\n");
             }
         }
         return key_arr;
     }
 
     private string[] remove_arritem (string s, string[] arr) {
+        // remove a string from an array (window id in this case)
         string[] newarr = {};
         foreach (string item in arr) {
             if (item != s) {
@@ -76,6 +67,35 @@ namespace GridAll {
         return newarr;
     }
 
+    private double get_distance (double x1, double y1, double x2, double y2) {
+        // calc distance between two coords
+        double x_comp = Math.pow(x1 - x2, 2);
+        double y_comp = Math.pow(y1 - y2, 2);
+        return Math.pow(x_comp + y_comp, 0.5);
+    }
+
+
+    private int get_windowindex (
+        double x, double y, string[] id_array, HashTable<string, Variant> wins
+    ) {
+        // get index of nearest window in window id list
+        int curr_index = 0;
+        int current_nearest = 0;
+        double distance = 10000000;
+        foreach (string id in id_array) {
+            Variant currsubj = wins[id];
+            double currx = (double)(int)currsubj.get_child_value(3);
+            double curry = (double)(int)currsubj.get_child_value(4);
+            double newdistance = get_distance(x, y, currx, curry);
+            if (newdistance < distance) {
+                distance = newdistance;
+                current_nearest = curr_index;
+            }
+            curr_index += 1;
+        }
+        return current_nearest;
+    }
+
     private void grid_allwindows (int[] geo_args) {
         // split args for readability please
 
@@ -83,29 +103,26 @@ namespace GridAll {
         / 1. make array of window ids. then:
         / 2. create sorted key list from args
         / 3. per tile, see what window is closest (lookup distance -from- id-array -in- hashtable)
-        / - move window, remove id from array
+        / 4. move window, remove id from array
         /
         / repeat until out of windows (id array is empty, cycle through tiles if needed)
-        / N.B. change order in creating tiles! row per row. not col for col...
         */
         HashTable<string, Variant>? tiles = null;
         HashTable<string, Variant>? wins = null;
-
         // get monitor name
         string mon_name = "none";
         try {
             // get active monitorname by active window ("" if null)
             mon_name = client.getactivemon_name();
+            print(@"found mon: $mon_name\n");
             tiles = client.get_tiles(
                 mon_name, geo_args[0], geo_args[1]
             );
-            print(@"$mon_name\n");
         }
         catch (Error e) {
         }
-
         // 1. get valid windows, populate id_array
-        string[] id_array = {}; /////////////////////////////////// work with this as window array
+        string[] id_array = {};
         try {
             print("here we are now\n");
             wins = client.get_winsdata();
@@ -124,86 +141,48 @@ namespace GridAll {
         catch (Error e) {
         }
         // 2. create sorted tile list
-        string[] ordered_keyarray = make_tilekeys(geo_args[0], geo_args[1]);  /////////////////////////////////// work with this as tile keys
+        string[] ordered_keyarray = make_tilekeys(geo_args[0], geo_args[1]);
         // 2a. fetch unordered tiles-hashtable to look up from
         if (tiles != null) {
-
-        //////////////////////////////////// here we go!
-        ////////////////////////////////////////////////
-
-        // insert from test
-        int ntiles = ordered_keyarray.length;
-        int i_tile = 0;
-
-        while (id_array.length > 0) {
-            string currtile = tiles[i_tile];
-            //
-
-            string window_id = id_array[0]; // NB index is calculated nearest
-
-            //
-            print(@"tile/window: $currtile, $window\n");
-            id_array = remove_arritem(window_id, id_array);
-            i_tile += 1;
-            if (i_tile == ntiles) {
-                i_tile = 0;
+            // insert from test
+            int ntiles = ordered_keyarray.length;
+            int i_tile = 0;
+            while (id_array.length > 0) {
+                string currtile = ordered_keyarray[i_tile];
+                // get xy on current tile:
+                Variant tilevar = tiles[currtile];
+                double x = (double)(int)tilevar.get_child_value(0);
+                double y = (double)(int)tilevar.get_child_value(1);
+                // now look through windows for nearest, remove match from id_array afterwards
+                int neares_wid = get_windowindex(x, y, id_array, wins);
+                string window_id = id_array[neares_wid];
+                // NB index is calculated nearest from tile -> hastable x-y and windowid -> wins hastable
+                // now move
+                int num_wid = int.parse(window_id);
+                client.move_window(
+                    num_wid, (int)x, (int)y - client.get_yshift(num_wid),
+                    (int)tilevar.get_child_value(2),
+                    (int)tilevar.get_child_value(3)
+                );
+                // here the removal is done:
+                id_array = remove_arritem(window_id, id_array);
+                i_tile += 1;
+                if (i_tile == ntiles) {
+                    i_tile = 0;
+                }
             }
         }
-
-        ////////////////////////////////////////////////
-        ////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-            //  string s1 = "";
-            //  string s2 = "";
-            //  string s3 = "";
-            //  int x = 0;
-            //  int y = 0;
-            //  int width;
-            //  int height;
-            //  foreach (string k in tiles.get_keys()) {
-            //      //print(@"$k\n");
-            //      Variant var1 = tiles[k];
-            //      VariantIter iter = var1.iterator ();
-
-            //      iter.next("i", &x);
-            //      iter.next("i", &y);
-            //      iter.next("i", &width);
-            //      iter.next("i", &height);
-            //  }
-        }
-
-
-        ////////////************************** */ */
     }
-    ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////
-
-
 
 
     public static void main(string[] args) {
-        print("id please\n");
+        print("id plea\n");
 
         try {
             client = Bus.get_proxy_sync (
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
-            //  int cols = 2;
-            //  int rows = 2;
-            //  int left = 0;
-            //  int right = 0;
-            //  int top = 0;
-            //  int bottom = 0;
             string[] arglist = {
                 "--cols", "--rows", "--left", "--right", "--top", "--bottom"
             };
@@ -223,7 +202,8 @@ namespace GridAll {
                 }
                 i += 1;
             }
-
+            // last four args still need to be implemented in daemon!
+            // (if we want to be able to set margins to area)
             grid_allwindows({
                 passedargs[0],
                 passedargs[1],
@@ -238,5 +218,4 @@ namespace GridAll {
             stderr.printf ("%s\n", e.message);
         }
     }
-
 }
