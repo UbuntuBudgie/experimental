@@ -114,7 +114,6 @@ namespace GridAll {
         try {
             // get active monitorname by active window ("" if null)
             mon_name = client.getactivemon_name();
-            print(@"found mon: $mon_name\n");
             tiles = client.get_tiles(
                 mon_name, geo_args[0], geo_args[1]
             );
@@ -124,7 +123,6 @@ namespace GridAll {
         // 1. get valid windows, populate id_array
         string[] id_array = {};
         try {
-            print("here we are now\n");
             wins = client.get_winsdata();
             foreach (string k in wins.get_keys()) {
                 Variant got_data = wins[k];
@@ -135,7 +133,6 @@ namespace GridAll {
                 if (onthisws && onthismon) {
                     id_array += k;
                 }
-                print(@"$k, on this mon / ws: $onthismon $onthisws\n");
             }
         }
         catch (Error e) {
@@ -174,10 +171,7 @@ namespace GridAll {
         }
     }
 
-
     public static void main(string[] args) {
-        print("id plea\n");
-
         try {
             client = Bus.get_proxy_sync (
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
@@ -186,6 +180,7 @@ namespace GridAll {
             string[] arglist = {
                 "--cols", "--rows", "--left", "--right", "--top", "--bottom"
             };
+            // todo: get cols & rows from dconf -or- args (secundary) ///////////////////////////////////////////////
             int[] passedargs = {0, 0, 0, 0, 0, 0};
             int i = 0;
             foreach (string s in args) {

@@ -85,8 +85,8 @@ namespace JumpActive {
             );
 
             // cols/rows is read from dconf, or overruled by args:
-            int cols = 3; // from dconf
-            int rows = 3; // from dconf
+            int cols = 2; // from dconf
+            int rows = 2; // from dconf
             if (args.length == 4) {
                 cols = int.parse(args[2]);
                 rows = int.parse(args[3]);
@@ -105,25 +105,20 @@ namespace JumpActive {
                 //  (string) lists
                 string[] x_anchors = xs.split(" ");
                 string[] y_anchors = ys.split(" ");
-                print("go on, go on\n");
                 HashTable<string, Variant> wins = client.get_winsdata();
                 Variant activewin_data = wins[@"$activewin"];
                 int winx = (int)activewin_data.get_child_value(3);
                 int winy = (int)activewin_data.get_child_value(4);
-                print(@"$xs\n$ys\n$tilewidth\n$activewin\n$winx $winy\n\n");
-
                 int nextx = 0;
                 int nexty = 0;
 
                 string direction = args[1];
 
                 switch(direction) {
-
                     case "right":
                         nextx = find_next(x_anchors, winx);
                         nexty = find_closest(y_anchors, winy);
                         break;
-
                     case "left":
                         nextx = find_previous(x_anchors, winx);
                         nexty = find_closest(y_anchors, winy);
@@ -132,7 +127,6 @@ namespace JumpActive {
                         nextx = find_closest(x_anchors, winx);
                         nexty = find_previous(y_anchors, winy);
                         break;
-
                     case "down":
                         nextx = find_closest(x_anchors, winx);
                         nexty = find_next(y_anchors, winy);
@@ -140,6 +134,41 @@ namespace JumpActive {
                 }
                 int yshift = client.get_yshift(activewin);
 
+                // find & move possible window on targeted position
+                GLib.List<weak string> winkeys = wins.get_keys();
+                int swapx = 0;
+                int swapy = 0;
+                int tomove_width = 0;
+                int tomove_height = 0;
+                int? tomove = null;
+
+                foreach (string k in winkeys) {
+                    Variant windata = wins[k];
+                    int xpos = (int)windata.get_child_value(3);
+                    int ypos = (int)windata.get_child_value(4);
+                    // find out possible window on targeted postition
+                    if (xpos == nextx && ypos == nexty) {
+                        tomove = int.parse(k);
+                    }
+                    // get x/y/w/h on current subject
+                    else if (k == @"$activewin") {
+                        swapx = (int)windata.get_child_value(3);
+                        swapy = (int)windata.get_child_value(4);
+                        tomove_width = (int)windata.get_child_value(5);
+                        tomove_height = (int)windata.get_child_value(6);
+                    }
+                }
+                /*
+                / move possible window away from targeted postition ->
+                / to position & size of subject
+                */
+                if (tomove != null) {
+                    int tomove_yshift = client.get_yshift(tomove);
+                    client.move_window(
+                        tomove, swapx, swapy - tomove_yshift, tomove_width, tomove_height
+                    );
+                }
+                // move subject to targeted position
                 client.move_window(
                     activewin, nextx, nexty - yshift, tilewidth, tileheight
                 );
