@@ -36,6 +36,7 @@ namespace JumpActive {
         public abstract HashTable<string, Variant> get_tiles (string mon, int cols, int rows) throws Error;
         public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
         public abstract int get_yshift (int w_id) throws Error;
+        public abstract string getactivemon_name () throws Error;
     }
 
     private int find_next (string[] arr, int anchor) {
@@ -90,8 +91,8 @@ namespace JumpActive {
                 cols = int.parse(args[2]);
                 rows = int.parse(args[3]);
             }
-
-            HashTable<string, Variant> anchordata = client.get_tiles("eDP-1", cols, rows);
+            string activemon_name = client.getactivemon_name();
+            HashTable<string, Variant> anchordata = client.get_tiles(activemon_name, cols, rows);
 
             // get active win
             int activewin = client.getactivewin();
