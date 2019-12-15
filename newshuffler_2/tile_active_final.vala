@@ -1,4 +1,4 @@
-/* 
+/*
 * ShufflerII
 * Author: Jacob Vlijm
 * Copyright © 2017-2019 Ubuntu Budgie Developers
@@ -93,14 +93,16 @@ namespace TileActive {
                 winsmonitor, int.parse(args[3]), int.parse(args[4])
             );
             GLib.List<unowned string> tilekeys = tiles.get_keys();
+            int orig_width = (int)tiles["tilewidth"];
+            int orig_height = (int)tiles["tileheight"];
             foreach (string tilename in tilekeys) {
                 // if key matches -> get tile pos & size -> move
                 if (args[1].concat("*", args[2]) == tilename) {
                     Variant currtile = tiles[tilename];
                     int tile_x = (int)currtile.get_child_value(0);
                     int tile_y = (int)currtile.get_child_value(1);
-                    int tile_wdth = (int)currtile.get_child_value(2) * ntiles_x;
-                    int tile_hght = (int)currtile.get_child_value(3) * ntiles_y;
+                    int tile_wdth = orig_width * ntiles_x;
+                    int tile_hght = orig_height * ntiles_y;
                     client.move_window(
                         activewin, tile_x, tile_y - yshift, tile_wdth, tile_hght
                     );

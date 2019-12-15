@@ -88,6 +88,9 @@ namespace ShufflerEssentialInfo {
             return Gdk.X11.get_server_time(timestamp_window);
         }
 
+
+
+
         public HashTable<string, Variant> get_tiles (
             string mon_name, int cols, int rows
         ) throws Error {
@@ -116,6 +119,23 @@ namespace ShufflerEssentialInfo {
                         ypositions += NEy;
                         NEy += tileheight;
                     }
+                    string[] xpositions_str = {};
+                    string[] ypositions_str = {};
+
+                    foreach (int xp in xpositions) {
+                        xpositions_str += @"$xp";
+                    }
+                    foreach (int yp in ypositions) {
+                        ypositions_str += @"$yp";
+                    }
+                    tiledata.insert("x_anchors", string.joinv(" ", xpositions_str));
+                    tiledata.insert("y_anchors", string.joinv(" ", ypositions_str));
+                    /*
+                    / ok, width/height is already in tiledata, but for jump r/l, we need it separatly.
+                    / optimize, or are we lazy? nah, leave it. We need to calc tiles anyway.
+                    */
+                    tiledata.insert("tilewidth", tilewidth);
+                    tiledata.insert("tileheight", tileheight);
                     // now create tiles
                     int col = 0;
 
@@ -134,6 +154,7 @@ namespace ShufflerEssentialInfo {
             }
             return tiledata;
         }
+
 
         public int get_yshift (int w_id) throws Error {
             /*
@@ -249,6 +270,57 @@ namespace ShufflerEssentialInfo {
         window_essentials = winsdata;
     }
 
+        //  ////////////////////////////////////////////////////////////////////
+        //  ////////////////////////////////////////////////////////////////////
+
+        //  public HashTable<string, Array> get_anchors (
+        //      string mon_name, int cols, int rows
+        //  ) throws Error {
+        //      var anchordata = new HashTable<string, Array> (str_hash, str_equal);
+
+        //      Array<int> xpositions = new Array<int>();
+        //      Array<int> ypositions = new Array<int>();
+
+        //      for (int i=0; i < n_monitors; i++) {
+        //          Gdk.Monitor monitorsubj = gdkdisplay.get_monitor(i);
+
+        //          if (monitorsubj.get_model()  == mon_name) {
+        //              Gdk.Rectangle mon_wa = monitorsubj.get_workarea();
+
+        //              int fullwidth = mon_wa.width * scale; // total width of wa
+        //              int tilewidth = (int)(fullwidth/cols);
+        //              int NEx = mon_wa.x * scale;
+        //              int origx = NEx;
+        //              int rightendx =  origx + fullwidth;
+
+        //              while (NEx < rightendx) {
+        //                  print(@"$NEx\n");
+        //                  //  xpositions += NEx;
+        //                  xpositions.append_val(NEx);
+        //                  NEx += tilewidth;
+        //              }
+
+        //              int fullheight = mon_wa.height * scale;
+        //              int tileheight = (int)(fullheight/rows);
+        //              int NEy = mon_wa.y * scale;
+        //              int origy = NEy;
+        //              int bottomy =  origy + fullheight;
+
+        //              while (NEy < bottomy) {
+        //                  print(@"$NEy\n");
+        //                  ypositions.append_val(NEy);
+        //                  //  ypositions += NEy;
+        //                  NEy += tileheight;
+        //              }
+        //              anchordata.insert("x_anchors", xpositions);
+        //              anchordata.insert("y_anchors", ypositions);
+        //          }
+        //      }
+        //      return anchordata;
+        //  }
+        //  //////////////////////////////////////////////////////////////////////////
+        //  //////////////////////////////////////////////////////////////////////////
+
 
     public static int main (string[] args) {
         Gtk.init(ref args);
@@ -269,6 +341,12 @@ namespace ShufflerEssentialInfo {
 
         get_monitors();
         getscale();
+
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
+        //  get_anchors("eDP-1", 3, 3);
+        ////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////
         gdkscreen.monitors_changed.connect(get_monitors);
         gdkscreen.monitors_changed.connect(getscale);
         wnckscr.window_opened.connect(get_windata);
