@@ -31,6 +31,7 @@ namespace GridAll {
         public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
         public abstract int get_yshift (int w_id) throws Error;
         public abstract string getactivemon_name () throws Error;
+        public abstract int[] get_grid () throws Error;
     }
 
     private int get_stringindex (string s, string[] arr) {
@@ -156,11 +157,21 @@ namespace GridAll {
                 // NB index is calculated nearest from tile -> hastable x-y and windowid -> wins hastable
                 // now move
                 int num_wid = int.parse(window_id);
-                client.move_window(
-                    num_wid, (int)x, (int)y - client.get_yshift(num_wid),
-                    (int)tilevar.get_child_value(2),
-                    (int)tilevar.get_child_value(3)
-                );
+                int yshift = 0;
+                try {
+                    yshift = client.get_yshift(num_wid);
+                }
+                catch (Error e) {
+                }
+                try {
+                    client.move_window(
+                        num_wid, (int)x, (int)y - yshift,
+                        (int)tilevar.get_child_value(2),
+                        (int)tilevar.get_child_value(3)
+                    );
+                }
+                catch (Error e) {
+                }
                 // here the removal is done:
                 id_array = remove_arritem(window_id, id_array);
                 i_tile += 1;
@@ -177,11 +188,13 @@ namespace GridAll {
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
+            int[] grid = client.get_grid ();
             string[] arglist = {
                 "--cols", "--rows", "--left", "--right", "--top", "--bottom"
             };
             // todo: get cols & rows from dconf -or- args (secundary) ///////////////////////////////////////////////
-            int[] passedargs = {0, 0, 0, 0, 0, 0};
+            int[] passedargs = {grid[0], grid[1], 0, 0, 0, 0};
+
             int i = 0;
             foreach (string s in args) {
                 int argindex = get_stringindex(s, arglist);

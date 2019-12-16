@@ -37,6 +37,7 @@ namespace JumpActive {
         public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
         public abstract int get_yshift (int w_id) throws Error;
         public abstract string getactivemon_name () throws Error;
+        public abstract int[] get_grid () throws Error;
     }
 
     private int find_next (string[] arr, int anchor) {
@@ -78,15 +79,16 @@ namespace JumpActive {
     }
 
     public static void main(string[] args) {
+
         try {
             ShufflerInfoClient client = Bus.get_proxy_sync (
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
-
+            int[] grid = client.get_grid();
             // cols/rows is read from dconf, or overruled by args:
-            int cols = 2; // from dconf
-            int rows = 2; // from dconf
+            int cols = grid[0];
+            int rows = grid[1];
             if (args.length == 4) {
                 cols = int.parse(args[2]);
                 rows = int.parse(args[3]);
