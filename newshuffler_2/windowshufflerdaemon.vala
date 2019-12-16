@@ -31,6 +31,10 @@ namespace ShufflerEssentialInfo {
     Gdk.X11.Window timestamp_window;
     // scale
     int scale;
+    // dconf
+    Settings shuffler_settings;
+    int setcols;
+    int setrows;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -152,6 +156,10 @@ namespace ShufflerEssentialInfo {
             return tiledata;
         }
 
+        public int[] get_grid() throws Error {
+            return {setcols, setrows};
+        }
+
 
         public int get_yshift (int w_id) throws Error {
             /*
@@ -267,9 +275,22 @@ namespace ShufflerEssentialInfo {
         window_essentials = winsdata;
     }
 
+    private GLib.Settings get_settings(string path) {
+        var settings = new GLib.Settings(path);
+        return settings;
+    }
+
+    private void update_grid (){
+        setcols = shuffler_settings.get_int("cols");
+        setrows = shuffler_settings.get_int("rows");
+        print(@"colsrows: $setcols $setrows\n");
+    }
+
     public static int main (string[] args) {
         Gtk.init(ref args);
-
+        shuffler_settings = get_settings("org.ubuntubudgie.windowshuffler");
+        shuffler_settings.changed.connect(update_grid);
+        update_grid();
         // X11 stuff, non-dynamic part
         unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
         unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
@@ -286,12 +307,6 @@ namespace ShufflerEssentialInfo {
 
         get_monitors();
         getscale();
-
-        ////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////
-        //  get_anchors("eDP-1", 3, 3);
-        ////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////
         gdkscreen.monitors_changed.connect(get_monitors);
         gdkscreen.monitors_changed.connect(getscale);
         wnckscr.window_opened.connect(get_windata);
