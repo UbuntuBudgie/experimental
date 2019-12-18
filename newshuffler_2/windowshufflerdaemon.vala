@@ -35,6 +35,7 @@ namespace ShufflerEssentialInfo {
     Settings shuffler_settings;
     int setcols;
     int setrows;
+    bool swapgeometry;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -160,6 +161,10 @@ namespace ShufflerEssentialInfo {
             return {setcols, setrows};
         }
 
+        public bool swapgeo() throws Error {
+            return swapgeometry;
+        }
+
 
         public int get_yshift (int w_id) throws Error {
             /*
@@ -276,21 +281,23 @@ namespace ShufflerEssentialInfo {
     }
 
     private GLib.Settings get_settings(string path) {
+        // make settings
         var settings = new GLib.Settings(path);
         return settings;
     }
 
-    private void update_grid (){
+    private void update_settings (){
+        // fetch dconf values
         setcols = shuffler_settings.get_int("cols");
         setrows = shuffler_settings.get_int("rows");
-        print(@"colsrows: $setcols $setrows\n");
+        swapgeometry = shuffler_settings.get_boolean("swapgeometry");
     }
 
     public static int main (string[] args) {
         Gtk.init(ref args);
         shuffler_settings = get_settings("org.ubuntubudgie.windowshuffler");
-        shuffler_settings.changed.connect(update_grid);
-        update_grid();
+        shuffler_settings.changed.connect(update_settings);
+        update_settings();
         // X11 stuff, non-dynamic part
         unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
         unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();

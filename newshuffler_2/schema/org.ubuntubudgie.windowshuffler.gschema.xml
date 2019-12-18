@@ -13,6 +13,11 @@
             <description>Default umber of rows in the window grid</description>
             <default>2</default>
 	    <range min="1" max="6"/>
+        </key>
+        <key type="b" name="swapgeometry">
+            <summary>Swap window geometry between windows on grid when jumping</summary>
+            <description>If a window jumps to another position where already is another window, swap window size and position</description>
+            <default>true</default>
         </key> 
     </schema>
 </schemalist>

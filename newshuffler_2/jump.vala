@@ -38,6 +38,7 @@ namespace JumpActive {
         public abstract int get_yshift (int w_id) throws Error;
         public abstract string getactivemon_name () throws Error;
         public abstract int[] get_grid () throws Error;
+        public abstract bool swapgeo () throws Error;
     }
 
     private int find_next (string[] arr, int anchor) {
@@ -108,6 +109,7 @@ namespace JumpActive {
                 string[] x_anchors = xs.split(" ");
                 string[] y_anchors = ys.split(" ");
                 HashTable<string, Variant> wins = client.get_winsdata();
+                // find out where to move the window to
                 Variant activewin_data = wins[@"$activewin"];
                 int winx = (int)activewin_data.get_child_value(3);
                 int winy = (int)activewin_data.get_child_value(4);
@@ -136,39 +138,43 @@ namespace JumpActive {
                 }
                 int yshift = client.get_yshift(activewin);
 
-                // find & move possible window on targeted position
-                GLib.List<weak string> winkeys = wins.get_keys();
-                int swapx = 0;
-                int swapy = 0;
-                int tomove_width = 0;
-                int tomove_height = 0;
-                int? tomove = null;
+                if (client.swapgeo()) {
+                    // find & move possible window on targeted position
+                    GLib.List<weak string> winkeys = wins.get_keys();
+                    int swapx = 0;
+                    int swapy = 0;
+                    int tomove_width = 0;
+                    int tomove_height = 0;
+                    int? tomove = null;
+                    foreach (string k in winkeys) {
+                        Variant windata = wins[k];
+                        int xpos = (int)windata.get_child_value(3);
+                        int ypos = (int)windata.get_child_value(4);
+                        // find out possible window on targeted postition
+                        if (xpos == nextx && ypos == nexty) {
+                            tomove = int.parse(k);
+                            tilewidth = (int)windata.get_child_value(5);
+                            tileheight = (int)windata.get_child_value(6);
+                        }
+                        // get x/y/w/h on current subject
+                        else if (k == @"$activewin") {
+                            swapx = (int)windata.get_child_value(3);
+                            swapy = (int)windata.get_child_value(4);
+                            tomove_width = (int)windata.get_child_value(5);
+                            tomove_height = (int)windata.get_child_value(6);
+                        }
 
-                foreach (string k in winkeys) {
-                    Variant windata = wins[k];
-                    int xpos = (int)windata.get_child_value(3);
-                    int ypos = (int)windata.get_child_value(4);
-                    // find out possible window on targeted postition
-                    if (xpos == nextx && ypos == nexty) {
-                        tomove = int.parse(k);
                     }
-                    // get x/y/w/h on current subject
-                    else if (k == @"$activewin") {
-                        swapx = (int)windata.get_child_value(3);
-                        swapy = (int)windata.get_child_value(4);
-                        tomove_width = (int)windata.get_child_value(5);
-                        tomove_height = (int)windata.get_child_value(6);
+                    /*
+                    / move possible window away from targeted postition ->
+                    / to position & size of subject
+                    */
+                    if (tomove != null) {
+                        int tomove_yshift = client.get_yshift(tomove);
+                        client.move_window(
+                            tomove, swapx, swapy - tomove_yshift, tomove_width, tomove_height
+                        );
                     }
-                }
-                /*
-                / move possible window away from targeted postition ->
-                / to position & size of subject
-                */
-                if (tomove != null) {
-                    int tomove_yshift = client.get_yshift(tomove);
-                    client.move_window(
-                        tomove, swapx, swapy - tomove_yshift, tomove_width, tomove_height
-                    );
                 }
                 // move subject to targeted position
                 client.move_window(

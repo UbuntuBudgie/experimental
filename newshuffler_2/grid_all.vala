@@ -51,7 +51,6 @@ namespace GridAll {
         for (int r=0; r< rows; r++) {
             for (int c=0; c < cols; c++) {
                 key_arr += @"$c*$r";
-                print( @"key: $c*$r\n");
             }
         }
         return key_arr;
