@@ -270,9 +270,10 @@ namespace ShufflerEssentialInfo {
                     (int)(x/scale), (int)(y/scale)
                 ).get_model();
                 ulong xid = w.get_xid();
+                bool minimized = w.is_minimized();
                 Variant windowdata = new Variant(
-                    "(sssiiii)", name, @"$onthisws", winsmonitor,
-                    x, y, width, height
+                    "(sssiiiis)", name, @"$onthisws", winsmonitor,
+                    x, y, width, height, @"$minimized"
                 );
                 winsdata.insert(@"$xid", windowdata);
             }

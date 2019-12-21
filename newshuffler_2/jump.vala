@@ -1,7 +1,7 @@
 /*
 * ShufflerII
 * Author: Jacob Vlijm
-* Copyright © 2017-2019 Ubuntu Budgie Developers
+* Copyright © 2017-2020 Ubuntu Budgie Developers
 * Website=https://ubuntubudgie.org
 * This program is free software: you can redistribute it and/or modify it
 * under the terms of the GNU General Public License as published by the Free
@@ -96,28 +96,25 @@ namespace JumpActive {
             }
             string activemon_name = client.getactivemon_name();
             HashTable<string, Variant> anchordata = client.get_tiles(activemon_name, cols, rows);
-
             // get active win
             int activewin = client.getactivewin();
-
+            // if acyive exists....
             if (activewin != -1) {
+                // calculate target
                 string xs = (string)anchordata["x_anchors"];
                 string ys = (string)anchordata["y_anchors"];
                 int tilewidth = (int)anchordata["tilewidth"];
                 int tileheight = (int)anchordata["tileheight"];
-                //  (string) lists
                 string[] x_anchors = xs.split(" ");
                 string[] y_anchors = ys.split(" ");
                 HashTable<string, Variant> wins = client.get_winsdata();
-                // find out where to move the window to
                 Variant activewin_data = wins[@"$activewin"];
                 int winx = (int)activewin_data.get_child_value(3);
                 int winy = (int)activewin_data.get_child_value(4);
+
                 int nextx = 0;
                 int nexty = 0;
-
                 string direction = args[1];
-
                 switch(direction) {
                     case "right":
                         nextx = find_next(x_anchors, winx);
@@ -138,48 +135,45 @@ namespace JumpActive {
                 }
                 int yshift = client.get_yshift(activewin);
 
+                // move window to target -if it isn't already there-
+                bool samewindow = winx == nextx && winy == nexty;
+
+                GLib.List<weak string> winkeys = wins.get_keys();
+
+                // if swapgemetry
                 if (client.swapgeo()) {
-                    // find & move possible window on targeted position
-                    GLib.List<weak string> winkeys = wins.get_keys();
-                    int swapx = 0;
-                    int swapy = 0;
-                    int tomove_width = 0;
-                    int tomove_height = 0;
-                    int? tomove = null;
+                    int winwidth = (int)activewin_data.get_child_value(5);
+                    int winheight = (int)activewin_data.get_child_value(6);
                     foreach (string k in winkeys) {
                         Variant windata = wins[k];
                         int xpos = (int)windata.get_child_value(3);
                         int ypos = (int)windata.get_child_value(4);
-                        // find out possible window on targeted postition
-                        if (xpos == nextx && ypos == nexty) {
-                            tomove = int.parse(k);
+                        bool minimized = (string)windata.get_child_value(7) == "true";
+                        // check if window is on targeted position
+                        bool ontargetpos = xpos == nextx && ypos == nexty;
+                        // take over size of win on target
+                        if (ontargetpos && !minimized) {
+                            int tomove = int.parse(k);
+                            // 1. set correct geo for sourcewin
                             tilewidth = (int)windata.get_child_value(5);
                             tileheight = (int)windata.get_child_value(6);
+                            // 2. get geo -of- sourcewin (activewin), move swapwindow
+                            int tomove_yshift = client.get_yshift(tomove);
+                            if (!samewindow) {
+                                client.move_window(
+                                    tomove, winx, winy - tomove_yshift, winwidth, winheight
+                                );
+                            }
+                            break;
                         }
-                        // get x/y/w/h on current subject
-                        else if (k == @"$activewin") {
-                            swapx = (int)windata.get_child_value(3);
-                            swapy = (int)windata.get_child_value(4);
-                            tomove_width = (int)windata.get_child_value(5);
-                            tomove_height = (int)windata.get_child_value(6);
-                        }
-
-                    }
-                    /*
-                    / move possible window away from targeted postition ->
-                    / to position & size of subject
-                    */
-                    if (tomove != null) {
-                        int tomove_yshift = client.get_yshift(tomove);
-                        client.move_window(
-                            tomove, swapx, swapy - tomove_yshift, tomove_width, tomove_height
-                        );
                     }
                 }
                 // move subject to targeted position
-                client.move_window(
-                    activewin, nextx, nexty - yshift, tilewidth, tileheight
-                );
+                if (!samewindow) {
+                    client.move_window(
+                        activewin, nextx, nexty - yshift, tilewidth, tileheight
+                    );
+                }
             }
         }
         catch (Error e) {
