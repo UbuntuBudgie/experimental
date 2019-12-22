@@ -23,10 +23,13 @@
 / or:
 / |--x/y--| |--cols/rows--| |--xspan/yspan--|
 /  int int      int int          int int
+/ or:
+/ maximize
 */
 
 namespace TileActive {
 
+    ShufflerInfoClient? client;
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
     interface ShufflerInfoClient : Object {
@@ -35,45 +38,59 @@ namespace TileActive {
         public abstract HashTable<string, Variant> get_tiles (string mon, int cols, int rows) throws Error;
         public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
         public abstract int get_yshift (int w_id) throws Error;
+        public abstract int toggle_maximize (int w_id) throws Error;
     }
 
     void main (string[] args) {
-
-        // check args; incorrect args make the daemon crash (or fix in daemon?)
-        if (args.length == 5) {
-            if (
-                int.parse(args[1]) < int.parse(args[3]) &&
-                int.parse(args[2]) < int.parse(args[4])
-            ) {
-                grid_window(args, 1, 1);
+        try {
+            client = Bus.get_proxy_sync (
+                BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
+                ("/org/ubuntubudgie/shufflerinfodaemon")
+            );
+            if (args.length == 2) {
+                string arg = (args[1]);
+                if (arg == "maximize") {
+                    // ok, for the sake of simplicity, let's allow one internal action
+                    int win_id = client.getactivewin();
+                    client.toggle_maximize(win_id);
+                }
+                else {
+                    print(@"Unknown argument: $arg\n");
+                }
             }
-            else {
-                print("position is outside monitor\n");
+            if (args.length == 5) {
+                if (
+                    int.parse(args[1]) < int.parse(args[3]) &&
+                    int.parse(args[2]) < int.parse(args[4])
+                ) {
+                    grid_window(args, 1, 1);
+                }
+                else {
+                    print("position is outside monitor\n");
+                }
+            }
+            else if (args.length == 7) {
+                int ntiles_x = int.parse(args[5]);
+                int ntiles_y = int.parse(args[6]);
+                if (
+                    int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
+                    int.parse(args[2]) + ntiles_y <= int.parse(args[4])
+                ) {
+                    grid_window(args, ntiles_x, ntiles_y);
+                }
+                else {
+                    print("size exceeds monitor size\n");
+                }
             }
         }
-        else if (args.length == 7) {
-            int ntiles_x = int.parse(args[5]);
-            int ntiles_y = int.parse(args[6]);
-            if (
-                int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
-                int.parse(args[2]) + ntiles_y <= int.parse(args[4])
-            ) {
-                grid_window(args, ntiles_x, ntiles_y);
-            }
-            else {
-                print("size exceeds monitor size\n");
-            }
+        catch (Error e) {
+            stderr.printf ("%s\n", e.message);
         }
     }
 
     void grid_window (string[] args, int ntiles_x, int ntiles_y) {
         // fetch info from daemon, do the job with it
         try {
-            ShufflerInfoClient client = Bus.get_proxy_sync (
-                BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
-                ("/org/ubuntubudgie/shufflerinfodaemon")
-            );
-
             int activewin = client.getactivewin();
             // get data, geo on windows
             GLib.HashTable<string, Variant> windata = client.get_winsdata();

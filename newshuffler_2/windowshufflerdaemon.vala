@@ -54,6 +54,21 @@ namespace ShufflerEssentialInfo {
             return activewin;
         }
 
+        public void toggle_maximize (int w_id) throws Error {
+            unowned GLib.List<Wnck.Window> wlist = wnckscr.get_windows();
+            foreach (Wnck.Window w in wlist) {
+                if (w.get_xid() == w_id) {
+                    bool state = w.is_maximized();
+                    if (state) {
+                        w.unmaximize();
+                    }
+                    else {
+                        w.maximize();
+                    }
+                }
+            }
+        }
+
         public HashTable<string, Variant> get_winsdata () throws Error {
             // window data, send through
             get_windata();
@@ -88,7 +103,7 @@ namespace ShufflerEssentialInfo {
             );
         }
 
-        private uint get_now() {
+        private uint get_now () {
             // timestamp
             return Gdk.X11.get_server_time(timestamp_window);
         }
@@ -248,7 +263,7 @@ namespace ShufflerEssentialInfo {
             () => {}, () => stderr.printf ("Could not aquire name\n"));
     }
 
-    private void get_windata() {
+    private void get_windata () {
         /*
         / maintaining function
         / get windowlist, per window:
@@ -281,7 +296,7 @@ namespace ShufflerEssentialInfo {
         window_essentials = winsdata;
     }
 
-    private GLib.Settings get_settings(string path) {
+    private GLib.Settings get_settings (string path) {
         // make settings
         var settings = new GLib.Settings(path);
         return settings;
