@@ -180,6 +180,11 @@ namespace ShufflerEssentialInfo {
             return swapgeometry;
         }
 
+        public void set_grid (int cols, int rows) throws Error {
+            shuffler_settings.set_int("cols", cols);
+            shuffler_settings.set_int("rows", rows);
+        }
+
 
         public int get_yshift (int w_id) throws Error {
             /*

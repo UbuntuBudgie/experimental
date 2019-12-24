@@ -25,6 +25,8 @@
 /  int int      int int          int int
 / or:
 / maximize
+/ optional -last arg- custom numeric window id (instead of active):
+/ id=12345678 <- no hex!
 */
 
 namespace TileActive {
@@ -47,7 +49,39 @@ namespace TileActive {
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
-            if (args.length == 2) {
+            int activewin = client.getactivewin();
+            string lastarg = args[args.length - 1];
+            if (lastarg.contains("id=")) {
+                activewin = int.parse(lastarg.split("=")[1]);
+            }
+
+            if (args.length >= 7) {
+                int ntiles_x = int.parse(args[5]);
+                int ntiles_y = int.parse(args[6]);
+                if (
+                    int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
+                    int.parse(args[2]) + ntiles_y <= int.parse(args[4])
+                ) {
+                    grid_window(args, ntiles_x, ntiles_y, activewin);
+                }
+                else {
+                    print("size exceeds monitor size\n");
+                }
+            }
+
+            else if (args.length >= 5) {
+                if (
+                    int.parse(args[1]) < int.parse(args[3]) &&
+                    int.parse(args[2]) < int.parse(args[4])
+                ) {
+                    grid_window(args, 1, 1, activewin);
+                }
+                else {
+                    print("position is outside monitor\n");
+                }
+            }
+
+            else if (args.length >= 2) {
                 string arg = (args[1]);
                 if (arg == "maximize") {
                     // ok, for the sake of simplicity, let's allow one internal action
@@ -58,40 +92,16 @@ namespace TileActive {
                     print(@"Unknown argument: $arg\n");
                 }
             }
-            if (args.length == 5) {
-                if (
-                    int.parse(args[1]) < int.parse(args[3]) &&
-                    int.parse(args[2]) < int.parse(args[4])
-                ) {
-                    grid_window(args, 1, 1);
-                }
-                else {
-                    print("position is outside monitor\n");
-                }
-            }
-            else if (args.length == 7) {
-                int ntiles_x = int.parse(args[5]);
-                int ntiles_y = int.parse(args[6]);
-                if (
-                    int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
-                    int.parse(args[2]) + ntiles_y <= int.parse(args[4])
-                ) {
-                    grid_window(args, ntiles_x, ntiles_y);
-                }
-                else {
-                    print("size exceeds monitor size\n");
-                }
-            }
         }
         catch (Error e) {
             stderr.printf ("%s\n", e.message);
         }
     }
 
-    void grid_window (string[] args, int ntiles_x, int ntiles_y) {
+    void grid_window (string[] args, int ntiles_x, int ntiles_y, int activewin) {
         // fetch info from daemon, do the job with it
         try {
-            int activewin = client.getactivewin();
+
             // get data, geo on windows
             GLib.HashTable<string, Variant> windata = client.get_winsdata();
             GLib.List<unowned string> windata_keys = windata.get_keys();
