@@ -1,4 +1,7 @@
 using Gdk.X11;
+using Cairo;
+using Gtk;
+using Gdk;
 
 /*
 * ShufflerII
@@ -32,10 +35,11 @@ namespace ShufflerEssentialInfo {
     // scale
     int scale;
     // dconf
-    Settings shuffler_settings;
+    GLib.Settings shuffler_settings;
     int setcols;
     int setrows;
     bool swapgeometry;
+    Gtk.Window? showtarget = null; /////////////////////////////////////////////////////
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -111,6 +115,19 @@ namespace ShufflerEssentialInfo {
         public HashTable<string, Variant> get_tiles (
             string mon_name, int cols, int rows
         ) throws Error {
+
+            /* tiledata.keys:
+            / "x_anchors" (as string)
+            / "y_anchors" (as string)
+            / "tilewidth" (int)
+            / "tileheight" (int)
+            / additionally per tile "col*row" (Variant), representing:
+            / - x, y, width, height (iiii)
+            / having info -per tile- and general info on the very same level
+            / doesn't seem brilliantly elegant on second thought. fix if we
+            / ever have too mutch time.
+            */
+
             // get the list of tiles, properties
             var tiledata = new HashTable<string, Variant> (str_hash, str_equal);
             int[] xpositions = {};
@@ -185,6 +202,44 @@ namespace ShufflerEssentialInfo {
             shuffler_settings.set_int("rows", rows);
         }
 
+           
+        ///////////////////////////////////////////////////////////////////
+         ////
+
+        public void kill_tilepreview () throws Error {
+            // create window
+            // print("trying to kill\n");
+            showtarget.destroy();
+        }
+
+        public void show_tilepreview (int col, int row) throws Error {
+            int x = 0;
+            int y = 0;
+            int w = 0;
+            int h = 0;
+            string currmon = getactivemon_name();
+            HashTable<string, Variant> currtiles = get_tiles(currmon, setcols, setrows);
+            foreach (string tk in currtiles.get_keys()) {
+                if (tk.contains("*")) {
+                    string[] xy = tk.split("*");
+                    if (int.parse(xy[0]) == col && int.parse(xy[1]) == row) {
+                        Variant v = currtiles[tk];
+                        // remember, Gtk uses scaled numbers!
+                        x = ((int)v.get_child_value(0))/scale;
+                        y = ((int)v.get_child_value(1))/scale;
+                        w = ((int)v.get_child_value(2))/scale;
+                        h = ((int)v.get_child_value(3))/scale;
+                        break;
+                    }
+                }
+            }
+            // create window
+            showtarget = new PreviewWindow(x, y, w, h);
+        }
+
+
+        ////
+        ///////////////////////////////////////////////////////////////////
 
         public int get_yshift (int w_id) throws Error {
             /*
@@ -301,6 +356,43 @@ namespace ShufflerEssentialInfo {
         window_essentials = winsdata;
     }
 
+    ///////////////////////////////////////////////////////////////////
+    ////
+    private class PreviewWindow: Gtk.Window {
+
+        public PreviewWindow (int x, int y, int w, int h) {
+            // transparency
+            var screen = this.get_screen();
+            this.set_app_paintable(true);
+            var visual = screen.get_rgba_visual();
+            this.set_visual(visual);
+            this.draw.connect(on_draw);
+            this.set_decorated(false);
+            this.title = "tilingpreview";
+            this.set_skip_taskbar_hint(true);
+            this.resize(w, h);
+            this.move(x, y);
+            this.set_focus_on_map(true);
+            //  wnckscr.active_window_changed.connect(keep_active);
+            this.show_all();
+        }
+    }
+
+    //  private void keep_active() {
+    //      print("keep active\n");
+    //  }
+
+    private bool on_draw (Widget da, Context ctx) {
+        // needs to be connected to transparency settings change
+        ctx.set_source_rgba(0.0, 0.30, 0.50, 0.40);
+        ctx.set_operator(Cairo.Operator.SOURCE);
+        ctx.paint();
+        ctx.set_operator(Cairo.Operator.OVER);
+        return false;
+    }
+    ////
+    ///////////////////////////////////////////////////////////////////
+
     private GLib.Settings get_settings (string path) {
         // make settings
         var settings = new GLib.Settings(path);
@@ -332,7 +424,6 @@ namespace ShufflerEssentialInfo {
 
         gdkdisplay = Gdk.Display.get_default();
         Gdk.Screen gdkscreen = Gdk.Screen.get_default();
-
         get_monitors();
         getscale();
         gdkscreen.monitors_changed.connect(get_monitors);
