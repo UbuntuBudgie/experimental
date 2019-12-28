@@ -6,7 +6,6 @@ using Gdk.X11;
 //valac --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
 // N.B. Eventually, this Gtk thread runs as a daemon, waiting to show its window.
-// N.B. Move functions to inside window-class, no reason for higher level.
 // N.B. Before setting style on clicked button: check if window != null.
 
 namespace GridWindowSection {
@@ -51,8 +50,6 @@ namespace GridWindowSection {
         Gtk.Button[] buttonarr;
         int[] xpos;
         int[] ypos;
-        int cols;
-        int rows;
         Gtk.Grid buttongrid;
         ulong? previously_active;
         Gtk.Grid maingrid;
@@ -85,9 +82,12 @@ namespace GridWindowSection {
                 previously_active = curr_active.get_xid();
             }
 
-            int[] colsrows = client.get_grid();
+            ///////////////////////////
+
+            int[] colsrows = get_setcolsrows();
             gridcols = colsrows[0];
             gridrows = colsrows[1];
+            ///////////////////////////
 
             // X11 stuff, non-dynamic part
             unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
@@ -125,6 +125,19 @@ namespace GridWindowSection {
             this.show_all();
         }
 
+        /////
+        private int[] get_setcolsrows () {
+            // get cols & rows from dconf
+            int[] colsrows = {0, 0};
+            try {
+                colsrows = client.get_grid();
+            }
+            catch (Error E) {
+            }
+            return colsrows;
+        }
+        /////
+
         private int find_buttonindex(Gtk.Button b) {
             // look up button index from array (to look up col/row)
             int i = 0;
@@ -142,8 +155,10 @@ namespace GridWindowSection {
             // todo: grab data for command from currselected
             int index = find_buttonindex(b);
             if (index != -1 && previously_active != null) {
-                manage_activebuttons(b); ////////////////////////////////////////////////////////////
+                manage_selection(b); ////////////////////////////////////////////////////////////
                 // instead of below, get min. x, min. y, gridcols, gridrows, spanx, spany --> make command
+
+
                 // manage preview shade separately: different rules, algorithm (first make this work)
                 int x = xpos[index];
                 int y = ypos[index];
@@ -151,26 +166,47 @@ namespace GridWindowSection {
                 string cm = "/home/jacob/Desktop/experisync/newshuffler_2/tile_active ".concat(
                     @"$x $y $gridcols $gridrows ", "id=", @"$previously_active");
                 //  print(@"$cm\n");
-                Process.spawn_command_line_async(cm);
+                try {
+                    Process.spawn_command_line_async(cm);
+                }
+                catch (SpawnError e) {
+                    
+                }
             }
         }
 
-        private void manage_activebuttons (Gtk.Button b) {
+        ////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
+        private void manage_selection (Gtk.Button b) {
             // here we check if we have a multi-span selection
             print("buttoncall\n");
             // empty list on grid change!!
             // check if active window != null!
-            int arrcontent = currselected.length;
+            int n_arrcontent = currselected.length;
             int latest_pressed = find_buttonindex(b);
-            if (arrcontent == 0 || (arrcontent == 1 && shiftispressed)) {
+            if (n_arrcontent == 0 || (n_arrcontent == 1 && shiftispressed)) {
                 currselected += latest_pressed;
             }
             else {
                 currselected = {latest_pressed};
             }
-            arrcontent = currselected.length;
-            print(@"n buttons selected: $arrcontent\n");
+            n_arrcontent = currselected.length;
+
+            // get min x, min y, span x/y
+            if (n_arrcontent == 2) {
+                print("multicell selection\n");
+                foreach (int n in currselected) {
+                    int x_comp = xpos[n];
+                    int y_comp = ypos[n];
+                    print(@"$x_comp, $y_comp\n");
+                }
+
+            }
+
+            print(@"n buttons selected: $n_arrcontent\n");
         }
+        ////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////
 
         private void set_this_active (string wname) {
             // (re-)set gridwindow active on focus out
@@ -240,20 +276,29 @@ namespace GridWindowSection {
             int bindex = find_buttonindex(b);
             int col = xpos[bindex];
             int row = ypos[bindex];
-            client.show_tilepreview(col, row);
+            try {
+                client.show_tilepreview(col, row);
+            }
+            catch (Error e) {
+
+            }
         }
 
         private bool killpreview () {
             // kill the preview shade
-            client.kill_tilepreview();
+            try {
+                client.kill_tilepreview();
+            }
+            catch (Error e) {
+            }
             return false;
         }
 
         private bool managegrid (string pressed) {
             // here we set cols.rows on the grid gui,
             // set dconf vals accordingly
-            client.kill_tilepreview();
-            int[] currgrid = client.get_grid();
+            killpreview();
+            int[] currgrid = get_setcolsrows();
             int currcols = currgrid[0];
             int currrows = currgrid[1];
             print(@"setting g grid, $pressed\n");
@@ -279,10 +324,15 @@ namespace GridWindowSection {
                 }
                 break;
             }
-            client.set_grid(gridcols, gridrows);
+            try {
+                client.set_grid(gridcols, gridrows);
+            }
+            catch (Error e) {
+            }
             buttongrid.destroy();
             setgrid();
             maingrid.show_all();
+            this.resize(10,10);
             return false;
         }
 

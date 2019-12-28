@@ -25,6 +25,10 @@
 / without --grid, dconf val is used
 */
 
+// TODO! exclude grid window from jumping. Get subject from grid window GUI?
+// Or simply do not run while grid window runs?
+
+
 namespace JumpActive {
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
