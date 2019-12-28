@@ -6,6 +6,7 @@ using Gdk.X11;
 //valac --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
 // N.B. Eventually, this Gtk thread runs as a daemon, waiting to show its window.
+// N.B. Move functions to inside window-class, no reason for higher level.
 
 namespace GridWindowSection {
 
@@ -20,8 +21,6 @@ namespace GridWindowSection {
     ulong? previously_active;
     Wnck.Screen wnckscr;
     Gdk.X11.Window timestamp_window;
-    bool shiftispressed;
-
 
     ShufflerInfoClient client;
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
@@ -54,6 +53,7 @@ namespace GridWindowSection {
 
     // ctx.set_source_rgba(0.0, 0.30, 0.50, 0.40);
     public class GridWindow: Gtk.Window {
+        bool shiftispressed;
         Gtk.Grid maingrid;
         string gridcss = """
         .gridmanage {
@@ -121,7 +121,6 @@ namespace GridWindowSection {
             }
             return false;
         }
-
 
         private bool showquestionmark () {
             //print("show help button\n");
@@ -202,11 +201,9 @@ namespace GridWindowSection {
                     xpos += ix;
                     ypos += iy;
                     buttonarr += gridbutton;
-                    //print(@"adding $ix\n");
                     gridbutton.clicked.connect(show_pos);
                     gridbutton.enter_notify_event.connect(()=> {
                         showpreview(gridbutton);
-
                         return false;
                     });
                     gridbutton.leave_notify_event.connect(killpreview); //////////////////////////////////////
@@ -277,6 +274,11 @@ namespace GridWindowSection {
         return -1;
     }
 
+    private void manage_activebuttons (Gtk.Button b) {
+        
+
+    }
+
     private void show_pos (Gtk.Button b) {
 
         int index = find_buttonindex(b);
@@ -309,9 +311,14 @@ namespace GridWindowSection {
     private void get_subject () {
         Wnck.Window? curr_active = wnckscr.get_active_window();
         if (curr_active != null) {
+            Wnck.WindowType type = curr_active.get_window_type ();
             string wname = curr_active.get_name();
             print(@"newname: $wname\n");
-            if (wname != "tilingpreview" && wname != "Gridwindows") {
+            if (
+                wname != "tilingpreview" && 
+                wname != "Gridwindows" && 
+                type == Wnck.WindowType.NORMAL
+                ) {
                 previously_active = curr_active.get_xid();
             }
             set_this_active("Gridwindows");
