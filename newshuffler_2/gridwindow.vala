@@ -72,29 +72,19 @@ namespace GridWindowSection {
             this.enter_notify_event.connect(showquestionmark);
             this.key_press_event.connect(manage_keypress);
             this.key_release_event.connect(manage_keyrelease);
-
-
-            // moved stuff
             wnckscr.active_window_changed.connect(get_subject);
-
             Wnck.Window? curr_active = wnckscr.get_active_window();
             if (curr_active != null) {
                 previously_active = curr_active.get_xid();
             }
-
-            ///////////////////////////
-
             int[] colsrows = get_setcolsrows();
             gridcols = colsrows[0];
             gridrows = colsrows[1];
-            ///////////////////////////
-
             // X11 stuff, non-dynamic part
             unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
             unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
             Gdk.X11.Display display = Gdk.X11.Display.lookup_for_xdisplay(xdisplay);
             timestamp_window = new Gdk.X11.Window.foreign_for_display(display, xwindow);
-
             // whole bunch of styling
             var screen = this.get_screen();
             this.set_app_paintable(true);
@@ -125,7 +115,6 @@ namespace GridWindowSection {
             this.show_all();
         }
 
-        /////
         private int[] get_setcolsrows () {
             // get cols & rows from dconf
             int[] colsrows = {0, 0};
@@ -136,7 +125,6 @@ namespace GridWindowSection {
             }
             return colsrows;
         }
-        /////
 
         private int find_buttonindex(Gtk.Button b) {
             // look up button index from array (to look up col/row)
@@ -155,31 +143,21 @@ namespace GridWindowSection {
             // todo: grab data for command from currselected
             int index = find_buttonindex(b);
             if (index != -1 && previously_active != null) {
-                manage_selection(b); ////////////////////////////////////////////////////////////
-                // instead of below, get min. x, min. y, gridcols, gridrows, spanx, spany --> make command
-
-
+                string cmd_args = manage_selection(b);
                 // manage preview shade separately: different rules, algorithm (first make this work)
-                int x = xpos[index];
-                int y = ypos[index];
-                print(@"$x, $y, $gridcols, $gridrows\n");
                 string cm = "/home/jacob/Desktop/experisync/newshuffler_2/tile_active ".concat(
-                    @"$x $y $gridcols $gridrows ", "id=", @"$previously_active");
-                //  print(@"$cm\n");
+                    cmd_args, " id=", @"$previously_active");
                 try {
                     Process.spawn_command_line_async(cm);
                 }
                 catch (SpawnError e) {
-                    
                 }
             }
         }
 
-        ////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////
-        private void manage_selection (Gtk.Button b) {
-            // here we check if we have a multi-span selection
-            print("buttoncall\n");
+        private string manage_selection (Gtk.Button b) {
+            // here we check if we have a multi-span selection,
+            // create args for move
             // empty list on grid change!!
             // check if active window != null!
             int n_arrcontent = currselected.length;
@@ -191,22 +169,41 @@ namespace GridWindowSection {
                 currselected = {latest_pressed};
             }
             n_arrcontent = currselected.length;
+            int minx = 100;
+            int miny = 100;
+            int maxx = 0;
+            int maxy = 0;
+            int w = 1;
+            int h = 1;
 
-            // get min x, min y, span x/y
             if (n_arrcontent == 2) {
-                print("multicell selection\n");
+                // get min x, min y, span x/y
                 foreach (int n in currselected) {
                     int x_comp = xpos[n];
                     int y_comp = ypos[n];
-                    print(@"$x_comp, $y_comp\n");
+                    if (x_comp < minx) {
+                        minx = x_comp;
+                    }
+                    if (y_comp < miny) {
+                        miny = y_comp;
+                    }
+                    if (x_comp > maxx) {
+                      maxx = x_comp;
+                    }
+                    if (y_comp > maxy) {
+                        maxy = y_comp;
+                    }
                 }
-
+                w = maxx + 1 - minx;
+                h = maxy + 1 - miny;
             }
-
-            print(@"n buttons selected: $n_arrcontent\n");
+            else {
+                minx = xpos[latest_pressed];
+                miny = ypos[latest_pressed];
+            }
+            // todo: also use output for setting selected (clicked) button span
+            return @"$minx $miny $gridcols $gridrows $w $h";
         }
-        ////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////
 
         private void set_this_active (string wname) {
             // (re-)set gridwindow active on focus out
@@ -229,7 +226,7 @@ namespace GridWindowSection {
             if (curr_active != null) {
                 Wnck.WindowType type = curr_active.get_window_type ();
                 string wname = curr_active.get_name();
-                print(@"newname: $wname\n");
+                // print(@"newname: $wname\n");
                 if (
                     wname != "tilingpreview" &&
                     wname != "Gridwindows" &&
@@ -240,7 +237,6 @@ namespace GridWindowSection {
                 set_this_active("Gridwindows");
             }
         }
-
 
         private bool manage_keyrelease (Gdk.EventKey key) {
             // to keep record of Shift state
