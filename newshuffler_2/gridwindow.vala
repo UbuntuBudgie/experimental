@@ -17,15 +17,15 @@ namespace GridWindowSection {
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
     interface ShufflerInfoClient : Object {
-        public abstract GLib.HashTable<string, Variant> get_winsdata () throws Error;
-        public abstract int getactivewin () throws Error;
-        public abstract HashTable<string, Variant> get_tiles (string mon, int cols, int rows) throws Error;
-        public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
-        public abstract int get_yshift (int w_id) throws Error;
-        public abstract string getactivemon_name () throws Error;
+        //  public abstract GLib.HashTable<string, Variant> get_winsdata () throws Error; // remove?
+        //  public abstract int getactivewin () throws Error; // remove?
+        //  public abstract HashTable<string, Variant> get_tiles (string mon, int cols, int rows) throws Error;  // remove? already using from tile_active
+        //  public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;  // remove? already using from tile_active
+        //  public abstract int get_yshift (int w_id) throws Error;  // remove? already using from tile_active
+        //  public abstract string getactivemon_name () throws Error;  // remove? already using from tile_active
         public abstract int[] get_grid () throws Error;
         public abstract void set_grid (int cols, int rows) throws Error;
-        public abstract bool swapgeo () throws Error;
+        //  public abstract bool swapgeo () throws Error; // remove?
         public abstract void show_tilepreview (int col, int row) throws Error;
         public abstract void kill_tilepreview () throws Error;
     }
@@ -126,6 +126,7 @@ namespace GridWindowSection {
         }
 
         private int find_buttonindex(Gtk.Button b) {
+            // look up button index from array (to look up col/row)
             int i = 0;
             foreach (Gtk.Button button in buttonarr) {
                 if (button == b) {
@@ -136,16 +137,20 @@ namespace GridWindowSection {
             return -1;
         }
 
-        private void show_pos (Gtk.Button b) {
+        private void send_to_pos (Gtk.Button b) {
+            // here we send the subject window to its targeted position, using tile_active
+            // todo: grab data for command from currselected
             int index = find_buttonindex(b);
             if (index != -1 && previously_active != null) {
+                manage_activebuttons(b); ////////////////////////////////////////////////////////////
+                // instead of below, get min. x, min. y, gridcols, gridrows, spanx, spany --> make command
+                // manage preview shade separately: different rules, algorithm (first make this work)
                 int x = xpos[index];
                 int y = ypos[index];
                 print(@"$x, $y, $gridcols, $gridrows\n");
                 string cm = "/home/jacob/Desktop/experisync/newshuffler_2/tile_active ".concat(
                     @"$x $y $gridcols $gridrows ", "id=", @"$previously_active");
-                print(@"$cm\n");
-                manage_activebuttons(b); ////////////////////////////////////////////////////////////
+                //  print(@"$cm\n");
                 Process.spawn_command_line_async(cm);
             }
         }
@@ -168,6 +173,7 @@ namespace GridWindowSection {
         }
 
         private void set_this_active (string wname) {
+            // (re-)set gridwindow active on focus out
             foreach (Wnck.Window w in wnckscr.get_windows()) {
                 if (w.get_name() == wname) {
                     w.activate(get_now());
@@ -177,11 +183,12 @@ namespace GridWindowSection {
         }
 
         private uint get_now () {
-            // timestamp
+            // get timestamp
             return Gdk.X11.get_server_time(timestamp_window);
         }
 
         private void get_subject () {
+            // bookkeeping on the window to move
             Wnck.Window? curr_active = wnckscr.get_active_window();
             if (curr_active != null) {
                 Wnck.WindowType type = curr_active.get_window_type ();
@@ -200,6 +207,7 @@ namespace GridWindowSection {
 
 
         private bool manage_keyrelease (Gdk.EventKey key) {
+            // to keep record of Shift state
             string released = Gdk.keyval_name(key.keyval);
             if (released.contains("Shift")) {
                 shiftispressed = false;
@@ -209,6 +217,7 @@ namespace GridWindowSection {
         }
 
         private bool manage_keypress (Gdk.EventKey key) {
+            // to keep record of Shift state & send through if not about Shift
             string pressed = Gdk.keyval_name(key.keyval);
             if (pressed.contains("Shift")) {
                 shiftispressed = true;
@@ -221,11 +230,13 @@ namespace GridWindowSection {
         }
 
         private bool showquestionmark () {
-            //print("show help button\n");
+            // currently out of a job
             return false;
         }
 
         private void showpreview (Button b) {
+            // as the title sais
+            // todo: make fit for multicell, additional args
             int bindex = find_buttonindex(b);
             int col = xpos[bindex];
             int row = ypos[bindex];
@@ -239,8 +250,9 @@ namespace GridWindowSection {
         }
 
         private bool managegrid (string pressed) {
+            // here we set cols.rows on the grid gui,
+            // set dconf vals accordingly
             client.kill_tilepreview();
-            //  string pressed = Gdk.keyval_name(key.keyval);
             int[] currgrid = client.get_grid();
             int currcols = currgrid[0];
             int currrows = currgrid[1];
@@ -275,7 +287,8 @@ namespace GridWindowSection {
         }
 
         private bool on_draw (Widget da, Context ctx) {
-            // needs to be connected to transparency settings change
+            // transparency
+            // needs to be connected to transparency settings change?
             ctx.set_source_rgba(0.15, 0.15, 0.15, 0.0);
             ctx.set_operator(Cairo.Operator.SOURCE);
             ctx.paint();
@@ -284,6 +297,7 @@ namespace GridWindowSection {
         }
 
         private void setgrid() {
+            // create the gui grid + buttons on it
             buttongrid = new Gtk.Grid();
             buttongrid.set_column_spacing(3);
             buttongrid.set_row_spacing(3);
@@ -298,7 +312,7 @@ namespace GridWindowSection {
                     xpos += ix;
                     ypos += iy;
                     buttonarr += gridbutton;
-                    gridbutton.clicked.connect(show_pos);
+                    gridbutton.clicked.connect(send_to_pos);
                     gridbutton.enter_notify_event.connect(()=> {
                         showpreview(gridbutton);
                         return false;
@@ -310,6 +324,10 @@ namespace GridWindowSection {
     }
 
     public static void main(string[] args) {
+        /*
+        / minimal main. eventually need to insert a signal watcher to
+        / create/destroy the grid window
+        */
         setup_client();
         Gtk.init(ref args);
         wnckscr = Wnck.Screen.get_default();
