@@ -3,28 +3,45 @@ using Cairo;
 using Gdk;
 using Gdk.X11;
 
+/*
+/ Button color management
+/ -----------------------
+/ variables played with:
+/ - int[] currentlycolored - array of indexes (buttonarr) of currently (permanently, not hovered) colored buttons
+/ - int[] currselected - array of indices of corners of the area (can represent either one or two buttons)
+/
+/ on click:
+/ if currselected.length == 1, -and- shift is pressed, the second button(index) is added
+/ to currselected and the area in between is calculated -> color button area, move subject window to spanning size.
+/ if currselected.length == 2 or 1, (new) currselected only contains the newly pressed button ->
+/ move subject window. [send_to_pos(), manage_selection(), manage_selected_color()]
+/ while the above is managed, the array currentlycolored is maintained to include all actually colored buttons,
+/ to simplify button hover (-color) management [manage_selected_color()].
+/ on the occasion of a grid change or a change in window subject, all arrays and button colors are reset
+/
+/ on hover:
+/ temporarily combine data from currselected and hovered button -> calculate min/max, set color
+/ on leave, reset to currentlycolored.
+*/
+
 //valac --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
 // N.B. Eventually, this Gtk thread runs as a daemon, waiting to show its window.
 // N.B. Before setting style on clicked button: check if window != null.
+// N.B. Unset selected button color on focus change (subject change) = done
+// N.B act on shift press -> update?
+
 
 namespace GridWindowSection {
 
     Wnck.Screen wnckscr;
-
     ShufflerInfoClient client;
+
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
     interface ShufflerInfoClient : Object {
-        //  public abstract GLib.HashTable<string, Variant> get_winsdata () throws Error; // remove?
-        //  public abstract int getactivewin () throws Error; // remove?
-        //  public abstract HashTable<string, Variant> get_tiles (string mon, int cols, int rows) throws Error;  // remove? already using from tile_active
-        //  public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;  // remove? already using from tile_active
-        //  public abstract int get_yshift (int w_id) throws Error;  // remove? already using from tile_active
-        //  public abstract string getactivemon_name () throws Error;  // remove? already using from tile_active
         public abstract int[] get_grid () throws Error;
         public abstract void set_grid (int cols, int rows) throws Error;
-        //  public abstract bool swapgeo () throws Error; // remove?
         public abstract void show_tilepreview (int col, int row) throws Error;
         public abstract void kill_tilepreview () throws Error;
     }
@@ -44,7 +61,7 @@ namespace GridWindowSection {
     public class GridWindow: Gtk.Window {
         Gdk.X11.Window timestamp_window;
         bool shiftispressed;
-        int[] currselected;
+        int[] currselected; // max 2, only corners of selection
         int gridcols;
         int gridrows;
         Gtk.Button[] buttonarr;
@@ -53,6 +70,7 @@ namespace GridWindowSection {
         Gtk.Grid buttongrid;
         ulong? previously_active;
         Gtk.Grid maingrid;
+        int[] currentlycolored; // arr of all currently colored buttons
 
         string gridcss = """
         .gridmanage {
@@ -155,11 +173,39 @@ namespace GridWindowSection {
             }
         }
 
+        private int[] get_selectedarea (
+            int[] b_indices, int minx = 100,
+            int miny = 100, int maxx = 0, int maxy = 0
+        ) {
+            // get min/max x, min/max y, span x/y of given button-indices
+            foreach (int n in b_indices) {
+                int x_comp = xpos[n];
+                int y_comp = ypos[n];
+                if (x_comp < minx) {
+                    minx = x_comp;
+                }
+                if (y_comp < miny) {
+                    miny = y_comp;
+                }
+                if (x_comp > maxx) {
+                    maxx = x_comp;
+                }
+                if (y_comp > maxy) {
+                    maxy = y_comp;
+                }
+            }
+            int w = maxx + 1 - minx;
+            int h = maxy + 1 - miny;
+            return {minx, miny, maxx, maxy, w, h};
+        }
+
         private string manage_selection (Gtk.Button b) {
-            // here we check if we have a multi-span selection,
-            // create args for move
-            // empty list on grid change!!
+            /*
+            / on-click functionality
+            / here we check if we have a multi-span selection
+            / & create args for move
             // check if active window != null!
+            */
             int n_arrcontent = currselected.length;
             int latest_pressed = find_buttonindex(b);
             if (n_arrcontent == 0 || (n_arrcontent == 1 && shiftispressed)) {
@@ -168,6 +214,7 @@ namespace GridWindowSection {
             else {
                 currselected = {latest_pressed};
             }
+            // update n_arrcontent
             n_arrcontent = currselected.length;
             int minx = 100;
             int miny = 100;
@@ -177,32 +224,77 @@ namespace GridWindowSection {
             int h = 1;
 
             if (n_arrcontent == 2) {
-                // get min x, min y, span x/y
-                foreach (int n in currselected) {
-                    int x_comp = xpos[n];
-                    int y_comp = ypos[n];
-                    if (x_comp < minx) {
-                        minx = x_comp;
-                    }
-                    if (y_comp < miny) {
-                        miny = y_comp;
-                    }
-                    if (x_comp > maxx) {
-                      maxx = x_comp;
-                    }
-                    if (y_comp > maxy) {
-                        maxy = y_comp;
-                    }
-                }
+                int[] areadata = get_selectedarea(currselected);
+                minx = areadata[0];
+                miny = areadata[1];
+                maxx = areadata[2];
+                maxy = areadata[3];
                 w = maxx + 1 - minx;
                 h = maxy + 1 - miny;
+
             }
             else {
                 minx = xpos[latest_pressed];
                 miny = ypos[latest_pressed];
             }
-            // todo: also use output for setting selected (clicked) button span
+            // todo: also use output for setting selected (clicked) button span <- done
+            manage_selected_color(n_arrcontent, minx, miny, maxx, maxy);
             return @"$minx $miny $gridcols $gridrows $w $h";
+        }
+
+        private bool check_int(int n, int[] arr) {
+            /* yep, silly repeated code. who cares? this is vala */
+            for (int i=0; i < arr.length; i++) {
+                if(n == arr[i]) return true;
+            } return false;
+        }
+
+        private void unsetsetcolor_onhover () {
+            // on leave, reset colored to current selection
+            foreach (Gtk.Button b in buttonarr) {
+                if (!check_int(find_buttonindex(b), currentlycolored)) {
+                    var ct = b.get_style_context();
+                    ct.remove_class("selected");
+                }
+            }
+        }
+
+        private void manage_selected_color (
+            int n_arrcontent, int minx, int miny, int maxx, int maxy
+        ) {
+            // after click, set the selected color for button or area
+            // do your bookkeeping on colored buttons
+            currentlycolored = {};
+            if (n_arrcontent == 1) {
+                Gtk.Button newselected = buttonarr[currselected[0]];
+                foreach (Gtk.Button b in buttonarr) {
+                    var st_gb = b.get_style_context();
+                    if (b == newselected) {
+                        st_gb.add_class("selected");
+                        currentlycolored += find_buttonindex(b);
+                    }
+                    else {
+                        st_gb.remove_class("selected");
+                    }
+                }
+            }
+            else {
+                foreach (Gtk.Button b in buttonarr) {
+                    int index = find_buttonindex(b);
+                    int x_comp = xpos[index];
+                    int y_comp = ypos[index];
+                    var st_gb = b.get_style_context();
+                    if (maxx >= x_comp >= minx && maxy >= y_comp >= miny) {
+                        st_gb.add_class("selected");
+                        currentlycolored += index;
+                    }
+                    else {
+                        st_gb.remove_class("selected");
+                    }
+                }
+            }
+            int ncolored = currentlycolored.length;
+            print(@"colored: $ncolored\n");
         }
 
         private void set_this_active (string wname) {
@@ -220,8 +312,16 @@ namespace GridWindowSection {
             return Gdk.X11.get_server_time(timestamp_window);
         }
 
+        private void unset_colors () {
+            foreach (Gtk.Button b in buttonarr) {
+                var st_gb = b.get_style_context();
+                st_gb.remove_class("selected");
+            }
+        }
+
         private void get_subject () {
             // bookkeeping on the window to move
+            ulong old_active = previously_active;
             Wnck.Window? curr_active = wnckscr.get_active_window();
             if (curr_active != null) {
                 Wnck.WindowType type = curr_active.get_window_type ();
@@ -235,6 +335,35 @@ namespace GridWindowSection {
                     previously_active = curr_active.get_xid();
                 }
                 set_this_active("Gridwindows");
+            }
+            // unset colors on subject change
+            if (old_active != previously_active) {
+                unset_colors();
+                currentlycolored = {};
+                int ncolored = currentlycolored.length;
+                print(@"colored: $ncolored\n");
+            }
+        }
+
+        private void setcolor_onshifthover (Gtk.Button hovered) {
+            if (shiftispressed && currentlycolored.length == 1) {
+                int[] temporarycolored = currentlycolored;
+                temporarycolored += find_buttonindex(hovered);
+                int[] temp_area = get_selectedarea(temporarycolored);
+                int minx = temp_area[0];
+                int miny = temp_area[1];
+                int maxx = temp_area[2];
+                int maxy = temp_area[3];
+                foreach (Gtk.Button b in buttonarr) {
+                    int index = find_buttonindex(b);
+                    int x_comp = xpos[index];
+                    int y_comp = ypos[index];
+                    var st_gb = b.get_style_context();
+                    if (maxx >= x_comp >= minx && maxy >= y_comp >= miny) {
+                        st_gb.add_class("selected");
+                    }
+                }
+                print("adding to selection:\n");
             }
         }
 
@@ -294,6 +423,8 @@ namespace GridWindowSection {
             // here we set cols.rows on the grid gui,
             // set dconf vals accordingly
             killpreview();
+            currselected = {};
+            currentlycolored = {};
             int[] currgrid = get_setcolsrows();
             int currcols = currgrid[0];
             int currrows = currgrid[1];
@@ -360,7 +491,12 @@ namespace GridWindowSection {
                     buttonarr += gridbutton;
                     gridbutton.clicked.connect(send_to_pos);
                     gridbutton.enter_notify_event.connect(()=> {
+                        setcolor_onshifthover(gridbutton);
                         showpreview(gridbutton);
+                        return false;
+                    });
+                    gridbutton.leave_notify_event.connect(()=> {
+                        unsetsetcolor_onhover();
                         return false;
                     });
                     gridbutton.leave_notify_event.connect(killpreview);
