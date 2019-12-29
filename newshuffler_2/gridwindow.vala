@@ -3,6 +3,23 @@ using Cairo;
 using Gdk;
 using Gdk.X11;
 
+
+/*
+* ShufflerII
+* Author: Jacob Vlijm
+* Copyright © 2017-2019 Ubuntu Budgie Developers
+* Website=https://ubuntubudgie.org
+* This program is free software: you can redistribute it and/or modify it
+* under the terms of the GNU General Public License as published by the Free
+* Software Foundation, either version 3 of the License, or any later version.
+* This program is distributed in the hope that it will be useful, but WITHOUT
+* ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+* FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+* more details. You should have received a copy of the GNU General Public
+* License along with this program.  If not, see
+* <https://www.gnu.org/licenses/>.
+*/
+
 /*
 / Button color management
 / -----------------------
@@ -243,7 +260,7 @@ namespace GridWindowSection {
         }
 
         private bool check_int(int n, int[] arr) {
-            /* yep, silly repeated code. who cares? this is vala */
+            // see if int in array
             for (int i=0; i < arr.length; i++) {
                 if(n == arr[i]) return true;
             } return false;
