@@ -39,7 +39,10 @@ namespace ShufflerEssentialInfo {
     int setcols;
     int setrows;
     bool swapgeometry;
+    int maxcols;
+    int maxrows;
     bool gridguiruns;
+    bool remembergrid;
     Gtk.Window? showtarget = null;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
@@ -197,6 +200,16 @@ namespace ShufflerEssentialInfo {
         public int[] get_grid() throws Error {
             return {setcols, setrows};
         }
+
+        ////////////////////////////////////////////////
+        public int[] get_maxsize () throws Error {
+            return {maxcols, maxrows};
+        }
+
+        public bool remember_grid () throws Error {
+            return remembergrid;
+        }
+        ////////////////////////////////////////////////
 
         public bool swapgeo() throws Error {
             return swapgeometry;
@@ -396,6 +409,10 @@ namespace ShufflerEssentialInfo {
         setcols = shuffler_settings.get_int("cols");
         setrows = shuffler_settings.get_int("rows");
         swapgeometry = shuffler_settings.get_boolean("swapgeometry");
+        maxcols = shuffler_settings.get_int("maxcols");
+        maxrows = shuffler_settings.get_int("maxrows");
+        remembergrid = shuffler_settings.get_boolean("remembergrid");
+
     }
 
     private void actonfile(File file, File? otherfile, FileMonitorEvent event) {
@@ -407,7 +424,6 @@ namespace ShufflerEssentialInfo {
             gridguiruns = false;
             print("gridgui stopped\n");
         }
-        
     }
 
     public static int main (string[] args) {
