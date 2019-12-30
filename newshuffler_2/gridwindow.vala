@@ -55,7 +55,6 @@ namespace GridWindowSection {
     Wnck.Screen wnckscr;
     ShufflerInfoClient client;
     Gtk.Window? gridgui;
-    
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -360,7 +359,6 @@ namespace GridWindowSection {
             if (curr_active != null) {
                 Wnck.WindowType type = curr_active.get_window_type ();
                 string wname = curr_active.get_name();
-                // print(@"newname: $wname\n");
                 if (
                     wname != "tilingpreview" &&
                     wname != "Gridwindows" &&
@@ -460,7 +458,6 @@ namespace GridWindowSection {
             int[] currgrid = get_setcolsrows();
             int currcols = currgrid[0];
             int currrows = currgrid[1];
-            print(@"setting g grid, $pressed\n");
             switch (pressed) {
                 case "Up":
                 if (currrows > 1) {
@@ -557,7 +554,6 @@ namespace GridWindowSection {
         wnckscr.force_update();
         // monitoring files / dirs
         string user = Environment.get_user_name();
-        print(@"$user\n");
         File gridtrigger = File.new_for_path(
             "/tmp/".concat(user, "_gridtrigger")
         );
