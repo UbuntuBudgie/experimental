@@ -43,6 +43,7 @@ namespace JumpActive {
         public abstract string getactivemon_name () throws Error;
         public abstract int[] get_grid () throws Error;
         public abstract bool swapgeo () throws Error;
+        public abstract bool check_ifguiruns () throws Error;
     }
 
     private int find_next (string[] arr, int anchor) {
@@ -90,6 +91,8 @@ namespace JumpActive {
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
+            bool guiruns = client.check_ifguiruns();
+            print(@"guiruns: $guiruns\n");
             int[] grid = client.get_grid();
             // cols/rows is read from dconf, or overruled by args:
             int cols = grid[0];
@@ -103,7 +106,7 @@ namespace JumpActive {
             // get active win
             int activewin = client.getactivewin();
             // if acyive exists....
-            if (activewin != -1) {
+            if (activewin != -1 && !guiruns) {
                 // calculate target
                 string xs = (string)anchordata["x_anchors"];
                 string ys = (string)anchordata["y_anchors"];

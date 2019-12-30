@@ -39,6 +39,7 @@ namespace ShufflerEssentialInfo {
     int setcols;
     int setrows;
     bool swapgeometry;
+    bool gridguiruns;
     Gtk.Window? showtarget = null;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
@@ -56,6 +57,10 @@ namespace ShufflerEssentialInfo {
                 activewin = -1;
             }
             return activewin;
+        }
+
+        public bool check_ifguiruns () throws Error {
+            return gridguiruns;
         }
 
         public void toggle_maximize (int w_id) throws Error {
@@ -85,7 +90,7 @@ namespace ShufflerEssentialInfo {
             // move window, external connection
             unowned GLib.List<Wnck.Window> wlist = wnckscr.get_windows();
             foreach (Wnck.Window w in wlist) {
-                if (w.get_xid() == w_id) {
+                if (w.get_xid() == w_id) {  // not sure about the last one
                     now_move(w, x, y, width, height);
                 }
             }
@@ -204,7 +209,9 @@ namespace ShufflerEssentialInfo {
 
         public void kill_tilepreview () throws Error {
             // kill preview
-            showtarget.destroy();
+            if (showtarget != null) {
+                showtarget.destroy();
+            }
         }
 
         public void show_tilepreview (int col, int row, int width = 1, int height = 1) throws Error {
@@ -352,6 +359,7 @@ namespace ShufflerEssentialInfo {
 
         public PreviewWindow (int x, int y, int w, int h) {
             // transparency
+            this.title = "shuffler_shade";
             var screen = this.get_screen();
             this.set_app_paintable(true);
             var visual = screen.get_rgba_visual();
@@ -390,8 +398,34 @@ namespace ShufflerEssentialInfo {
         swapgeometry = shuffler_settings.get_boolean("swapgeometry");
     }
 
+    private void actonfile(File file, File? otherfile, FileMonitorEvent event) {
+        if (event == FileMonitorEvent.CREATED) {
+            gridguiruns = true;
+            print("gridgui runs\n");
+        }
+        else if (event == FileMonitorEvent.DELETED) {
+            gridguiruns = false;
+            print("gridgui stopped\n");
+        }
+        
+    }
+
     public static int main (string[] args) {
         Gtk.init(ref args);
+        // FileMonitor stuff, see if gui runs (disable jump & tileactive)
+        gridguiruns = false;
+        FileMonitor monitor;
+        string user = Environment.get_user_name();
+        File gridtrigger = File.new_for_path(
+            "/tmp/".concat(user, "_gridtrigger")
+        );
+        try {
+            monitor = gridtrigger.monitor(FileMonitorFlags.NONE, null);
+            monitor.changed.connect(actonfile);
+        }
+        catch (Error e) {
+        }
+        // settings stuff
         shuffler_settings = get_settings("org.ubuntubudgie.windowshuffler");
         shuffler_settings.changed.connect(update_settings);
         update_settings();

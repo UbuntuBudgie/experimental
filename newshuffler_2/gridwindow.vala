@@ -47,7 +47,10 @@ using Gdk.X11;
 // N.B act on shift press -> update? No.
 // todo: gsettings gui_controlsgrid true/false
 // todo: gsettings max cols/rows 1-10
-// create settings
+// todo: create settings
+// todo: exclude gridwindow from tile_active, jump and til_all
+
+// todo? wait for shadewindow -> window activate in gridwindow from signal?
 
 
 namespace GridWindowSection {
@@ -549,15 +552,14 @@ namespace GridWindowSection {
         */
         setup_client();
         Gtk.init(ref args);
-        FileMonitor monitor;
         wnckscr = Wnck.Screen.get_default();
         wnckscr.force_update();
         // monitoring files / dirs
+        FileMonitor monitor;
         string user = Environment.get_user_name();
         File gridtrigger = File.new_for_path(
             "/tmp/".concat(user, "_gridtrigger")
         );
-        
         try {
             monitor = gridtrigger.monitor(FileMonitorFlags.NONE, null);
             monitor.changed.connect(actonfile);
