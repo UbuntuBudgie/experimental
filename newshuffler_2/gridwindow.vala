@@ -41,16 +41,21 @@ using Gdk.X11;
 / on leave, reset to currentlycolored.
 */
 
-//valac --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
+//valac --pkg gio-2.0 --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
 // N.B. Eventually, this Gtk thread runs as a daemon, waiting to show its window.
 // N.B act on shift press -> update? No.
+// todo: gsettings gui_controlsgrid true/false
+// todo: gsettings max cols/rows 1-10
+// create settings
 
 
 namespace GridWindowSection {
 
     Wnck.Screen wnckscr;
     ShufflerInfoClient client;
+    Gtk.Window? gridgui;
+    
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -191,7 +196,6 @@ namespace GridWindowSection {
 
         private void send_to_pos (Gtk.Button b) {
             // here we send the subject window to its targeted position, using tile_active
-            // todo: grab data for command from currselected
             int index = find_buttonindex(b);
             if (index != -1 && previously_active != null && winstillexists(previously_active)) {
                 string cmd_args = manage_selection(b);
@@ -270,7 +274,6 @@ namespace GridWindowSection {
                 minx = xpos[latest_pressed];
                 miny = ypos[latest_pressed];
             }
-            // todo: also use output for setting selected (clicked) button span <- done
             manage_selected_color(n_arrcontent, minx, miny, maxx, maxy);
             return @"$minx $miny $gridcols $gridrows $w $h";
         }
@@ -533,6 +536,15 @@ namespace GridWindowSection {
         }
     }
 
+    private void actonfile(File file, File? otherfile, FileMonitorEvent event) {
+        if (event == FileMonitorEvent.CREATED) {
+            gridgui = new GridWindow();
+        }
+        else if (event == FileMonitorEvent.DELETED) {
+            gridgui.destroy();
+        }
+    }
+
     public static void main(string[] args) {
         /*
         / minimal main. eventually need to insert a signal watcher to
@@ -540,9 +552,22 @@ namespace GridWindowSection {
         */
         setup_client();
         Gtk.init(ref args);
+        FileMonitor monitor;
         wnckscr = Wnck.Screen.get_default();
         wnckscr.force_update();
-        new GridWindow();
+        // monitoring files / dirs
+        string user = Environment.get_user_name();
+        print(@"$user\n");
+        File gridtrigger = File.new_for_path(
+            "/tmp/".concat(user, "_gridtrigger")
+        );
+        
+        try {
+            monitor = gridtrigger.monitor(FileMonitorFlags.NONE, null);
+            monitor.changed.connect(actonfile);
+        }
+        catch (Error e) {
+        }
         Gtk.main();
     }
 }
