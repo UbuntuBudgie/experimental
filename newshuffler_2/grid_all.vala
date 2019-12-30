@@ -26,7 +26,7 @@ namespace GridAll {
 
     interface ShufflerInfoClient : Object {
         public abstract GLib.HashTable<string, Variant> get_winsdata () throws Error;
-        public abstract int getactivewin () throws Error;
+        //  public abstract int getactivewin () throws Error;
         public abstract HashTable<string, Variant> get_tiles (string mon, int cols, int rows) throws Error;
         public abstract void move_window (int wid, int x, int y, int width, int height) throws Error;
         public abstract int get_yshift (int w_id) throws Error;

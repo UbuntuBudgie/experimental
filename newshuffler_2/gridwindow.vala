@@ -43,14 +43,10 @@ using Gdk.X11;
 
 //valac --pkg gio-2.0 --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
-// N.B. Eventually, this Gtk thread runs as a daemon, waiting to show its window.
 // N.B act on shift press -> update? No.
 // todo: gsettings gui_controlsgrid true/false
 // todo: gsettings max cols/rows 1-10
 // todo: create settings
-// todo: exclude gridwindow from tile_active, jump and til_all
-
-// todo? wait for shadewindow -> window activate in gridwindow from signal?
 
 
 namespace GridWindowSection {
