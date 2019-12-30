@@ -7,7 +7,7 @@ using Gdk.X11;
 /*
 * ShufflerII
 * Author: Jacob Vlijm
-* Copyright © 2017-2019 Ubuntu Budgie Developers
+* Copyright © 2017-2020 Ubuntu Budgie Developers
 * Website=https://ubuntubudgie.org
 * This program is free software: you can redistribute it and/or modify it
 * under the terms of the GNU General Public License as published by the Free
@@ -37,16 +37,14 @@ using Gdk.X11;
 / on the occasion of a grid change or a change in window subject, all arrays and button colors are reset
 /
 / on hover:
-/ temporarily combine data from currselected and hovered button -> calculate min/max, set color
+/ temporarily combine data from currselected and hovered button -> calculate min/max, set color.
 / on leave, reset to currentlycolored.
 */
 
 //valac --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
 // N.B. Eventually, this Gtk thread runs as a daemon, waiting to show its window.
-// N.B. Before setting style on clicked button: check if window != null.
-// N.B. Unset selected button color on focus change (subject change) = done
-// N.B act on shift press -> update?
+// N.B act on shift press -> update? No.
 
 
 namespace GridWindowSection {
@@ -59,7 +57,7 @@ namespace GridWindowSection {
     interface ShufflerInfoClient : Object {
         public abstract int[] get_grid () throws Error;
         public abstract void set_grid (int cols, int rows) throws Error;
-        public abstract void show_tilepreview (int col, int row) throws Error;
+        public abstract void show_tilepreview (int col, int row, int width = 1, int height = 1) throws Error;
         public abstract void kill_tilepreview () throws Error;
     }
 
@@ -92,12 +90,16 @@ namespace GridWindowSection {
         string gridcss = """
         .gridmanage {
             border-radius: 3px;
+            background-color: rgb(235, 235, 235);
+            box-shadow: none;
         }
         .gridmanage:hover {
-            background-color: rgb(0, 77, 128);
+            background-color: rgb(0, 100, 148);
+            transition: 0.05s linear;
         }
         .selected {
             background-color: rgb(0, 77, 128);
+            transition: 0.05s linear;
         }
         """;
 
@@ -105,8 +107,8 @@ namespace GridWindowSection {
             this.title = "Gridwindows";
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             this.enter_notify_event.connect(showquestionmark);
-            this.key_press_event.connect(manage_keypress);
-            this.key_release_event.connect(manage_keyrelease);
+            this.key_press_event.connect(on_shiftpress);
+            this.key_release_event.connect(on_shiftrelease);
             wnckscr.active_window_changed.connect(get_subject);
             Wnck.Window? curr_active = wnckscr.get_active_window();
             if (curr_active != null) {
@@ -143,7 +145,6 @@ namespace GridWindowSection {
             setgrid();
             //add_gridcontrols();
             currselected = {};
-
             maingrid.show_all();
             this.set_decorated(false);
             this.set_keep_above(true);
@@ -173,11 +174,26 @@ namespace GridWindowSection {
             return -1;
         }
 
+        private bool winstillexists (ulong subj) {
+            /*
+            / not-so-elegant way to re-check if the subject hasn't just
+            / been closed by user. its xid still exists then
+            */
+            //GLib.List<Wnck.Window> allwins = wnckscr.get_windows();
+            foreach (Wnck.Window w in wnckscr.get_windows()) {
+                if (w.get_xid() == subj) {
+                    return true;
+                }
+            }
+            print("Oops, no window was selected!\n");
+            return false;
+        }
+
         private void send_to_pos (Gtk.Button b) {
             // here we send the subject window to its targeted position, using tile_active
             // todo: grab data for command from currselected
             int index = find_buttonindex(b);
-            if (index != -1 && previously_active != null) {
+            if (index != -1 && previously_active != null && winstillexists(previously_active)) {
                 string cmd_args = manage_selection(b);
                 // manage preview shade separately: different rules, algorithm (first make this work)
                 string cm = "/home/jacob/Desktop/experisync/newshuffler_2/tile_active ".concat(
@@ -310,8 +326,6 @@ namespace GridWindowSection {
                     }
                 }
             }
-            int ncolored = currentlycolored.length;
-            print(@"colored: $ncolored\n");
         }
 
         private void set_this_active (string wname) {
@@ -357,12 +371,10 @@ namespace GridWindowSection {
             if (old_active != previously_active) {
                 unset_colors();
                 currentlycolored = {};
-                int ncolored = currentlycolored.length;
-                print(@"colored: $ncolored\n");
             }
         }
 
-        private void setcolor_onshifthover (Gtk.Button hovered) {
+        private void setcolor_onhover (Gtk.Button hovered) {
             if (shiftispressed && currentlycolored.length == 1) {
                 int[] temporarycolored = currentlycolored;
                 temporarycolored += find_buttonindex(hovered);
@@ -380,26 +392,40 @@ namespace GridWindowSection {
                         st_gb.add_class("selected");
                     }
                 }
-                print("adding to selection:\n");
+                try {
+                    client.show_tilepreview(
+                        minx, miny, maxx - minx + 1, maxy - miny + 1
+                    );
+                }
+                catch (Error e) {
+                }
+            }
+            else {
+                int b_index = find_buttonindex(hovered);
+                int col = xpos[b_index];
+                int row = ypos[b_index];
+                try {
+                    client.show_tilepreview(col, row);
+                }
+                catch (Error e) {
+                }
             }
         }
 
-        private bool manage_keyrelease (Gdk.EventKey key) {
+        private bool on_shiftrelease (Gdk.EventKey key) {
             // to keep record of Shift state
             string released = Gdk.keyval_name(key.keyval);
             if (released.contains("Shift")) {
                 shiftispressed = false;
-                print(@"shift: $shiftispressed\n");
             }
             return false;
         }
 
-        private bool manage_keypress (Gdk.EventKey key) {
-            // to keep record of Shift state & send through if not about Shift
+        private bool on_shiftpress (Gdk.EventKey key) {
+            // to keep record of Shift state & send through if not Shift
             string pressed = Gdk.keyval_name(key.keyval);
             if (pressed.contains("Shift")) {
                 shiftispressed = true;
-                print(@"shift: $shiftispressed\n");
             }
             else {
                 managegrid(pressed);
@@ -410,20 +436,6 @@ namespace GridWindowSection {
         private bool showquestionmark () {
             // currently out of a job
             return false;
-        }
-
-        private void showpreview (Button b) {
-            // as the title sais
-            // todo: make fit for multicell, additional args
-            int bindex = find_buttonindex(b);
-            int col = xpos[bindex];
-            int row = ypos[bindex];
-            try {
-                client.show_tilepreview(col, row);
-            }
-            catch (Error e) {
-
-            }
         }
 
         private bool killpreview () {
@@ -508,8 +520,7 @@ namespace GridWindowSection {
                     buttonarr += gridbutton;
                     gridbutton.clicked.connect(send_to_pos);
                     gridbutton.enter_notify_event.connect(()=> {
-                        setcolor_onshifthover(gridbutton);
-                        showpreview(gridbutton);
+                        setcolor_onhover(gridbutton);
                         return false;
                     });
                     gridbutton.leave_notify_event.connect(()=> {

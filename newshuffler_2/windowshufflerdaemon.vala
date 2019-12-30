@@ -6,7 +6,7 @@ using Gdk;
 /*
 * ShufflerII
 * Author: Jacob Vlijm
-* Copyright © 2017-2019 Ubuntu Budgie Developers
+* Copyright © 2017-2020 Ubuntu Budgie Developers
 * Website=https://ubuntubudgie.org
 * This program is free software: you can redistribute it and/or modify it
 * under the terms of the GNU General Public License as published by the Free
@@ -39,7 +39,7 @@ namespace ShufflerEssentialInfo {
     int setcols;
     int setrows;
     bool swapgeometry;
-    Gtk.Window? showtarget = null; /////////////////////////////////////////////////////
+    Gtk.Window? showtarget = null;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -202,17 +202,12 @@ namespace ShufflerEssentialInfo {
             shuffler_settings.set_int("rows", rows);
         }
 
-           
-        ///////////////////////////////////////////////////////////////////
-         ////
-
         public void kill_tilepreview () throws Error {
-            // create window
-            // print("trying to kill\n");
+            // kill preview
             showtarget.destroy();
         }
 
-        public void show_tilepreview (int col, int row) throws Error {
+        public void show_tilepreview (int col, int row, int width = 1, int height = 1) throws Error {
             int x = 0;
             int y = 0;
             int w = 0;
@@ -227,8 +222,8 @@ namespace ShufflerEssentialInfo {
                         // remember, Gtk uses scaled numbers!
                         x = ((int)v.get_child_value(0))/scale;
                         y = ((int)v.get_child_value(1))/scale;
-                        w = ((int)v.get_child_value(2))/scale;
-                        h = ((int)v.get_child_value(3))/scale;
+                        w = width * ((int)v.get_child_value(2))/scale;
+                        h = height * ((int)v.get_child_value(3))/scale;
                         break;
                     }
                 }
@@ -236,10 +231,6 @@ namespace ShufflerEssentialInfo {
             // create window
             showtarget = new PreviewWindow(x, y, w, h);
         }
-
-
-        ////
-        ///////////////////////////////////////////////////////////////////
 
         public int get_yshift (int w_id) throws Error {
             /*
@@ -288,7 +279,7 @@ namespace ShufflerEssentialInfo {
     private void get_monitors () {
         // maintaining function
         // collect data on connected monitors: real numbers! (unscaled)
-        monitorgeo = new HashTable<string, Variant> (str_hash, str_equal); //++
+        monitorgeo = new HashTable<string, Variant> (str_hash, str_equal);
         n_monitors = gdkdisplay.get_n_monitors();
         for (int i=0; i < n_monitors; i++) {
             Gdk.Monitor newmonitor = gdkdisplay.get_monitor(i);
@@ -356,8 +347,7 @@ namespace ShufflerEssentialInfo {
         window_essentials = winsdata;
     }
 
-    ///////////////////////////////////////////////////////////////////
-    ////
+
     private class PreviewWindow: Gtk.Window {
 
         public PreviewWindow (int x, int y, int w, int h) {
@@ -378,10 +368,6 @@ namespace ShufflerEssentialInfo {
         }
     }
 
-    //  private void keep_active() {
-    //      print("keep active\n");
-    //  }
-
     private bool on_draw (Widget da, Context ctx) {
         // needs to be connected to transparency settings change
         ctx.set_source_rgba(0.0, 0.30, 0.50, 0.40);
@@ -390,8 +376,6 @@ namespace ShufflerEssentialInfo {
         ctx.set_operator(Cairo.Operator.OVER);
         return false;
     }
-    ////
-    ///////////////////////////////////////////////////////////////////
 
     private GLib.Settings get_settings (string path) {
         // make settings
