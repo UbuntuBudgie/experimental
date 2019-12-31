@@ -53,11 +53,12 @@ namespace TileActive {
             bool guiruns = client.check_ifguiruns();
             int activewin = client.getactivewin();
             string lastarg = args[args.length - 1];
+            bool surpass_blocking = lastarg.contains("id=");
             if (lastarg.contains("id=")) {
                 activewin = int.parse(lastarg.split("=")[1]);
             }
 
-            if (args.length >= 7 && !guiruns) {
+            if (args.length >= 7 && (!guiruns || surpass_blocking)) {
                 int ntiles_x = int.parse(args[5]);
                 int ntiles_y = int.parse(args[6]);
                 if (
@@ -71,7 +72,7 @@ namespace TileActive {
                 }
             }
 
-            else if (args.length >= 5 && !guiruns) {
+            else if (args.length >= 5 && (!guiruns || surpass_blocking)) {
                 if (
                     int.parse(args[1]) < int.parse(args[3]) &&
                     int.parse(args[2]) < int.parse(args[4])
@@ -83,7 +84,7 @@ namespace TileActive {
                 }
             }
 
-            else if (args.length >= 2 && !guiruns) {
+            else if (args.length >= 2 && (!guiruns || surpass_blocking)) {
                 string arg = (args[1]);
                 if (arg == "maximize") {
                     // ok, for the sake of simplicity, let's allow one internal action
