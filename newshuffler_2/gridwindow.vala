@@ -78,7 +78,6 @@ namespace GridWindowSection {
     }
 
     public class GridWindow: Gtk.Window {
-        //  Gdk.X11.Window timestamp_window;
         bool shiftispressed;
         int[] currselected; // max 2, only corners of selection
         int gridcols;
@@ -121,11 +120,6 @@ namespace GridWindowSection {
             int[] colsrows = get_setcolsrows();
             gridcols = colsrows[0];
             gridrows = colsrows[1];
-            // X11 stuff, non-dynamic part
-            unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
-            unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
-            Gdk.X11.Display display = Gdk.X11.Display.lookup_for_xdisplay(xdisplay);
-            timestamp_window = new Gdk.X11.Window.foreign_for_display(display, xwindow);
             // whole bunch of styling
             var screen = this.get_screen();
             this.set_app_paintable(true);
