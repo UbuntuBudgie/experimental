@@ -200,7 +200,6 @@ namespace GridWindowSection {
                 // manage preview shade separately: different rules, algorithm (first make this work)
                 string cm = "/home/jacob/Desktop/experisync_edit3/newshuffler_2/tile_active ".concat(
                     cmd_args, " id=", @"$previously_active");
-                print(@"$cm\n");
                 try {
                     Process.spawn_command_line_async(cm);
                 }

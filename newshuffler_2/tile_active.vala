@@ -63,13 +63,10 @@ namespace TileActive {
             int activewin;
             string lastarg = args[args.length - 1];
             bool surpass_blocking = lastarg.contains("id=");
-            print("tile active general\n");
             if (surpass_blocking) {
-                print("tile active from arg\n");
                 activewin = int.parse(lastarg.split("=")[1]);
             }
             else {
-                print("tile active from active\n");
                 activewin = client.getactivewin();
             }
             bool run = (!guiruns || surpass_blocking);

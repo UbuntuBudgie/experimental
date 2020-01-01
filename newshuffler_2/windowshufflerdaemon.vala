@@ -50,7 +50,6 @@ namespace ShufflerEssentialInfo {
     public class ShufflerInfoServer : Object {
 
         public int getactivewin () throws Error {
-            print("the right file\n");
             // get active window id
             int activewin = -1;
             Wnck.Window? curr_activewin = wnckscr.get_active_window();
@@ -62,7 +61,6 @@ namespace ShufflerEssentialInfo {
                         return candidate;
                     }
                 }
-
             }
             return activewin;
         }
@@ -423,11 +421,9 @@ namespace ShufflerEssentialInfo {
     private void actonfile(File file, File? otherfile, FileMonitorEvent event) {
         if (event == FileMonitorEvent.CREATED) {
             gridguiruns = true;
-            print("gridgui runs\n");
         }
         else if (event == FileMonitorEvent.DELETED) {
             gridguiruns = false;
-            print("gridgui stopped\n");
         }
     }
 
