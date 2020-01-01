@@ -54,6 +54,7 @@ namespace GridWindowSection {
     Wnck.Screen wnckscr;
     ShufflerInfoClient client;
     Gtk.Window? gridgui;
+    Gdk.X11.Window timestamp_window;
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -77,7 +78,7 @@ namespace GridWindowSection {
     }
 
     public class GridWindow: Gtk.Window {
-        Gdk.X11.Window timestamp_window;
+        //  Gdk.X11.Window timestamp_window;
         bool shiftispressed;
         int[] currselected; // max 2, only corners of selection
         int gridcols;
@@ -108,7 +109,6 @@ namespace GridWindowSection {
 
         public GridWindow() {
             this.title = "Gridwindows";
-            this.set_focus_on_map(true);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             this.enter_notify_event.connect(showquestionmark);
             this.key_press_event.connect(on_shiftpress);
@@ -183,7 +183,6 @@ namespace GridWindowSection {
             / not-so-elegant way to re-check if the subject hasn't just
             / been closed by user. its xid still exists then
             */
-            //GLib.List<Wnck.Window> allwins = wnckscr.get_windows();
             foreach (Wnck.Window w in wnckscr.get_windows()) {
                 if (w.get_xid() == subj) {
                     return true;
@@ -330,21 +329,6 @@ namespace GridWindowSection {
             }
         }
 
-        private void set_this_active (string wname) {
-            // (re-)set gridwindow active on focus out
-            foreach (Wnck.Window w in wnckscr.get_windows()) {
-                if (w.get_name() == wname) {
-                    w.activate(get_now());
-                    break;
-                }
-            }
-        }
-
-        private uint get_now () {
-            // get timestamp
-            return Gdk.X11.get_server_time(timestamp_window);
-        }
-
         private void unset_colors () {
             foreach (Gtk.Button b in buttonarr) {
                 var st_gb = b.get_style_context();
@@ -366,7 +350,7 @@ namespace GridWindowSection {
                     ) {
                     previously_active = curr_active.get_xid();
                 }
-                set_this_active("Gridwindows");
+                makesure_offocus();
             }
             // unset colors on subject change
             if (old_active != previously_active) {
@@ -542,6 +526,19 @@ namespace GridWindowSection {
         }
     }
 
+    private uint get_now () {
+        // get timestamp
+        return Gdk.X11.get_server_time(timestamp_window);
+    }
+
+    private void makesure_offocus () {
+        foreach (Wnck.Window w in wnckscr.get_windows()) {
+            if (w.get_name() == "Gridwindows") {
+                w.activate(get_now());
+            }
+        }
+    }
+
     public static void main(string[] args) {
         /*
         / minimal main. eventually need to insert a signal watcher to
@@ -551,6 +548,12 @@ namespace GridWindowSection {
         Gtk.init(ref args);
         wnckscr = Wnck.Screen.get_default();
         wnckscr.force_update();
+        wnckscr.window_opened.connect(makesure_offocus);
+        // X11 stuff, non-dynamic part
+        unowned X.Window xwindow = Gdk.X11.get_default_root_xwindow();
+        unowned X.Display xdisplay = Gdk.X11.get_default_xdisplay();
+        Gdk.X11.Display display = Gdk.X11.Display.lookup_for_xdisplay(xdisplay);
+        timestamp_window = new Gdk.X11.Window.foreign_for_display(display, xwindow);
         // monitoring files / dirs
         FileMonitor monitor;
         string user = Environment.get_user_name();
