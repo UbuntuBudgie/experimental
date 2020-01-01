@@ -127,10 +127,11 @@ namespace GridAll {
             foreach (string k in wins.get_keys()) {
                 Variant got_data = wins[k];
                 // on current workspace?
+                bool exclude = (string)got_data.get_child_value(0) == "Gridwindows";
                 bool onthisws = (string)got_data.get_child_value(1) == "true";
                 // on active monitor?
                 bool onthismon = (string)got_data.get_child_value(2) == mon_name;
-                if (onthisws && onthismon) {
+                if (onthisws && onthismon && !exclude) { //////////////////////////////////////////
                     id_array += k;
                 }
             }
@@ -191,7 +192,6 @@ namespace GridAll {
             string[] arglist = {
                 "--cols", "--rows", "--left", "--right", "--top", "--bottom"
             };
-            // todo: get cols & rows from dconf -or- args (secundary) ///////////////////////////////////////////////
             int[] passedargs = {grid[0], grid[1], 0, 0, 0, 0};
 
             int i = 0;
