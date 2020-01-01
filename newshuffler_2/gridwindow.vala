@@ -108,6 +108,7 @@ namespace GridWindowSection {
 
         public GridWindow() {
             this.title = "Gridwindows";
+            this.set_focus_on_map(true);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             this.enter_notify_event.connect(showquestionmark);
             this.key_press_event.connect(on_shiftpress);
