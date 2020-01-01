@@ -31,6 +31,9 @@
 
 namespace TileActive {
 
+    GLib.HashTable<string, Variant> windata;
+    GLib.List<unowned string> windata_keys;
+
     ShufflerInfoClient? client;
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
 
@@ -50,49 +53,72 @@ namespace TileActive {
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
+
+            // get data, geo on windows
+            windata = client.get_winsdata();
+            windata_keys = windata.get_keys();
+            // if guiruns, only act on window from args
             bool guiruns = client.check_ifguiruns();
-            int activewin = client.getactivewin();
+            // check if we should use window from set args
+            int activewin;
             string lastarg = args[args.length - 1];
             bool surpass_blocking = lastarg.contains("id=");
-            if (lastarg.contains("id=")) {
+            print("tile active general\n");
+            if (surpass_blocking) {
+                print("tile active from arg\n");
                 activewin = int.parse(lastarg.split("=")[1]);
             }
-
-            if (args.length >= 7 && (!guiruns || surpass_blocking)) {
-                int ntiles_x = int.parse(args[5]);
-                int ntiles_y = int.parse(args[6]);
-                if (
-                    int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
-                    int.parse(args[2]) + ntiles_y <= int.parse(args[4])
-                ) {
-                    grid_window(args, ntiles_x, ntiles_y, activewin);
-                }
-                else {
-                    print("size exceeds monitor size\n");
+            else {
+                print("tile active from active\n");
+                activewin = client.getactivewin();
+            }
+            bool run = (!guiruns || surpass_blocking);
+            // need to check validity from client, since we possibly
+            // get the window as xid
+            bool winisvalid = false;
+            foreach (string k in windata_keys) {
+                if (k == @"$activewin") {
+                    winisvalid = true;
                 }
             }
+            if (run && winisvalid) {
+                if (args.length >= 7) {
+                    int ntiles_x = int.parse(args[5]);
+                    int ntiles_y = int.parse(args[6]);
+                    if (
+                        int.parse(args[1]) + ntiles_x <= int.parse(args[3])  &&
+                        int.parse(args[2]) + ntiles_y <= int.parse(args[4])
+                    ) {
+                        grid_window(args, ntiles_x, ntiles_y, activewin);
+                    }
+                    else {
+                        print("size exceeds monitor size\n");
+                    }
+                }
 
-            else if (args.length >= 5 && (!guiruns || surpass_blocking)) {
-                if (
-                    int.parse(args[1]) < int.parse(args[3]) &&
-                    int.parse(args[2]) < int.parse(args[4])
-                ) {
-                    grid_window(args, 1, 1, activewin);
+                else if (args.length >= 5) {
+                    if (
+                        int.parse(args[1]) < int.parse(args[3]) &&
+                        int.parse(args[2]) < int.parse(args[4])
+                    ) {
+                        grid_window(args, 1, 1, activewin);
+                    }
+                    else {
+                        print("position is outside monitor\n");
+                    }
                 }
-                else {
-                    print("position is outside monitor\n");
-                }
-            }
 
-            else if (args.length >= 2 && (!guiruns || surpass_blocking)) {
-                string arg = (args[1]);
-                if (arg == "maximize") {
-                    // ok, for the sake of simplicity, let's allow one internal action
-                    int win_id = client.getactivewin();
-                    client.toggle_maximize(win_id);
-                }
-                else {
-                    print(@"Unknown argument: $arg\n");
+                else if (args.length >= 2) {
+                    string arg = (args[1]);
+                    if (arg == "maximize") {
+                        // ok, for the sake of simplicity,
+                        // let's allow one internal action
+                        int win_id = client.getactivewin();
+                        client.toggle_maximize(win_id);
+                    }
+                    else {
+                        print(@"Unknown argument: $arg\n");
+                    }
                 }
             }
         }
@@ -101,13 +127,11 @@ namespace TileActive {
         }
     }
 
-    void grid_window (string[] args, int ntiles_x, int ntiles_y, int activewin) {
+    void grid_window (
+        string[] args, int ntiles_x, int ntiles_y, int activewin
+        ) {
         // fetch info from daemon, do the job with it
         try {
-
-            // get data, geo on windows
-            GLib.HashTable<string, Variant> windata = client.get_winsdata();
-            GLib.List<unowned string> windata_keys = windata.get_keys();
             // vars
             int yshift = 0;
             string winsmonitor = "";
@@ -134,7 +158,8 @@ namespace TileActive {
                     int tile_wdth = orig_width * ntiles_x;
                     int tile_hght = orig_height * ntiles_y;
                     client.move_window(
-                        activewin, tile_x, tile_y - yshift, tile_wdth, tile_hght
+                        activewin, tile_x, tile_y - yshift,
+                        tile_wdth, tile_hght
                     );
                 }
             }

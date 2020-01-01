@@ -50,14 +50,19 @@ namespace ShufflerEssentialInfo {
     public class ShufflerInfoServer : Object {
 
         public int getactivewin () throws Error {
+            print("the right file\n");
             // get active window id
-            int activewin;
+            int activewin = -1;
             Wnck.Window? curr_activewin = wnckscr.get_active_window();
             if (curr_activewin != null) {
-                activewin = (int)curr_activewin.get_xid();
-            }
-            else {
-                activewin = -1;
+                int candidate = (int)curr_activewin.get_xid();
+                // do the validity test
+                foreach (string k in window_essentials.get_keys()) {
+                    if (k == @"$candidate") {
+                        return candidate;
+                    }
+                }
+
             }
             return activewin;
         }

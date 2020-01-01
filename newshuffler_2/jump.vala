@@ -105,7 +105,8 @@ namespace JumpActive {
             HashTable<string, Variant> anchordata = client.get_tiles(activemon_name, cols, rows);
             // get active win
             int activewin = client.getactivewin();
-            // if acyive exists....
+            // if active exists....
+            // add validity test!...nope, made daemon say "-1" on invalid windows
             if (activewin != -1 && !guiruns) {
                 // calculate target
                 string xs = (string)anchordata["x_anchors"];
