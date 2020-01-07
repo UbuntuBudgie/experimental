@@ -25,10 +25,6 @@
 / without --grid, dconf val is used
 */
 
-// TODO! exclude grid window from jumping. Get subject from grid window GUI?
-// Or simply do not run while grid window runs?
-
-
 namespace JumpActive {
 
     [DBus (name = "org.UbuntuBudgie.ShufflerInfoDaemon")]
@@ -92,7 +88,6 @@ namespace JumpActive {
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
             bool guiruns = client.check_ifguiruns();
-            print(@"guiruns: $guiruns\n");
             int[] grid = client.get_grid();
             // cols/rows is read from dconf, or overruled by args:
             int cols = grid[0];

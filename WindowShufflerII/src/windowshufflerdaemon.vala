@@ -46,11 +46,6 @@ namespace ShufflerEssentialInfo {
 
     public class ShufflerInfoServer : Object {
 
-
-        ///////////////////////////////////////////////////////////////////////////////////////////////////// split please
-
-
-        // make it check id from input? -> separate as id-ckecker? done
         public int getactivewin () throws Error {
             // get active window id
             Wnck.Window? curr_activewin = wnckscr.get_active_window();
@@ -70,8 +65,6 @@ namespace ShufflerEssentialInfo {
             }
             return -1;
         }
-
-        /////////////////////////////////////////////////////////////////////////////////////////////////////
 
         public bool check_ifguiruns () throws Error {
             return gridguiruns;
@@ -385,7 +378,6 @@ namespace ShufflerEssentialInfo {
             this.resize(w, h);
             this.move(x, y);
             this.set_focus_on_map(true);
-            //  wnckscr.active_window_changed.connect(keep_active);
             this.show_all();
         }
     }

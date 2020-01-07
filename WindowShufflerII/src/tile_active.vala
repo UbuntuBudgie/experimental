@@ -54,9 +54,6 @@ namespace TileActive {
                 BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
                 ("/org/ubuntubudgie/shufflerinfodaemon")
             );
-
-            //print("niet weer aub\n");
-
             // get data, geo on windows
             windata = client.get_winsdata();
             windata_keys = windata.get_keys();

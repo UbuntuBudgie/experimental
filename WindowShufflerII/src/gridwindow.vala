@@ -41,7 +41,7 @@ using Gdk.X11;
 / on leave, reset to currentlycolored.
 */
 
-//valac --pkg gio-2.0 --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
+// valac --pkg gio-2.0 --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
 // N.B act on shift press -> update? No.
 // todo: gsettings gui_controlsgrid true/false
@@ -108,6 +108,7 @@ namespace GridWindowSection {
 
         public GridWindow() {
             this.title = "Gridwindows";
+            this.set_skip_taskbar_hint(true);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             this.enter_notify_event.connect(showquestionmark);
             this.key_press_event.connect(on_shiftpress);
@@ -194,7 +195,6 @@ namespace GridWindowSection {
                 // manage preview shade separately: different rules, algorithm (first make this work)
                 string cm = "/home/jacob/Desktop/experimental/WindowShufflerII/src/tile_active ".concat(
                     cmd_args, " id=", @"$previously_active");
-                print(@"$cm\n");
                 try {
                     Process.spawn_command_line_async(cm);
                 }
