@@ -29,14 +29,13 @@ namespace ShufflerControls {
 
         SpinButton columns_spin;
         SpinButton rows_spin;
-        string default_folder;
-        Button set_customtwalls;
         ToggleButton toggle_gui;
         ToggleButton toggle_shuffler;
         ToggleButton toggle_swapgeo;
-        string runinstruction;
+        //  string runinstruction;
         Label expl_label;
         Gtk.Grid supergrid;
+        Stack controlwin_stack;
 
         public ControlsWindow () {
 
@@ -45,7 +44,6 @@ namespace ShufflerControls {
             string daemonexpl = "Enable tiling and window jump shortcuts" + ":";
             string guiexpl = "Enable grid tiling GUI shortcut";
             string swapgeexpl = "When using junp shortcuts, swap window geometry if a window moves to an existing window's position";
-            string colsexpl = "Number of grid colums (for GUI, grid-all- and jump shortcuts)";
             string default_expl = "Move the mouse over a button for an explanation";
             string cols_expl = "Number of grid columns, used by GUI grid, jump and tile-all shortcuts";
             string rows_expl = "Number of grid rows, used by GUI grid, jump and tile-all shortcuts";
@@ -62,7 +60,7 @@ namespace ShufflerControls {
             string tileall = "Super + Alt_L + A".concat("\t", "Tile all windows to grid");
             // Jump
             string jump_header = "Shortcuts for jumping to the nearest grid cell" + ":";
-            string jumpleft = "Super + Alt_L + ←".concat("\t\t", "Jump left"); // split for translation!
+            string jumpleft = "Super + Alt_L + ←".concat("\t\t", "Jump left");
             string jumpright = "Super + Alt_L + →".concat("\t\t", "Jump right");
             string jumpup = "Super + Alt_L + ↑".concat("\t\t", "Jump up");
             string jumpdown = "Super + Alt_L + ↓".concat("\t\t", "Jump down");
@@ -103,7 +101,7 @@ namespace ShufflerControls {
             // lay out essential window elements
             supergrid = new Gtk.Grid();
             this.add(supergrid);
-            var controlwin_stack = new Stack();
+            controlwin_stack = new Stack();
             controlwin_stack.set_transition_type(
                 Gtk.StackTransitionType.SLIDE_LEFT_RIGHT
             );
@@ -119,39 +117,32 @@ namespace ShufflerControls {
             // SUPERGRID
             supergrid.attach(new Label("\n"), 0, 2, 1, 1);
             set_margins(supergrid);
-            int buttonwidth = 100;
+            make_headerbutton ("Settings", "stackbuttonleft", 1, "settings");
+            make_headerbutton ("Tiling", "stackbuttons", 2, "qhshortcuts");
+            make_headerbutton ("Jump", "stackbuttons", 3, "jumpshortcuts");
+            make_headerbutton ("GUI grid", "stackbuttonright", 4, "guigrid");
 
-            var settingsbutton = new Gtk.Button.with_label("Settings");
-            set_buttonstyle(settingsbutton, "stackbuttonleft");
-            supergrid.attach(settingsbutton, 1, 1, 1, 1);
-            settingsbutton.set_size_request(buttonwidth, 10);
-            settingsbutton.clicked.connect(() => {
-                controlwin_stack.set_visible_child_name("settings");
-            });
-
-            var qtilebutton = new Gtk.Button.with_label("Tiling");
-            set_buttonstyle(qtilebutton, "stackbuttons");
-            supergrid.attach(qtilebutton, 2, 1, 1, 1);
-            qtilebutton.set_size_request(buttonwidth, 10);
-            qtilebutton.clicked.connect(() => {
-                controlwin_stack.set_visible_child_name("qhshortcuts");
-            });
-
-            var jumpbutton = new Gtk.Button.with_label("Jump");
-            set_buttonstyle(jumpbutton, "stackbuttons");
-            supergrid.attach(jumpbutton, 3, 1, 1, 1);
-            jumpbutton.set_size_request(buttonwidth, 10);
-            jumpbutton.clicked.connect(() => {
-                controlwin_stack.set_visible_child_name("jumpshortcuts");
-            });
-
-            var gridbutton = new Gtk.Button.with_label("GUI grid");
-            set_buttonstyle(gridbutton, "stackbuttonright");
-            supergrid.attach(gridbutton, 4, 1, 1, 1);
-            gridbutton.set_size_request(buttonwidth, 10);
-            gridbutton.clicked.connect(() => {
-                controlwin_stack.set_visible_child_name("guigrid");
-            });
+            //  var qtilebutton = new Gtk.Button.with_label("Tiling");
+            //  set_buttonstyle(qtilebutton, "stackbuttons");
+            //  supergrid.attach(qtilebutton, 2, 1, 1, 1);
+            //  qtilebutton.set_size_request(buttonwidth, 10);
+            //  qtilebutton.clicked.connect(() => {
+            //      controlwin_stack.set_visible_child_name("qhshortcuts");
+            //  });
+            //  var jumpbutton = new Gtk.Button.with_label("Jump");
+            //  set_buttonstyle(jumpbutton, "stackbuttons");
+            //  supergrid.attach(jumpbutton, 3, 1, 1, 1);
+            //  jumpbutton.set_size_request(buttonwidth, 10);
+            //  jumpbutton.clicked.connect(() => {
+            //      controlwin_stack.set_visible_child_name("jumpshortcuts");
+            //  });
+            //  var gridbutton = new Gtk.Button.with_label("GUI grid");
+            //  set_buttonstyle(gridbutton, "stackbuttonright");
+            //  supergrid.attach(gridbutton, 4, 1, 1, 1);
+            //  gridbutton.set_size_request(buttonwidth, 10);
+            //  gridbutton.clicked.connect(() => {
+            //      controlwin_stack.set_visible_child_name("guigrid");
+            //  });
 
             // STACK-PAGES
             // 1. settingsgrid - checkbuttons
@@ -171,7 +162,6 @@ namespace ShufflerControls {
             settingsgrid.attach(toggle_swapgeo, 1, 4, 1, 1);
             var empty = new Label("");
             settingsgrid.attach(empty, 1, 12, 1, 1);
-
             // settingsgrid - spinbuttonsection
             var colslabel = new Label("\n" + "Grid GUI: columns & rows" + "\n");
             colslabel.set_xalign(0);
@@ -188,13 +178,11 @@ namespace ShufflerControls {
             geogrid.attach(rows_label, 0, 1, 1, 1);
             rows_spin = new Gtk.SpinButton.with_range(1, 10, 1);
             geogrid.attach(rows_spin, 1, 1, 1, 1);
-            
             // settingsgrid - explanation section
             var empty2 = new Label("");
             geogrid.attach(empty2, 1, 20, 1, 1);
             Gtk.Label expl_vertspace = new Gtk.Label("\n\n\n\n");
             settingsgrid.attach(expl_vertspace, 0, 21, 1, 1);
-
             // settingsgrid - explanation section & css provider
             Gdk.Screen screen = this.get_screen();
             Gtk.CssProvider css_provider = new Gtk.CssProvider();
@@ -206,7 +194,7 @@ namespace ShufflerControls {
             }
             catch (Error e) {
             }
-            //
+
             expl_label = new Gtk.Label(default_expl);
             expl_label.set_xalign(0);
             expl_label.set_line_wrap(true);
@@ -222,18 +210,7 @@ namespace ShufflerControls {
             supergrid.attach(okbox, 2, 99, 4, 1);
             ok_button.clicked.connect(Gtk.main_quit);
             this.destroy.connect(Gtk.main_quit);
-            columns_spin.value_changed.connect(set_grid);
-            rows_spin.value_changed.connect(set_grid);
 
-            // fetch toggle_gui
-            //  toggle_gui.set_active(
-            //      wallstreet_settings.get_boolean("random")
-            //  );
-            // fetch toggle_shuffler
-            //  toggle_shuffler.set_active(
-            //      wallstreet_settings.get_boolean("lockscreensync")
-            //  );
-            ///////////////////////
             toggle_shuffler.enter_notify_event.connect(() => {
                 expl_label.set_text(daemonexpl);
                 return false;
@@ -242,7 +219,6 @@ namespace ShufflerControls {
                 expl_label.set_text(default_expl);
                 return false;
             });
-            ///////////////////////
             toggle_gui.enter_notify_event.connect(() => {
                 expl_label.set_text(guiexpl);
                 return false;
@@ -251,7 +227,6 @@ namespace ShufflerControls {
                 expl_label.set_text(default_expl);
                 return false;
             });
-            ///////////////////////
             toggle_swapgeo.enter_notify_event.connect(() => {
                 expl_label.set_text(swapgeexpl);
                 return false;
@@ -260,7 +235,6 @@ namespace ShufflerControls {
                 expl_label.set_text(default_expl);
                 return false;
             });
-            ///////////////////////
             columns_spin.enter_notify_event.connect(() => {
                 expl_label.set_text(cols_expl);
                 return false;
@@ -269,9 +243,8 @@ namespace ShufflerControls {
                 expl_label.set_text(default_expl);
                 return false;
             });
-            ///////////////////////
             rows_spin.enter_notify_event.connect(() => {
-                expl_label.set_text(cols_expl);
+                expl_label.set_text(rows_expl);
                 return false;
             });
             rows_spin.leave_notify_event.connect(() => {
@@ -343,7 +316,11 @@ namespace ShufflerControls {
             supergrid.attach(controlwin_stack, 1, 3, 4, 1);
             controlwin_stack.set_visible_child_name("settings");
 
+            // get stuff
+            get_currsettings();
             // connect stuff
+            columns_spin.value_changed.connect(set_grid);
+            rows_spin.value_changed.connect(set_grid);
             toggle_shuffler.toggled.connect(manage_boolean);
             toggle_gui.toggled.connect(manage_boolean);
             toggle_swapgeo.toggled.connect(manage_boolean);
@@ -351,8 +328,15 @@ namespace ShufflerControls {
             this.show_all();
         }
 
-        private void set_hoveractions(Gtk.Button b) {
-            print("widget works\n");
+        private Gtk.Button make_headerbutton (string name, string style, int pos, string target) {
+            var stackbutton = new Gtk.Button.with_label(name);
+            set_buttonstyle(stackbutton, style);
+            supergrid.attach(stackbutton, pos, 1, 1, 1);
+            stackbutton.set_size_request(100, 10);
+            stackbutton.clicked.connect(() => {
+                controlwin_stack.set_visible_child_name(target);
+            });
+            return stackbutton;
         }
 
         /**
@@ -360,7 +344,6 @@ namespace ShufflerControls {
          * according to the locale
          */
         private void set_buttonstyle (Gtk.Button b, string style) {
-            print("setting style\n");
             var sct = b.get_style_context();
             sct.add_class(style);
         }
@@ -370,13 +353,8 @@ namespace ShufflerControls {
             sct.add_class(style);
         }
 
-        private bool test_hover (string str) {
-            print("hover works\n");
-            expl_label.set_text(str);
-            return false;
-        }
         public void initialiseLocaleLanguageSupport() {
-            // Initialize gettext
+            //  Initialize gettext
             //  GLib.Intl.setlocale(GLib.LocaleCategory.ALL, "");
             //  GLib.Intl.bindtextdomain(
             //      Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR
@@ -385,6 +363,18 @@ namespace ShufflerControls {
             //      Config.GETTEXT_PACKAGE, "UTF-8"
             //  );
             //  GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
+        }
+
+        private void get_currsettings () {
+            bool currentlyactive = shuffler_settings.get_boolean("runshuffler");
+            toggle_shuffler.set_active(currentlyactive);
+            // ok, slight repetition, but who cares
+            toggle_gui.set_sensitive(currentlyactive);
+            toggle_swapgeo.set_sensitive(currentlyactive);
+            toggle_gui.set_active(shuffler_settings.get_boolean("runshufflergui"));
+            toggle_swapgeo.set_active(shuffler_settings.get_boolean("swapgeometry"));
+            columns_spin.set_value(shuffler_settings.get_int("cols"));
+            rows_spin.set_value(shuffler_settings.get_int("rows"));
         }
 
         private void manage_boolean (ToggleButton button) {
@@ -404,7 +394,6 @@ namespace ShufflerControls {
                 }
                 n += 1;
             }
-            print(@"$match, $newval\n");
             shuffler_settings.set_boolean(match, newval);
             if (n == 1) {
                 if (!newval) {
@@ -415,47 +404,49 @@ namespace ShufflerControls {
             }
         }
 
-        private void check_firstrunwarning() {
-            /*
-            / 0.1 dec after gsettings change check if process is running
-            / if not -> show message in label
-            */
-            GLib.Timeout.add(100, () => {
-                bool runs = processruns("/budgie-wallstreet/wallstreet");
-                if (!runs) {
-                    toggle_shuffler.set_label(
-                        runinstruction + "\t" +
-                            "Please log out/in to initialize"
-                         // -lang
-                    );
-                }
-                return false;
-            });
-        }
+        // needed?
+        //  private void check_firstrunwarning() {
+        //      /*
+        //      / 0.1 dec after gsettings change check if process is running
+        //      / if not -> show message in label
+        //      */
+        //      GLib.Timeout.add(100, () => {
+        //          bool runs = processruns("/budgie-wallstreet/wallstreet");
+        //          if (!runs) {
+        //              toggle_shuffler.set_label(
+        //                  runinstruction + "\t" +
+        //                      "Please log out/in to initialize"
+        //                   // -lang
+        //              );
+        //          }
+        //          return false;
+        //      });
+        //  }
 
-        private bool processruns (string application) {
-            string cmd = "pgrep -f " + application;
-            string output;
-            try {
-                GLib.Process.spawn_command_line_sync(cmd, out output);
-                if (output != "") {
-                    // remove trailing \n, does not count
-                    string[] pids = output[0:output.length-1].split("\n");
-                    int n_pids = pids.length;
-                    if (n_pids >= 2) {
-                        return true;
-                    }
-                    else {
-                        return false;
-                    }
-                }
-            }
-            /* on an (unlikely to happen) exception, show the message */
-            catch (SpawnError e) {
-                return false;
-            }
-            return false;
-        }
+        // needed?
+        //  private bool processruns (string application) {
+        //      string cmd = "pgrep -f " + application;
+        //      string output;
+        //      try {
+        //          GLib.Process.spawn_command_line_sync(cmd, out output);
+        //          if (output != "") {
+        //              // remove trailing \n, does not count
+        //              string[] pids = output[0:output.length-1].split("\n");
+        //              int n_pids = pids.length;
+        //              if (n_pids >= 2) {
+        //                  return true;
+        //              }
+        //              else {
+        //                  return false;
+        //              }
+        //          }
+        //      }
+        //      /* on an (unlikely to happen) exception, show the message */
+        //      catch (SpawnError e) {
+        //          return false;
+        //      }
+        //      return false;
+        //  }
 
 
         private void set_grid (SpinButton b) {
