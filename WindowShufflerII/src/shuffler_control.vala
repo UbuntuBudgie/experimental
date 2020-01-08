@@ -1,7 +1,7 @@
 using Gtk;
 using Math;
 
-// valac -X -lm --pkg gtk+-3.0
+// valac --pkg gtk+-3.0
 
 /*
 Budgie Window Shuffler II

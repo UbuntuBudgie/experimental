@@ -14,7 +14,7 @@
 * <https://www.gnu.org/licenses/>.
 */
 
-// valac --pkg gio-2.0 --pkg gtk+-3.0
+// valac --pkg gio-2.0
 
 
 /*
