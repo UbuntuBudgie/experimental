@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Name=Window Shuffler Control
+_Name=Window Shuffler Control
 Exec=PATH_LOC/shuffler_control
 Icon=shuffler-control
 Categories=Utility;
