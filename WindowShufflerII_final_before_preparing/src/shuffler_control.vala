@@ -40,36 +40,36 @@ namespace ShufflerControls {
 
             // STRINGS & THINGS
             // settings
-            string daemonexpl = (_("Enable tiling and window jump shortcuts")) + ":";
-            string guiexpl = (_("Enable grid tiling GUI shortcut"));
-            string swapgeexpl = (_("When using junp shortcuts, swap window geometry if a window moves to an existing window's position"));
-            string default_expl = (_("Move the mouse over a button for an explanation"));
-            string cols_expl = (_("Number of grid columns, used by GUI grid, jump and tile-all shortcuts"));
-            string rows_expl = (_("Number of grid rows, used by GUI grid, jump and tile-all shortcuts"));
+            string daemonexpl = "Enable tiling and window jump shortcuts" + ":";
+            string guiexpl = "Enable grid tiling GUI shortcut";
+            string swapgeexpl = "When using junp shortcuts, swap window geometry if a window moves to an existing window's position";
+            string default_expl = "Move the mouse over a button for an explanation";
+            string cols_expl = "Number of grid columns, used by GUI grid, jump and tile-all shortcuts";
+            string rows_expl = "Number of grid rows, used by GUI grid, jump and tile-all shortcuts";
             // tiling
-            string qtiling_header = (_("Shortcuts for quarter and half tiling & tiling to grid")) +":";
-            string topleft = "Ctrl-7".concat("\t\t\t", (_("Top-left")));
-            string topright = "Ctrl-9".concat("\t\t\t", (_("Top-right")));
-            string bottomright = "Ctrl-3".concat("\t\t\t", (_("Bottom-right")));
-            string bottomleft = "Ctrl-1".concat("\t\t\t", (_("Top-left")));
-            string lefthalf = "Ctrl-4".concat("\t\t\t", (_("Left-half")));
-            string tophalf = "Ctrl-8".concat("\t\t\t", (_("Top-half")));
-            string rightthalf = "Ctrl-6".concat("\t\t\t", (_("Right-half")));
-            string bottomhalf = "Ctrl-2".concat("\t\t\t", (_("Bottom-half")));
-            string tileall = "Super + Alt_L + A".concat("\t", (_("Tile all windows to grid")));
+            string qtiling_header = "Shortcuts for quarter and half tiling & tiling to grid" +":";
+            string topleft = "Ctrl-7".concat("\t\t\t", "Top-left");
+            string topright = "Ctrl-9".concat("\t\t\t", "Top-right");
+            string bottomright = "Ctrl-3".concat("\t\t\t", "Bottom-right");
+            string bottomleft = "Ctrl-1".concat("\t\t\t", "Top-left");
+            string lefthalf = "Ctrl-4".concat("\t\t\t", "Left-half");
+            string tophalf = "Ctrl-8".concat("\t\t\t", "Top-half");
+            string rightthalf = "Ctrl-6".concat("\t\t\t", "Right-half");
+            string bottomhalf = "Ctrl-2".concat("\t\t\t", "Bottom-half");
+            string tileall = "Super + Alt_L + A".concat("\t", "Tile all windows to grid");
             // Jump
-            string jump_header = (_("Shortcuts for jumping to the nearest grid cell")) + ":";
-            string jumpleft = "Super + Alt_L + ←".concat("\t\t", (_("Jump left")));
-            string jumpright = "Super + Alt_L + →".concat("\t\t", (_("Jump right")));
-            string jumpup = "Super + Alt_L + ↑".concat("\t\t", (_("Jump up")));
-            string jumpdown = "Super + Alt_L + ↓".concat("\t\t", (_("Jump down")));
+            string jump_header = "Shortcuts for jumping to the nearest grid cell" + ":";
+            string jumpleft = "Super + Alt_L + ←".concat("\t\t", "Jump left");
+            string jumpright = "Super + Alt_L + →".concat("\t\t", "Jump right");
+            string jumpup = "Super + Alt_L + ↑".concat("\t\t", "Jump up");
+            string jumpdown = "Super + Alt_L + ↓".concat("\t\t", "Jump down");
             // GUI grid
-            string guigrid_header = (_("Shortcuts for the grid GUI")) + ":";
-            string callgrid = (_("Call the grid GUI")).concat("\t\t", "Super + S");
-            string addcol = (_("Add a column")).concat("\t\t", "→");
-            string addrow = (_("Add a row")).concat("\t\t\t", "↓");
-            string remcol = (_("Remove a column")).concat("\t\t", "←");
-            string remrow = (_("Remove a row")).concat("\t\t", "↑");
+            string guigrid_header = "Shortcuts for the grid GUI:";
+            string callgrid = "Call the grid GUI".concat("\t\t", "Super + S");
+            string addcol = "Add a column".concat("\t\t", "→");
+            string addrow = "Add a row".concat("\t\t\t", "↓");
+            string remcol = "Remove a column".concat("\t\t", "←");
+            string remrow = "Remove a row".concat("\t\t", "↑");
 
             // WINDOW STUFF
             string shufflercontrols_stylecss = """
@@ -95,7 +95,7 @@ namespace ShufflerControls {
             //this.set_resizable(false);
             initialiseLocaleLanguageSupport();
             this.set_position(Gtk.WindowPosition.CENTER);
-            this.title = (_("Window Shuffler Control"));
+            this.title = "Window Shuffler Control";
 
             // lay out essential window elements
             supergrid = new Gtk.Grid();
@@ -116,41 +116,41 @@ namespace ShufflerControls {
             // SUPERGRID
             supergrid.attach(new Label("\n"), 0, 2, 1, 1);
             set_margins(supergrid);
-            make_headerbutton ((_("Settings")), "stackbuttonleft", 1, "settings");
-            make_headerbutton ((_("Tiling")), "stackbuttons", 2, "qhshortcuts");
-            make_headerbutton ((_("Jump")), "stackbuttons", 3, "jumpshortcuts");
-            make_headerbutton ((_("GUI grid")), "stackbuttonright", 4, "guigrid");
+            make_headerbutton ("Settings", "stackbuttonleft", 1, "settings");
+            make_headerbutton ("Tiling", "stackbuttons", 2, "qhshortcuts");
+            make_headerbutton ("Jump", "stackbuttons", 3, "jumpshortcuts");
+            make_headerbutton ("GUI grid", "stackbuttonright", 4, "guigrid");
 
             // STACK-PAGES
             // 1. settingsgrid - checkbuttons
             toggle_shuffler = new Gtk.CheckButton.with_label(
-                (_("Enable Window Shuffler"))
+                "Enable Window Shuffler"
             );
             settingsgrid.attach(toggle_shuffler, 1, 1, 1, 1);
             toggle_gui = new Gtk.CheckButton.with_label(
-                (_("Enable Window Shuffler grid GUI"))
+                "Enable Window Shuffler grid GUI"
             );
             settingsgrid.attach(toggle_gui, 1, 2, 1, 1);
             var givemesomespace = new Gtk.Label("");
             settingsgrid.attach(givemesomespace, 1, 3, 1, 1);
             toggle_swapgeo = new Gtk.CheckButton.with_label(
-                (_("Swap geometry"))
+                "Swap geometry"
             );
             settingsgrid.attach(toggle_swapgeo, 1, 4, 1, 1);
             var empty = new Label("");
             settingsgrid.attach(empty, 1, 12, 1, 1);
             // settingsgrid - spinbuttonsection
-            var colslabel = new Label("\n" + (_("Grid GUI: columns & rows")) + "\n");
+            var colslabel = new Label("\n" + "Grid GUI: columns & rows" + "\n");
             colslabel.set_xalign(0);
             settingsgrid.attach(colslabel, 1, 13, 1, 1);
             var geogrid = new Gtk.Grid();
             settingsgrid.attach(geogrid, 1, 14, 2, 3);
-            var columns_label = new Label((_("Columns")) + "\t");
+            var columns_label = new Label("Columns" + "\t");
             columns_label.set_xalign(0);
             geogrid.attach(columns_label, 0, 0, 1, 1);
             columns_spin = new Gtk.SpinButton.with_range(1, 10, 1);
             geogrid.attach(columns_spin, 1, 0, 1, 1);
-            var rows_label = new Label((_("Rows")) + "\t");
+            var rows_label = new Label("Rows" + "\t");
             rows_label.set_xalign(0);
             geogrid.attach(rows_label, 0, 1, 1, 1);
             rows_spin = new Gtk.SpinButton.with_range(1, 10, 1);
@@ -158,7 +158,6 @@ namespace ShufflerControls {
             // settingsgrid - explanation section
             var empty2 = new Label("");
             geogrid.attach(empty2, 1, 20, 1, 1);
-            // Prevent window bottom section from jumping: reserve space
             Gtk.Label expl_vertspace = new Gtk.Label("\n\n\n\n");
             settingsgrid.attach(expl_vertspace, 0, 21, 1, 1);
             // settingsgrid - explanation section & css provider
@@ -182,7 +181,7 @@ namespace ShufflerControls {
 
             // settingsgrid - bottomsection
             var okbox = new Box(Gtk.Orientation.HORIZONTAL, 0);
-            var ok_button = new Button.with_label((_("Close")));
+            var ok_button = new Button.with_label("Close");
             ok_button.set_size_request(100, 5);
             okbox.pack_end(ok_button, false, false, 0);
             supergrid.attach(okbox, 2, 99, 4, 1);

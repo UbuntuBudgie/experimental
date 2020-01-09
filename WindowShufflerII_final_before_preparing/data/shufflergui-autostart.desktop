@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Window Shuffler GUI
-Exec=PATH_LOC/gridwindow
+Exec=/usr/lib/windowshuffler/gridwindow
 NoDisplay=true
 AutostartCondition=GSettings org.ubuntubudgie.windowshuffler runshufflergui
 X-MATE-AutoRestart=true
