@@ -101,7 +101,7 @@ namespace JumpActive {
             // get active win
             int activewin = client.getactivewin();
             // if active exists....
-            // add validity test!...nope, made daemon say "-1" on invalid windows
+            // made daemon say "-1" on invalid windows
             if (activewin != -1 && !guiruns) {
                 // calculate target
                 string xs = (string)anchordata["x_anchors"];

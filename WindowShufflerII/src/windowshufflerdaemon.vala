@@ -339,7 +339,7 @@ namespace ShufflerEssentialInfo {
         foreach (Wnck.Window w in wlist) {
             Wnck.WindowType type = w.get_window_type ();
             if (type == Wnck.WindowType.NORMAL) {
-                string name = w.get_name(); // needed?
+                string name = w.get_name();
                 bool onthisws = wnckscr.get_active_workspace() == w.get_workspace ();
                 int x;
                 int y;

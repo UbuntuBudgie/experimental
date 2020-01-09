@@ -26,7 +26,6 @@ namespace ShufflerControls {
 
     class ControlsWindow : Gtk.Window {
 
-
         SpinButton columns_spin;
         SpinButton rows_spin;
         ToggleButton toggle_gui;
@@ -96,7 +95,7 @@ namespace ShufflerControls {
             //this.set_resizable(false);
             initialiseLocaleLanguageSupport();
             this.set_position(Gtk.WindowPosition.CENTER);
-            this.title = "Window Shuffler Control";  // -lang
+            this.title = "Window Shuffler Control";
 
             // lay out essential window elements
             supergrid = new Gtk.Grid();
@@ -121,28 +120,6 @@ namespace ShufflerControls {
             make_headerbutton ("Tiling", "stackbuttons", 2, "qhshortcuts");
             make_headerbutton ("Jump", "stackbuttons", 3, "jumpshortcuts");
             make_headerbutton ("GUI grid", "stackbuttonright", 4, "guigrid");
-
-            //  var qtilebutton = new Gtk.Button.with_label("Tiling");
-            //  set_buttonstyle(qtilebutton, "stackbuttons");
-            //  supergrid.attach(qtilebutton, 2, 1, 1, 1);
-            //  qtilebutton.set_size_request(buttonwidth, 10);
-            //  qtilebutton.clicked.connect(() => {
-            //      controlwin_stack.set_visible_child_name("qhshortcuts");
-            //  });
-            //  var jumpbutton = new Gtk.Button.with_label("Jump");
-            //  set_buttonstyle(jumpbutton, "stackbuttons");
-            //  supergrid.attach(jumpbutton, 3, 1, 1, 1);
-            //  jumpbutton.set_size_request(buttonwidth, 10);
-            //  jumpbutton.clicked.connect(() => {
-            //      controlwin_stack.set_visible_child_name("jumpshortcuts");
-            //  });
-            //  var gridbutton = new Gtk.Button.with_label("GUI grid");
-            //  set_buttonstyle(gridbutton, "stackbuttonright");
-            //  supergrid.attach(gridbutton, 4, 1, 1, 1);
-            //  gridbutton.set_size_request(buttonwidth, 10);
-            //  gridbutton.clicked.connect(() => {
-            //      controlwin_stack.set_visible_child_name("guigrid");
-            //  });
 
             // STACK-PAGES
             // 1. settingsgrid - checkbuttons
@@ -318,6 +295,7 @@ namespace ShufflerControls {
 
             // get stuff
             get_currsettings();
+
             // connect stuff
             columns_spin.value_changed.connect(set_grid);
             rows_spin.value_changed.connect(set_grid);
@@ -339,10 +317,6 @@ namespace ShufflerControls {
             return stackbutton;
         }
 
-        /**
-         * Ensure translations are displayed correctly
-         * according to the locale
-         */
         private void set_buttonstyle (Gtk.Button b, string style) {
             var sct = b.get_style_context();
             sct.add_class(style);
@@ -352,6 +326,11 @@ namespace ShufflerControls {
             var sct = l.get_style_context();
             sct.add_class(style);
         }
+
+        /**
+        * Ensure translations are displayed correctly
+        * according to the locale
+        */
 
         public void initialiseLocaleLanguageSupport() {
             //  Initialize gettext
@@ -368,7 +347,6 @@ namespace ShufflerControls {
         private void get_currsettings () {
             bool currentlyactive = shuffler_settings.get_boolean("runshuffler");
             toggle_shuffler.set_active(currentlyactive);
-            // ok, slight repetition, but who cares
             toggle_gui.set_sensitive(currentlyactive);
             toggle_swapgeo.set_sensitive(currentlyactive);
             toggle_gui.set_active(shuffler_settings.get_boolean("runshufflergui"));
@@ -404,51 +382,6 @@ namespace ShufflerControls {
             }
         }
 
-        // needed?
-        //  private void check_firstrunwarning() {
-        //      /*
-        //      / 0.1 dec after gsettings change check if process is running
-        //      / if not -> show message in label
-        //      */
-        //      GLib.Timeout.add(100, () => {
-        //          bool runs = processruns("/budgie-wallstreet/wallstreet");
-        //          if (!runs) {
-        //              toggle_shuffler.set_label(
-        //                  runinstruction + "\t" +
-        //                      "Please log out/in to initialize"
-        //                   // -lang
-        //              );
-        //          }
-        //          return false;
-        //      });
-        //  }
-
-        // needed?
-        //  private bool processruns (string application) {
-        //      string cmd = "pgrep -f " + application;
-        //      string output;
-        //      try {
-        //          GLib.Process.spawn_command_line_sync(cmd, out output);
-        //          if (output != "") {
-        //              // remove trailing \n, does not count
-        //              string[] pids = output[0:output.length-1].split("\n");
-        //              int n_pids = pids.length;
-        //              if (n_pids >= 2) {
-        //                  return true;
-        //              }
-        //              else {
-        //                  return false;
-        //              }
-        //          }
-        //      }
-        //      /* on an (unlikely to happen) exception, show the message */
-        //      catch (SpawnError e) {
-        //          return false;
-        //      }
-        //      return false;
-        //  }
-
-
         private void set_grid (SpinButton b) {
             SpinButton[] sp_buttons = {
                 columns_spin, rows_spin
@@ -466,7 +399,6 @@ namespace ShufflerControls {
                 }
                 n += 1;
             }
-
             shuffler_settings.set_int(match, newval);
         }
 

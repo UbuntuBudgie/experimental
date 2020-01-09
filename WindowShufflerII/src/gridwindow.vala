@@ -43,11 +43,6 @@ using Gdk.X11;
 
 // valac --pkg gio-2.0 --pkg gdk-x11-3.0 --pkg gtk+-3.0 --pkg gdk-3.0 --pkg cairo --pkg libwnck-3.0 -X "-D WNCK_I_KNOW_THIS_IS_UNSTABLE"
 
-// N.B act on shift press -> update? No.
-// todo: gsettings gui_controlsgrid true/false
-// todo: gsettings max cols/rows 1-10
-// todo: create settings
-
 
 namespace GridWindowSection {
 
@@ -473,7 +468,6 @@ namespace GridWindowSection {
 
         private bool on_draw (Widget da, Context ctx) {
             // transparency
-            // needs to be connected to transparency settings change?
             ctx.set_source_rgba(0.15, 0.15, 0.15, 0.0);
             ctx.set_operator(Cairo.Operator.SOURCE);
             ctx.paint();
