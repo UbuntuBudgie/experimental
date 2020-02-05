@@ -1,7 +1,4 @@
 using Gtk;
-using Gdk;
-using GLib.Math;
-using Json;
 
 /*
 * Template
@@ -20,14 +17,14 @@ using Json;
 */
 
 namespace SupportingFunctions {
-    /* 
+    /*
     * Here we keep the (possibly) shared stuff, or general functions, to
     * keep the main code clean and readable
     */
 }
 
 
-namespace TemplateApplet { 
+namespace TemplateApplet {
 
     public class TemplateSettings : Gtk.Grid {
         /* Budgie Settings -section */
@@ -35,7 +32,7 @@ namespace TemplateApplet {
 
         public TemplateSettings(GLib.Settings? settings) {
             /*
-            * Gtk stuff, widgets etc. here 
+            * Gtk stuff, widgets etc. here
             */
         }
     }
@@ -58,9 +55,9 @@ namespace TemplateApplet {
 
         public TemplatePopover(Gtk.EventBox indicatorBox) {
             GLib.Object(relative_to: indicatorBox);
-            this.indicatorBox = indicatorBox;
+            indicatorBox = indicatorBox;
             /* set icon */
-            this.indicatorIcon = new Gtk.Image.from_icon_name(
+            indicatorIcon = new Gtk.Image.from_icon_name(
                 "templateicon-symbolic", Gtk.IconSize.MENU
             );
             indicatorBox.add(this.indicatorIcon);
@@ -68,7 +65,9 @@ namespace TemplateApplet {
             /* gsettings stuff */
 
             /* grid */
-            this.maingrid = new Gtk.Grid();
+            maingrid = new Gtk.Grid();
+            maingrid.attach(new Label("Monkey"), 0, 0, 1, 1);
+
             this.add(this.maingrid);
         }
     }
@@ -91,7 +90,6 @@ namespace TemplateApplet {
         }
 
         public Applet() {
-            initialiseLocaleLanguageSupport();
             /* box */
             indicatorBox = new Gtk.EventBox();
             add(indicatorBox);
@@ -117,18 +115,6 @@ namespace TemplateApplet {
         {
             this.manager = manager;
             manager.register_popover(indicatorBox, popover);
-        }
-
-        public void initialiseLocaleLanguageSupport(){
-            // Initialize gettext
-            GLib.Intl.setlocale(GLib.LocaleCategory.ALL, "");
-            GLib.Intl.bindtextdomain(
-                Config.GETTEXT_PACKAGE, Config.PACKAGE_LOCALEDIR
-            );
-            GLib.Intl.bind_textdomain_codeset(
-                Config.GETTEXT_PACKAGE, "UTF-8"
-            );
-            GLib.Intl.textdomain(Config.GETTEXT_PACKAGE);
         }
     }
 }
