@@ -9,7 +9,8 @@ namespace PowerTest {
 
     public static void main(string[] args) {
         Gtk.init(ref args);
-        new OneMoreWindow();
+        var window = new OneMoreWindow();
+        window.destroy.connect(Gtk.main_quit);
         Gtk.main();
     }
 
