@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+    <schema path="/org/rinzwind/batterystatus/"
+            id="org.rinzwind.batterystatus">
+        <key type="i" name="fontsize">
+            <summary>fontsize</summary>
+            <description>Fontsize of the percentage label</description>
+            <default>50</default>
+	    <range min="10" max="100"/>
+        </key>
+        <key type="i" name="xpos">
+            <summary>x-position</summary>
+            <description>X-position of the window</description>
+            <default>300</default>
+	    <range min="0" max="4000"/>
+        </key>
+        <key type="i" name="ypos">
+            <summary>y-position</summary>
+            <description>Y-position of the window</description>
+            <default>300</default>
+	    <range min="0" max="4000"/>
+        </key>
+    </schema>
+</schemalist>
