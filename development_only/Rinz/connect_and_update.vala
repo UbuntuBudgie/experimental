@@ -47,7 +47,7 @@ namespace PowerTest {
                     return true;
                 });
                 this.add(percentlabel);
-                update_window();
+                update_windowprops();
                 this.show_all();
             }
             catch (Error e) {
