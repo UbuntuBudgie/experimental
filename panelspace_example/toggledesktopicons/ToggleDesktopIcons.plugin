@@ -1,0 +1,9 @@
+[Plugin]
+Loader=python3
+Module=toggledesktopicons
+Name=Toggle desktop icons
+Description=Toggle desktop icons
+Authors=Jacob Vlijm
+Copyright=Copyright © 2017 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org
+Icon=preferences-desktop-display-symbolic

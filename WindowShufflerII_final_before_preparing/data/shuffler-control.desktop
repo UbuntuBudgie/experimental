@@ -1,6 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Window Shuffler Control
-Exec=/usr/lib/windowshuffler/shuffler_control
-Icon=shuffler-control
-Categories=Utility;
