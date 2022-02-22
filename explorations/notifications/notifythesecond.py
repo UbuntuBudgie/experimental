@@ -2,13 +2,13 @@
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
-import sys
 import subprocess
+import argparse
 
 """
 notifythesecond
 Author: Jacob Vlijm
-Copyright ©2019 Ubuntu Budgie Developers
+Copyright ©2019-2022 Ubuntu Budgie Developers
 Website=https://ubuntubudgie.org
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -20,36 +20,47 @@ should have received a copy of the GNU General Public License along with this
 program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
+
 class NotifyWindow(Gtk.Window):
 
-    def __init__(self):
+    def __init__(self, title, body, icon, command, position, duration):
         Gtk.Window.__init__(self)
-        self.set_decorated(False)
-        distance = 80 # gsettings
-        winwidth = 300 # gsettings
-        winheight = 80 # gsettings
+        self.set_type_hint(Gdk.WindowTypeHint.NOTIFICATION)
+        self.duration = duration if duration else 10
+        position = position if position else 2
+        self.ran = False
+        # suggest making these gsettings options:
+        distance = 80
+        winwidth = 300
+        winheight = 80
         self.set_default_size(winwidth, winheight)
         self.maingrid = Gtk.Grid()
-        self.add(self.maingrid)  
+        self.add(self.maingrid)
         self.set_space()
-        self.winpos = 4 # gsettings? default = SE
-        self.get_args()
+        # gsettings?
+        ationargs = [title, body, icon, command]
+        funcs = [
+            self.show_title, self.set_body, self.set_icon,
+            self.connect_action
+        ]
+        for arg in ationargs:
+            if arg:
+                funcs[ationargs.index(arg)](arg)
         self.currage = 0
-        self.targetage = 10 # gsettings,life seconds
-        GLib.timeout_add_seconds(1, self.limit_windowlife) 
+        # gsettings?,life seconds
+        GLib.timeout_add_seconds(1, self.limit_windowlife)
         self.maingrid.show_all()
-        self.position_popup(self.winpos, winwidth, winheight, distance)
+        self.position_popup(position, winwidth, winheight, distance)
         self.show_all()
         Gtk.main()
 
-    def get_winpos(self, arg):
-        self.winpos = int(arg)
-        
     def limit_windowlife(self):
-        if self.currage >= self.targetage:
+        if self.currage >= self.duration:
+            self.destroy()
             Gtk.main_quit()
-        self.currage = self.currage + 1;
-        return True        
+            return False
+        self.currage = self.currage + 1
+        return True
 
     def position_popup(self, winpos, winwidth, winheight, distance):
         monitordata = self.get_primarymonitor()
@@ -82,7 +93,7 @@ class NotifyWindow(Gtk.Window):
         ]
         height = geo.height
         return width, height, screen_xpos, screen_ypos
-        
+
     def show_title(self, title):
         title_label = Gtk.Label(label=title)
         self.maingrid.attach(title_label, 3, 1, 1, 1)
@@ -104,34 +115,16 @@ class NotifyWindow(Gtk.Window):
 
     def set_icon(self, icon):
         self.maingrid.attach(Gtk.Label(label="\t"), 2, 0, 1, 1)
-        if not "/" in icon:
+        if "/" not in icon:
             newicon = Gtk.Image.new_from_icon_name(
                 icon, Gtk.IconSize.DIALOG
             )
             self.maingrid.attach(newicon, 1, 1, 1, 2)
             self.maingrid.show_all()
 
-    def get_args(self):
-        args = sys.argv[1:]
-        funcs = [
-            self.show_title, self.set_body, self.set_icon,
-            self.connect_action, self.get_winpos,
-        ]
-        argnames = ["title", "body", "icon", "command", "position"]
-        for arg in args:
-            argdata = arg.split("=")
-            argname = argdata[0]
-            arg = argdata[1]
-            try:
-                i = argnames.index(argname)
-                funcs[i](arg)
-            except ValueError:
-                print("invalid argument:", arg)             
-
     def connect_action(self, arg):
         self.connect("button_press_event", self.run_command, arg)
-        pass
-                    
+
     def set_textstyle(self, widget, style):
         widget_cont = widget.get_style_context()
         widget_cont.add_class(style)
@@ -139,11 +132,17 @@ class NotifyWindow(Gtk.Window):
             widget_cont,
             self.provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION,
-        )               
-                
-    def run_command(self, event, key, command):
-        if key.get_button()[1] == 1:
+        )
+
+    def run_command(self, key, event, command):              
+        if all([
+            event.type == Gdk.EventType.BUTTON_PRESS,
+            event.get_button()[1] == 1,
+            self.ran == False
+        ]):
             subprocess.Popen(["/bin/bash", "-c", command])
+            # prevent running twice
+            self.ran = True
 
     def set_space(self):
         for cell in [[0, 0], [100, 0], [0, 100], [100, 100]]:
@@ -151,4 +150,44 @@ class NotifyWindow(Gtk.Window):
                 Gtk.Label(label="\t"), cell[0], cell[1], 1, 1
             )
 
-NotifyWindow()
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    # --title
+    parser.add_argument(
+        "--title", help="Title of the notification (bold)"
+    )
+    # --body
+    parser.add_argument(
+        "--body", help="Body text"
+    )
+    # --icon
+    parser.add_argument(
+        "--icon", help="Icon (from icon name)"
+    )
+    # command
+    parser.add_argument(
+        "--command", help="Optional command, to run if user on click"
+    )
+    # position
+    parser.add_argument(
+        "--position", help="Position, (1-4)", type=int
+    )
+    # duration
+    parser.add_argument(
+        "--duration", help="Lifetime of the notification (sec)", type=int
+    )
+    # args
+    args = parser.parse_args()
+    title = args.title
+    body = args.body
+    icon = args.icon
+    command = args.command
+    position = args.position
+    duration = args.duration
+    # set defaults
+    position = position if position else 2
+    duration = duration if duration else 10
+    NotifyWindow(
+        title, body, icon, command, position, duration
+    )
