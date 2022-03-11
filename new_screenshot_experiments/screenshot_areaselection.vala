@@ -90,18 +90,10 @@ namespace SelectArea2 {
             / bottom-right), so we need to convert & calculate into the
             / right format for drawing the rectangle or taking scrshot
             */
-            int topleftx = startx; int bottomrightx = endx;
-            if (endx < topleftx) {
-                topleftx = endx; bottomrightx = startx;
-            }
-            int toplefty = starty; int bottomrighty = endy;
-            if (endy < starty) {
-                toplefty = endy; bottomrighty = starty;
-            }
-            //  print(@"from calc: $topleftx, $toplefty\n");
+            (endx < startx)? topleftx = endx : topleftx = startx;
+            (endy < starty)? toplefty = endy : toplefty = starty;
             return {
-                topleftx, toplefty, bottomrightx - topleftx,
-                bottomrighty - toplefty
+                topleftx, toplefty, (startx-endx).abs(), (starty-endy).abs()
             };
         }
 
