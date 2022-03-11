@@ -26,6 +26,7 @@ namespace SelectArea2 {
             //  this.destroy.connect(Gtk.main_quit); // not in final version?
             this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
             this.fullscreen();
+            this.set_keep_above(true);
             // connect draw
             Gtk.DrawingArea darea = new Gtk.DrawingArea();
             darea.draw.connect((w, ctx)=> {
