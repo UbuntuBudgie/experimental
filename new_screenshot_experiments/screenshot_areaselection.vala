@@ -159,10 +159,8 @@ namespace SelectArea2 {
     public static int main(string[] args) {
         // Just for testing, we are running it now from cli
         Gtk.init(ref args);
-        int delay = 0;
-        if (args.length != 1) {
-            delay = int.parse(args[1]);
-        }
+        int delay;
+        (args.length != 1)? delay = int.parse(args[1]) : delay = 0;
         new SelectLayer(delay);
         Gtk.main();
         return 0;
