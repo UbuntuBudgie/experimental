@@ -166,9 +166,8 @@ namespace SelectArea2 {
             Gst.Element pipeline;
             try {
                 pipeline = Gst.parse_launch(
-                    "playbin uri=\"file://%s\"".printf(
-                        "/usr/share/sounds/freedesktop/stereo/screen-capture.oga"
-                ));
+                    "playbin uri=file:///usr/share/sounds/freedesktop/stereo/screen-capture.oga"
+                );
             }
             catch (Error e) {
                 error ("Error: %s", e.message);
