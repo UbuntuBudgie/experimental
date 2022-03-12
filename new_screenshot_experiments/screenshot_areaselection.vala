@@ -1,8 +1,9 @@
 using Gtk;
 using Gdk;
 using Cairo;
+using Gst;
 
-// valac --pkg cairo --pkg gtk+-3.0 --pkg gdk-3.0
+// valac --pkg cairo --pkg gtk+-3.0 --pkg gdk-3.0 --pkg gstreamer-1.0
 
 /*
 / We don't kill the Gtk thread after the job is done, since this will be part
@@ -99,7 +100,7 @@ namespace SelectArea2 {
         }
 
         private void draw_rectangle(
-            Widget da, Context ctx, int x1, int y1, int x2, int y2
+            Widget da, Cairo.Context ctx, int x1, int y1, int x2, int y2
         ) {
             ctx.set_source_rgba(0.0, 0.4, 0.6, 0.3);
             ctx.rectangle(x1, y1, x2, y2);
@@ -141,6 +142,7 @@ namespace SelectArea2 {
             Gdk.Window rootwindow = Gdk.get_default_root_window();
             // make sure the colored preview selection is gone before we shoot
             GLib.Timeout.add(100 + (delay*1000), ()=> {
+                play_shuttersound();
                 // checking delay
                 print("Bam! there we go.\n");
                 Gdk.Pixbuf currpix = Gdk.pixbuf_get_from_window(
@@ -154,8 +156,29 @@ namespace SelectArea2 {
                 }
                 return false;
             });
-            print(@"taking a shot: $topleftx, $toplefty, $width, $height\n");
+            //  print(@"taking a shot: $topleftx, $toplefty, $width, $height\n");
             return true;
+        }
+
+        private void play_shuttersound (string[]? args=null) {
+            // todo: we should probably not hardcode the soundfile?
+            Gst.init(ref args);
+            Gst.Element pipeline;
+            try {
+                pipeline = Gst.parse_launch(
+                    "playbin uri=\"file://%s\"".printf(
+                        "/usr/share/sounds/freedesktop/stereo/screen-capture.oga"
+                ));
+            }
+            catch (Error e) {
+                error ("Error: %s", e.message);
+            }
+            pipeline.set_state (State.PLAYING);
+            Gst.Bus bus = pipeline.get_bus();
+            bus.timed_pop_filtered(
+                Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS
+            );
+            pipeline.set_state (Gst.State.NULL);
         }
     }
 
