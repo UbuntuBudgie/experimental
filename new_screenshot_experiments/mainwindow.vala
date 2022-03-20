@@ -21,15 +21,13 @@ namespace ScreenshotHome {
                 border-radius: 0px 0px 0px 0px;
                 border-width: 0px;
             }
-            .shootbutton {
-                border-radius: 5px 5px 5px 5px;
-                border-width: 0px;
-            }
             .optionslabel {
                 margin-left: 12px;
                 margin-bottom: 2px;
             }
             """;
+
+            //border-radius: 5px 5px 5px 5px;
 
             topbar = new Gtk.HeaderBar();
             topbar.show_close_button = true;
@@ -113,11 +111,20 @@ namespace ScreenshotHome {
             foreach (Widget w in topbar.get_children()) {
                 w.destroy();
             }
-            Gtk.Button shootbutton = new Gtk.Button.from_icon_name (
-                "shootscreen-symbolic", Gtk.IconSize.DND
-            );
-            shootbutton.set_size_request(60, 4);
-            shootbutton.get_style_context().add_class("shootbutton");
+            /*
+            / all the things you need to do to work around Gtk peculiarities:
+            / if you set an image on a button, button gets crazy roundings,
+            / if you set border radius, you get possible theming issues,
+            / so.. add icon to grid, grid to button, button behaves. pfff.
+            */
+            Gtk.Button shootbutton = new Gtk.Button();
+            Gtk.Image shootimage = new Gtk.Image.from_icon_name(
+                "shootscreen-symbolic", Gtk.IconSize.DND);
+            Gtk.Grid shootgrid = new Gtk.Grid();
+            shootgrid.attach(shootimage, 0, 0, 1, 1);
+            shootbutton.add(shootgrid);
+            set_margins(shootgrid, 10, 10, 0, 0);
+
             shootbutton.get_style_context().add_class(
                 Gtk.STYLE_CLASS_SUGGESTED_ACTION
             );
