@@ -22,12 +22,21 @@ namespace SelectArea2 {
         int toplefty;
         int width;
         int height;
+        double red = 0; // fallback
+        double green = 0; // fallback
+        double blue = 1; // fallback
+        GLib.Settings? theme_settings;
 
         public SelectLayer(int delay) {
+            theme_settings = new GLib.Settings("org.gnome.desktop.interface");
+            theme_settings.changed["gtk-theme"].connect(()=> {
+                get_theme_fillcolor();
+            });
             //  this.destroy.connect(Gtk.main_quit); // not in final version?
             this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
             this.fullscreen();
             this.set_keep_above(true);
+            get_theme_fillcolor();
             // connect draw
             Gtk.DrawingArea darea = new Gtk.DrawingArea();
             darea.draw.connect((w, ctx)=> {
@@ -49,6 +58,17 @@ namespace SelectArea2 {
             set_win_transparent();
             this.show_all();
             change_cursor();
+        }
+
+        private void get_theme_fillcolor(){
+            Gtk.StyleContext style_ctx = new Gtk.StyleContext();
+            Gtk.WidgetPath widget_path =  new Gtk.WidgetPath();
+            widget_path.append_type(typeof(Gtk.Button));
+            style_ctx.set_path(widget_path);
+            Gdk.RGBA fcolor = style_ctx.get_color(Gtk.StateFlags.LINK);
+            red = fcolor.red;
+            green = fcolor.green;
+            blue = fcolor.blue;
         }
 
         private bool determine_startpoint(Gtk.Widget w, EventButton e) {
@@ -102,10 +122,10 @@ namespace SelectArea2 {
         private void draw_rectangle(
             Widget da, Cairo.Context ctx, int x1, int y1, int x2, int y2
         ) {
-            ctx.set_source_rgba(0.0, 0.4, 0.6, 0.3);
+            ctx.set_source_rgba(red, green, blue, 0.3);
             ctx.rectangle(x1, y1, x2, y2);
             ctx.fill_preserve();
-            ctx.set_source_rgba(0.2, 1.0, 1.0, 1.0);
+            ctx.set_source_rgba(red, green, blue, 1.0);
             ctx.set_line_width(0.5);
             ctx.stroke();
             ctx.fill();
