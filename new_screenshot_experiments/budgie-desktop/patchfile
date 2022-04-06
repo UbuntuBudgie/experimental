@@ -661,31 +661,6 @@ index 0f2d409a..38b987a3 100644
  		}
  
  		/**
-diff --git a/vapi/Meta-10.metadata b/vapi/Meta-10.metadata
-index c3a6c902..50f8884d 100644
---- a/vapi/Meta-10.metadata
-+++ b/vapi/Meta-10.metadata
-@@ -11,6 +11,7 @@ CloseDialog cheader_filename="meta/meta-close-dialog.h"
- CursorTracker cheader_filename="meta/meta-cursor-tracker.h"
- CursorTracker.get_for_display parent="Meta.Display" symbol_type="method" instance_idx=0 name="get_cursor_tracker"
- CursorTracker.get_pointer.mods out
-+CursorTracker.get_pointer.coords out
- Display cheader_filename="meta/display.h"
- Dnd cheader_filename="meta/meta-dnd.h"
- IdleMonitor cheader_filename="meta/meta-idle-monitor.h"
-diff --git a/vapi/libmutter-10.vapi b/vapi/libmutter-10.vapi
-index 46b71c4d..25e88839 100644
---- a/vapi/libmutter-10.vapi
-+++ b/vapi/libmutter-10.vapi
-@@ -314,7 +314,7 @@ namespace Meta {
- 		[CCode (has_construct_function = false)]
- 		protected CursorTracker ();
- 		public void get_hot (out int x, out int y);
--		public void get_pointer (Graphene.Point coords, out Clutter.ModifierType mods);
-+		public void get_pointer (out Graphene.Point coords, out Clutter.ModifierType mods);
- 		public bool get_pointer_visible ();
- 		public float get_scale ();
- 		public unowned Cogl.Texture get_sprite ();
 diff --git a/vapi/mutter-clutter-9.vapi b/vapi/mutter-clutter-9.vapi
 index 387ac6db..b6315766 100644
 --- a/vapi/mutter-clutter-9.vapi
