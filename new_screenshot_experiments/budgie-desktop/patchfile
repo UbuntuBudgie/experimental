@@ -1,0 +1,701 @@
+diff --git a/src/daemon/manager.vala b/src/daemon/manager.vala
+index 2711824e..d9909a39 100644
+--- a/src/daemon/manager.vala
++++ b/src/daemon/manager.vala
+@@ -23,6 +23,7 @@ namespace Budgie {
+ 		Budgie.Notifications.Server? notifications;
+ 		Budgie.MenuManager? menus;
+ 		Budgie.TabSwitcher? switcher;
++		Budgie.ScreenshotClient? screenshotclient;
+ 
+ 		/**
+ 		* Construct a new ServiceManager and initialiase appropriately
+@@ -42,6 +43,8 @@ namespace Budgie {
+ 			menus.setup_dbus(replace);
+ 			switcher = new Budgie.TabSwitcher();
+ 			switcher.setup_dbus(replace);
++			screenshotclient = new Budgie.ScreenshotClient();
++			screenshotclient.setup_dbus(replace);
+ 		}
+ 
+ 		/**
+diff --git a/src/daemon/meson.build b/src/daemon/meson.build
+index 3d367abe..e7d2595a 100644
+--- a/src/daemon/meson.build
++++ b/src/daemon/meson.build
+@@ -25,6 +25,7 @@ daemon_sources = [
+     'osd.vala',
+     'settings.vala',
+     'tabswitcher.vala',
++    'screenshotclient.vala',
+     daemon_resources,
+ ]
+ 
+diff --git a/src/daemon/screenshotclient.vala b/src/daemon/screenshotclient.vala
+new file mode 100644
+index 00000000..c29d6231
+--- /dev/null
++++ b/src/daemon/screenshotclient.vala
+@@ -0,0 +1,78 @@
++/*
++ * This file is part of budgie-desktop
++ *
++ * Copyright (C) 2017-2022 taaem <taaem@mailbox.org>
++ * Copyright (C) 2017-2022 Budgie Desktop Developers
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++namespace Budgie {
++	/**
++	* Our name on the session bus. Reserved for Budgie use
++	*/
++	public const string SCREENSHOTCLIENT_DBUS_NAME = "org.budgie_desktop.ScreenshotClient";
++
++	/**
++	* Unique object path on SWITCHER_DBUS_NAME
++	*/
++	public const string SCREENSHOTCLIENT_DBUS_OBJECT_PATH = "/org/budgie_desktop/ScreenshotClient";
++
++	/**
++	* ScreenshotClient is responsible for managing the client-side calls over d-bus, receiving
++	* requests, for example, from budgie-wm
++	*/
++	[DBus (name="org.budgie_desktop.ScreenshotClient")]
++	public class ScreenshotClient : GLib.Object {
++		//private ScreenshotClientWindow? screenshotclient_window = null;
++		private uint32 mod_timeout = 0;
++
++		[DBus (visible=false)]
++		public ScreenshotClient() {
++			//screenshotclient_window = new TabSwitcherWindow();
++		}
++
++		/**
++		* Own the SWITCHER_DBUS_NAME
++		*/
++		[DBus (visible=false)]
++		public void setup_dbus(bool replace) {
++			var flags = BusNameOwnerFlags.ALLOW_REPLACEMENT;
++			if (replace) {
++				flags |= BusNameOwnerFlags.REPLACE;
++			}
++			Bus.own_name(BusType.SESSION, Budgie.SCREENSHOTCLIENT_DBUS_NAME, flags,
++				on_bus_acquired, ()=> {}, Budgie.DaemonNameLost);
++		}
++
++		/**
++		* Acquired SWITCHER_DBUS_NAME, register ourselves on the bus
++		*/
++		private void on_bus_acquired(DBusConnection conn) {
++			try {
++				conn.register_object(Budgie.SCREENSHOTCLIENT_DBUS_OBJECT_PATH, this);
++			} catch (Error e) {
++				stderr.printf("Error registering ScreenshotClient: %s\n", e.message);
++			}
++			Budgie.setup = true;
++		}
++
++		//public void StopSwitcher() throws DBusError, IOError {
++		//	switcher_window.stop_switching();
++		//}
++        public async void ScreenshotClientArea() throws DBusError, IOError {
++            message("calling screenshotclientarea");
++        }
++
++		public async void ScreenshotClientWindow() throws DBusError, IOError {
++            message("calling screenshotclientwindow");
++        }
++
++		public async void ScreenshotClientFullscreen() throws DBusError, IOError {
++            message("calling screenshotclientfullscreen");
++        }
++	}
++}
+diff --git a/src/wm/com.solus-project.budgie.wm.gschema.xml b/src/wm/com.solus-project.budgie.wm.gschema.xml
+index 533e5b8f..554bef14 100644
+--- a/src/wm/com.solus-project.budgie.wm.gschema.xml
++++ b/src/wm/com.solus-project.budgie.wm.gschema.xml
+@@ -117,9 +117,9 @@
+ 		</key>
+ 
+ 		<key type="s" name="full-screenshot-cmd">
+-			<default>'gnome-screenshot'</default>
++			<default>''</default>
+ 			<summary>Take screenshot of all displays application</summary>
+-			<description>Application that is run when taking a screenshot of all displays</description>
++			<description>Application that is run when taking a screenshot of all displays. The default is budgie screenshot.</description>
+ 		</key>
+ 
+ 		<key type="as" name="take-region-screenshot">
+@@ -129,9 +129,9 @@
+ 		</key>
+ 
+ 		<key type="s" name="take-region-screenshot-cmd">
+-			<default>'gnome-screenshot -a'</default>
++			<default>''</default>
+ 			<summary>Take screenshot of selectable region application</summary>
+-			<description>Application that is run when taking a screenshot of a selectable region</description>
++			<description>Application that is run when taking a screenshot of a selectable region. The default is budgie screenshot.</description>
+ 		</key>
+ 
+ 		<key type="as" name="take-window-screenshot">
+@@ -141,9 +141,9 @@
+ 		</key>
+ 
+ 		<key type="s" name="take-window-screenshot-cmd">
+-			<default>'gnome-screenshot -w -b'</default>
++			<default>''</default>
+ 			<summary>Take screenshot of current window application</summary>
+-			<description>Application that is run when taking a screenshot of the current window</description>
++			<description>Application that is run when taking a screenshot of the current window. The default is budgie screenshot.</description>
+ 		</key>
+ 
+ 		<key type="as" name="toggle-notifications">
+diff --git a/src/wm/meson.build b/src/wm/meson.build
+index 52c06959..02a042d2 100644
+--- a/src/wm/meson.build
++++ b/src/wm/meson.build
+@@ -13,6 +13,7 @@ budgie_wm_sources = [
+     'main.vala',
+     'shim.vala',
+     'wm.vala',
++    'screenshot.vala',
+ ]
+ 
+ budgie_wm_status_vala_args = []
+diff --git a/src/wm/screenshot.vala b/src/wm/screenshot.vala
+new file mode 100644
+index 00000000..629a0388
+--- /dev/null
++++ b/src/wm/screenshot.vala
+@@ -0,0 +1,338 @@
++/*
++ * This file is part of budgie-desktop
++ *
++ * Copyright © 2022 Budgie Desktop Developers
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * Code has been inspired by the elementaryOS Gala ScreenshotManager.vala
++ * and the GNOME 42 shell-screenshot.c techniques.
++ */
++
++
++namespace Budgie {
++	const string EXTENSION = ".png";
++	const string DBUS_SCREENSHOT = "org.buddiesofbudgie.Screenshot";
++	const string DBUS_SCREENSHOT_PATH = "/org/buddiesofbudgie/Screenshot";
++
++	[DBus (name="org.buddiesofbudgie.Screenshot")]
++	public class ScreenshotManager : Object {
++		static ScreenshotManager? instance;
++
++		[DBus (visible = false)]
++		public static unowned ScreenshotManager init (BudgieWM wm) {
++			if (instance == null)
++				instance = new ScreenshotManager (wm);
++
++			return instance;
++		}
++
++		BudgieWM? wm = null;
++		unowned Meta.Display? display = null;
++
++		ScreenshotManager (BudgieWM _wm) {
++			wm = _wm;
++			display = wm.get_display();
++		}
++
++		[DBus (visible = false)]
++		public void setup_dbus() {
++			/* Hook up screenshot dbus */
++            Bus.own_name (BusType.SESSION, DBUS_SCREENSHOT, BusNameOwnerFlags.REPLACE,
++                on_bus_acquired,
++                () => {},
++                () => {} );
++		}
++
++		void on_bus_acquired(DBusConnection conn) {
++			try {
++				conn.register_object(DBUS_SCREENSHOT_PATH, this);
++			} catch (Error e) {
++				message("Unable to register Screenshot: %s", e.message);
++			}
++		}
++
++		public void flash_area (int x, int y, int width, int height) throws DBusError, IOError {
++			double[] keyframes = { 0.3f, 0.8f };
++			GLib.Value[] values = { 180U, 0U };
++
++			var transition = new Clutter.KeyframeTransition ("opacity") {
++				duration = 200,
++				remove_on_complete = true,
++				progress_mode = Clutter.AnimationMode.LINEAR
++			};
++			transition.set_key_frames (keyframes);
++			transition.set_values (values);
++			transition.set_to_value (0.0f);
++
++			var flash_actor = new Clutter.Actor ();
++			flash_actor.set_size (width, height);
++			flash_actor.set_position (x, y);
++			flash_actor.set_background_color (Clutter.Color.get_static (Clutter.StaticColor.WHITE));
++			flash_actor.set_opacity (0);
++			var top_display_group = Meta.Compositor.get_top_window_group_for_display(display);
++			flash_actor.transitions_completed.connect ((actor) => {
++				top_display_group.remove_child (actor);
++				actor.destroy ();
++			});
++
++			top_display_group.add_child (flash_actor);
++			flash_actor.add_transition ("flash", transition);
++		}
++
++		public async void screenshot (bool include_cursor, bool flash, string filename, out bool success, out string filename_used) throws DBusError, IOError {
++			int width, height;
++			display.get_size (out width, out height);
++
++			var image = take_screenshot (0, 0, width, height, include_cursor);
++
++			if (flash) {
++				flash_area (0, 0, width, height);
++			}
++
++			success = yield save_image (image, filename, out filename_used);
++		}
++
++		public async void screenshot_area (int x, int y, int width, int height, bool include_cursor, bool flash, string filename, out bool success, out string filename_used) throws DBusError, IOError {
++			yield wait_stage_repaint ();
++
++			var image = take_screenshot (x, y, width, height, include_cursor);
++
++			if (flash) {
++				flash_area (x, y, width, height);
++			}
++
++			success = yield save_image (image, filename, out filename_used);
++			if (!success)
++				throw new DBusError.FAILED ("Failed to save image");
++		}
++
++		public async void screenshot_window (bool include_frame, bool include_cursor, bool flash, string filename, out bool success, out string filename_used) throws DBusError, IOError {
++			var window = display.get_focus_window ();
++
++			if (window == null) {
++				throw new DBusError.FAILED ("Cannot find active window");
++			}
++
++			var window_actor = (Meta.WindowActor) window.get_compositor_private ();
++			unowned Meta.ShapedTexture window_texture = (Meta.ShapedTexture) window_actor.get_texture ();
++
++			if (window_texture == null) {
++				throw new DBusError.FAILED ("Cannot get window actor texture");
++			}
++
++			float actor_x, actor_y;
++			window_actor.get_position (out actor_x, out actor_y);
++
++			var rect = window.get_frame_rect ();
++			if ((include_frame && window.is_client_decorated ()) ||
++                (!include_frame && !window.is_client_decorated ())) {
++                rect = window.frame_rect_to_client_rect (rect);
++            }
++
++			//var image = take_screenshot (rect.x, rect.y, rect.width, rect.height, include_cursor);
++
++			Cairo.RectangleInt clip = { rect.x - (int) actor_x, rect.y - (int) actor_y, rect.width, rect.height };
++			var image = (Cairo.ImageSurface) window_texture.get_image (clip);
++			if (include_cursor) {
++				image = composite_stage_cursor (image, { rect.x, rect.y, rect.width, rect.height });
++			}
++
++			if (flash) {
++				flash_area (rect.x, rect.y, rect.width, rect.height);
++			}
++
++			success = yield save_image (image, filename, out filename_used);
++			if (!success)
++				throw new DBusError.FAILED ("Failed to save image");
++		}
++
++
++		static string find_target_path () {
++			/*
++			 * If path in screenshots exists/or can be created then use this path
++			 * otherwise use the PICTURES xdg-dir path
++			 * default is the home folder as the ultimate fallback
++			 */
++			unowned string? base_path = Environment.get_user_special_dir (UserDirectory.PICTURES);
++			if (base_path != null && FileUtils.test (base_path, FileTest.EXISTS)) {
++				var path = "";
++				var settings_schema = "org.gnome.gnome-screenshot";  /*DM this needs changing to a budgie-desktop path*/
++				var schema = GLib.SettingsSchemaSource.get_default ().lookup (settings_schema, true);
++				if (schema != null) { // settings schema does exist
++					var settings = new Settings(settings_schema);
++					path = settings.get_string("auto-save-directory");
++				}
++				if (FileUtils.test (path, FileTest.EXISTS)) {
++					return path;
++				} else if (DirUtils.create (path, 0755) == 0) {
++					return path;
++				} else {
++					return base_path;
++				}
++			}
++
++			return Environment.get_home_dir ();
++		}
++
++		private async bool save_image (Cairo.ImageSurface image, string filename, out string used_filename) {
++			used_filename = filename;
++
++			if (used_filename != "" && !Path.is_absolute (used_filename)) {
++				if (!used_filename.has_suffix (EXTENSION)) {
++					used_filename = used_filename.concat (EXTENSION);
++				}
++
++				var scale_factor = Meta.Backend.get_backend ().get_settings ().get_ui_scaling_factor ();
++				if (scale_factor > 1) {
++					var scale_pos = -EXTENSION.length;
++					used_filename = used_filename.splice (scale_pos, scale_pos, "@%ix".printf (scale_factor));
++				}
++
++				var path = find_target_path ();
++				used_filename = Path.build_filename (path, used_filename, null);
++			}
++
++			try {
++				var screenshot = Gdk.pixbuf_get_from_surface (image, 0, 0, image.get_width (), image.get_height ());
++				if (screenshot == null) {
++					throw new GLib.Error(0, 1, "Invalid surface image to get pixbuf from");
++				}
++
++				if (used_filename == "") { // save to clipboard
++					var selection = display.get_selection();
++					var stream = new MemoryOutputStream.resizable();
++					yield screenshot.save_to_stream_async (stream, "png");
++					stream.close(null);
++					var source = new Meta.SelectionSourceMemory("image/png", stream.steal_as_bytes());
++					selection.set_owner(Meta.SelectionType.SELECTION_CLIPBOARD, source);
++				}
++				else { // save to file
++					var file = File.new_for_path (used_filename);
++					FileIOStream stream;
++					if (file.query_exists ()) {
++						stream = yield file.open_readwrite_async (FileCreateFlags.NONE);
++					} else {
++						stream = yield file.create_readwrite_async (FileCreateFlags.NONE);
++					}
++					yield screenshot.save_to_stream_async (stream.output_stream, "png");
++				}
++
++				return true;
++			} catch (GLib.Error e) {
++				if (e.message != null) {
++					warning ("could not save file: %s", e.message);
++				}
++				return false;
++			}
++		}
++
++		Cairo.ImageSurface take_screenshot (int x, int y, int width, int height, bool include_cursor) {
++			Cairo.ImageSurface image;
++			int image_width, image_height;
++			float scale;
++
++			var stage = Meta.Compositor.get_stage_for_display(display) as Clutter.Stage;
++
++			stage.get_capture_final_size ({x, y, width, height}, out image_width, out image_height, out scale);
++
++			image = new Cairo.ImageSurface (Cairo.Format.ARGB32, image_width, image_height);
++
++			var paint_flags = Clutter.PaintFlag.CLEAR;
++			if (include_cursor) {
++				paint_flags |= Clutter.PaintFlag.FORCE_CURSORS;
++			}
++			else {
++				paint_flags |= Clutter.PaintFlag.NO_CURSORS;
++			}
++
++			if (GLib.ByteOrder.HOST == GLib.ByteOrder.LITTLE_ENDIAN) {
++				//gnome shell uses CLUTTER_CAIRO_FORMAT_ARGB32 - in the cairo header
++				//this is defined depending on the architecture and maps to a pixel format
++				stage.paint_to_buffer (
++					{x, y, width, height},
++					scale,
++					image.get_data(),
++					image.get_stride (),
++					Cogl.PixelFormat.BGRA_8888_PRE,
++					paint_flags
++				);
++			} else {
++				stage.paint_to_buffer (
++					{x, y, width, height},
++					scale,
++					image.get_data(),
++					image.get_stride (),
++					Cogl.PixelFormat.ARGB_8888_PRE,
++					paint_flags
++				);
++			}
++
++			if (include_cursor) {
++				if (include_cursor) {
++					image = composite_stage_cursor (image, { x, y, width, height });
++				}
++			}
++
++			return image;
++		}
++
++		Cairo.ImageSurface composite_stage_cursor (Cairo.ImageSurface image, Cairo.RectangleInt image_rect) {
++			Graphene.Point coords = {};
++			int xhot, yhot;
++			unowned Meta.CursorTracker cursor_tracker = display.get_cursor_tracker();
++			unowned Cogl.Texture texture = cursor_tracker.get_sprite ();
++
++			if (texture == null) {
++				return image;
++			}
++
++
++			var region = new Cairo.Region.rectangle (image_rect);
++			cursor_tracker.get_pointer (out coords, null);
++
++			if (!region.contains_point ((int) coords.x, (int) coords.y)) {
++				return image;
++			}
++
++			cursor_tracker.get_hot (out xhot, out yhot);
++
++			int width = (int)texture.get_width ();
++			int height = (int)texture.get_height ();
++
++			uint8[] data = new uint8[width * height * 4];
++			texture.get_data (Cogl.PixelFormat.RGBA_8888, 0, data);
++
++			var cursor_image = new Cairo.ImageSurface.for_data (data, Cairo.Format.ARGB32, width, height, width * 4);
++			var target = new Cairo.ImageSurface (Cairo.Format.ARGB32, image_rect.width, image_rect.height);
++
++			var cr = new Cairo.Context (target);
++			cr.set_operator (Cairo.Operator.OVER);
++			image.mark_dirty();
++			cr.set_source_surface (image, 0, 0);
++			cr.paint ();
++
++			cr.set_operator (Cairo.Operator.OVER);
++			cr.set_source_surface (cursor_image, coords.x - image_rect.x - xhot,
++				coords.y - image_rect.y - yhot);
++			cr.paint ();
++
++			return (Cairo.ImageSurface)cr.get_target ();
++		}
++
++		async void wait_stage_repaint () {
++			ulong signal_id = 0UL;
++			var stage = Meta.Compositor.get_stage_for_display(display) as Clutter.Stage;
++			signal_id = stage.after_paint.connect (() => {
++				stage.disconnect (signal_id);
++				Idle.add (wait_stage_repaint.callback);
++			});
++
++			stage.queue_redraw ();
++			yield;
++		}
++	}
++}
+diff --git a/src/wm/shim.vala b/src/wm/shim.vala
+index 3b48f237..a0372d8d 100644
+--- a/src/wm/shim.vala
++++ b/src/wm/shim.vala
+@@ -129,10 +129,12 @@ namespace Budgie {
+ 
+ 		/* Proxy off the OSD Calls */
+ 		private BudgieOSD? osd_proxy = null;
++		private unowned BudgieWM? wm = null;
+ 
+ 		[DBus (visible=false)]
+-		public ShellShim(Budgie.BudgieWM? wm) {
++		public ShellShim(Budgie.BudgieWM? _wm) {
+ 			grabs = new HashTable<string,uint?>(str_hash, str_equal);
++			wm = _wm;
+ 
+ 			display = wm.get_display();
+ 			display.accelerator_activated.connect(on_accelerator_activated);
+diff --git a/src/wm/wm.vala b/src/wm/wm.vala
+index 0f2d409a..38b987a3 100644
+--- a/src/wm/wm.vala
++++ b/src/wm/wm.vala
+@@ -36,6 +36,10 @@ namespace Budgie {
+ 	public const string SWITCHER_DBUS_NAME = "org.budgie_desktop.TabSwitcher";
+ 	public const string SWITCHER_DBUS_OBJECT_PATH = "/org/budgie_desktop/TabSwitcher";
+ 
++	public const string SCREENSHOTCLIENT_DBUS_NAME = "org.budgie_desktop.ScreenshotClient";
++	public const string SCREENSHOTCLIENT_DBUS_OBJECT_PATH = "/org/budgie_desktop/ScreenshotClient";
++
++
+ 	[Flags]
+ 	public enum PanelAction {
+ 		NONE = 1 << 0,
+@@ -101,6 +105,16 @@ namespace Budgie {
+ 		public abstract async void StopSwitcher() throws Error;
+ 	}
+ 
++	/**
++	* Allows us to invoke the screenshot client without directly using GTK+ ourselves
++	*/
++	[DBus (name="org.budgie_desktop.ScreenshotClient")]
++	public interface ScreenshotClient: GLib.Object {
++		public abstract async void ScreenshotClientArea() throws Error;
++		public abstract async void ScreenshotClientWindow() throws Error;
++		public abstract async void ScreenshotClientFullscreen() throws Error;
++	}
++
+ 	public class MinimizeData {
+ 		public float scale_x;
+ 		public float scale_y;
+@@ -138,6 +152,8 @@ namespace Budgie {
+ 		RavenRemote? raven_proxy = null;
+ 		ShellShim? shim = null;
+ 		BudgieWMDBUS? focus_interface = null;
++		ScreenshotManager? screenshot = null;
++		ScreenshotClient? screenshotclient_proxy = null;
+ 		PanelRemote? panel_proxy = null;
+ 		LoginDRemote? logind_proxy = null;
+ 		MenuManager? menu_proxy = null;
+@@ -171,6 +187,15 @@ namespace Budgie {
+ 			return FileUtils.test("/run/systemd/seats", FileTest.EXISTS);
+ 		}
+ 
++		/* Hold onto our ScreenshotClient proxy ref */
++		void on_screenshotclient_get(Object? o, AsyncResult? res) {
++			try {
++				screenshotclient_proxy = Bus.get_proxy.end(res);
++			} catch (Error e) {
++				warning("Failed to gain ScreenshotClient proxy: %s", e.message);
++			}
++		}
++
+ 		/* Hold onto our Raven proxy ref */
+ 		void on_raven_get(Object? o, AsyncResult? res) {
+ 			try {
+@@ -271,6 +296,9 @@ namespace Budgie {
+ 				string cmd=this.settings.get_string("full-screenshot-cmd");
+ 				if (cmd != "")
+ 					Process.spawn_command_line_async(cmd);
++				else
++					screenshotclient_proxy.ScreenshotClientFullscreen.begin();
++
+ 			} catch (SpawnError e) {
+ 				print("Error: %s\n", e.message);
+ 			}
+@@ -278,10 +306,14 @@ namespace Budgie {
+ 
+ 		/* Binding for take-region-screenshot */
+ 		void on_take_region_screenshot(Meta.Display display, Meta.Window? window, Clutter.KeyEvent? event, Meta.KeyBinding binding) {
++			message("on take region");
+ 			try {
+ 				string cmd=this.settings.get_string("take-region-screenshot-cmd");
+ 				if (cmd != "")
+ 					Process.spawn_command_line_async(cmd);
++				else
++					screenshotclient_proxy.ScreenshotClientArea.begin();
++
+ 			} catch (SpawnError e) {
+ 				print("Error: %s\n", e.message);
+ 			}
+@@ -293,6 +325,9 @@ namespace Budgie {
+ 				string cmd=this.settings.get_string("take-window-screenshot-cmd");
+ 				if (cmd != "")
+ 					Process.spawn_command_line_async(cmd);
++				else
++					screenshotclient_proxy.ScreenshotClientWindow.begin();
++
+ 			} catch (SpawnError e) {
+ 				print("Error: %s\n", e.message);
+ 			}
+@@ -343,6 +378,17 @@ namespace Budgie {
+ 			}
+ 		}
+ 
++		/* Set up the proxy when raven appears */
++		void has_screenshotclient() {
++			if (screenshotclient_proxy == null) {
++				Bus.get_proxy.begin<ScreenshotClient>(BusType.SESSION, SCREENSHOTCLIENT_DBUS_NAME, SCREENSHOTCLIENT_DBUS_OBJECT_PATH, 0, null, on_screenshotclient_get);
++			}
++		}
++
++		void lost_screenshotclient() {
++			screenshotclient_proxy = null;
++		}
++
+ 		/* Set up the proxy when raven appears */
+ 		void has_raven() {
+ 			if (raven_proxy == null) {
+@@ -478,6 +524,11 @@ namespace Budgie {
+ 			Bus.watch_name(BusType.SESSION, SWITCHER_DBUS_NAME, BusNameWatcherFlags.NONE,
+ 				has_switcher, lost_switcher);
+ 
++			/* ScreenshotClient */
++			Bus.watch_name(BusType.SESSION, SCREENSHOTCLIENT_DBUS_NAME, BusNameWatcherFlags.NONE,
++				has_screenshotclient, lost_screenshotclient);
++
++
+ 			/* Keep an eye out for systemd stuffs */
+ 			if (have_logind()) {
+ 				get_logind();
+@@ -513,6 +564,9 @@ namespace Budgie {
+ 			keyboard.hook_extra();
+ 
+ 			display.get_workspace_manager().override_workspace_layout(Meta.DisplayCorner.TOPLEFT, false, 1, -1);
++
++			screenshot = ScreenshotManager.init(this);
++			screenshot.setup_dbus();
+ 		}
+ 
+ 		/**
+diff --git a/vapi/Meta-10.metadata b/vapi/Meta-10.metadata
+index c3a6c902..50f8884d 100644
+--- a/vapi/Meta-10.metadata
++++ b/vapi/Meta-10.metadata
+@@ -11,6 +11,7 @@ CloseDialog cheader_filename="meta/meta-close-dialog.h"
+ CursorTracker cheader_filename="meta/meta-cursor-tracker.h"
+ CursorTracker.get_for_display parent="Meta.Display" symbol_type="method" instance_idx=0 name="get_cursor_tracker"
+ CursorTracker.get_pointer.mods out
++CursorTracker.get_pointer.coords out
+ Display cheader_filename="meta/display.h"
+ Dnd cheader_filename="meta/meta-dnd.h"
+ IdleMonitor cheader_filename="meta/meta-idle-monitor.h"
+diff --git a/vapi/libmutter-10.vapi b/vapi/libmutter-10.vapi
+index 46b71c4d..25e88839 100644
+--- a/vapi/libmutter-10.vapi
++++ b/vapi/libmutter-10.vapi
+@@ -314,7 +314,7 @@ namespace Meta {
+ 		[CCode (has_construct_function = false)]
+ 		protected CursorTracker ();
+ 		public void get_hot (out int x, out int y);
+-		public void get_pointer (Graphene.Point coords, out Clutter.ModifierType mods);
++		public void get_pointer (out Graphene.Point coords, out Clutter.ModifierType mods);
+ 		public bool get_pointer_visible ();
+ 		public float get_scale ();
+ 		public unowned Cogl.Texture get_sprite ();
+diff --git a/vapi/mutter-clutter-9.vapi b/vapi/mutter-clutter-9.vapi
+index 387ac6db..b6315766 100644
+--- a/vapi/mutter-clutter-9.vapi
++++ b/vapi/mutter-clutter-9.vapi
+@@ -6634,7 +6634,7 @@ namespace Clutter {
+ 		[Version (since = "0.4")]
+ 		public unowned string get_title ();
+ 		public bool get_use_alpha ();
+-		public bool paint_to_buffer (Cairo.RectangleInt rect, float scale, [CCode (array_length = false)] ref uint8[] data, int stride, Cogl.PixelFormat format, Clutter.PaintFlag paint_flags) throws GLib.Error;
++		public bool paint_to_buffer (Cairo.RectangleInt rect, float scale, [CCode (array_length = false)] uint8[] data, int stride, Cogl.PixelFormat format, Clutter.PaintFlag paint_flags) throws GLib.Error;
+ 		public Clutter.Content paint_to_content (Cairo.RectangleInt rect, float scale, Clutter.PaintFlag paint_flags) throws GLib.Error;
+ 		public void paint_to_framebuffer (Cogl.Framebuffer framebuffer, Cairo.RectangleInt rect, float scale, Clutter.PaintFlag paint_flags);
+ 		[CCode (array_length = false)]
