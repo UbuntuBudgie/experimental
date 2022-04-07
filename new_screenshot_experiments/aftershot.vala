@@ -47,8 +47,7 @@ namespace AfterShot {
                 );
                 decisionimage.pixel_size = 24;
                 buttongrid.attach(decisionimage, 0, 0, 1, 1);
-                buttongrid.set_margin_start(10);
-                buttongrid.set_margin_end(10);
+                set_margins(buttongrid, 8, 8, 0, 0);
                 decisionbutton.add(buttongrid);
                 buttongrid.show_all();
                 if (left) {
@@ -95,7 +94,6 @@ namespace AfterShot {
             directorygrid.attach(pickdirbox, 0, 1, 1, 1);
 
             // volume monitor
-            
             monitor = VolumeMonitor.get();
             monitor.mount_added.connect(update_dropdown);
             monitor.mount_removed.connect(update_dropdown);
