@@ -210,9 +210,6 @@ namespace AfterShot {
         new AfterShotWindow();
         Gtk.main();
     }
-
-
-
 }
 
 
