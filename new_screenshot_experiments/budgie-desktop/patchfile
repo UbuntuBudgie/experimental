@@ -20,17 +20,17 @@ index 2711824e..d9909a39 100644
  
  		/**
 diff --git a/src/daemon/meson.build b/src/daemon/meson.build
-index 3d367abe..e7d2595a 100644
+index e2e91416..5ff54856 100644
 --- a/src/daemon/meson.build
 +++ b/src/daemon/meson.build
-@@ -25,6 +25,7 @@ daemon_sources = [
+@@ -33,6 +33,7 @@ daemon_sources = [
      'osd.vala',
      'settings.vala',
      'tabswitcher.vala',
 +    'screenshotclient.vala',
-     daemon_resources,
  ]
  
+ daemon_deps = [
 diff --git a/src/daemon/screenshotclient.vala b/src/daemon/screenshotclient.vala
 new file mode 100644
 index 00000000..c29d6231
@@ -169,10 +169,10 @@ index 52c06959..02a042d2 100644
  budgie_wm_status_vala_args = []
 diff --git a/src/wm/screenshot.vala b/src/wm/screenshot.vala
 new file mode 100644
-index 00000000..629a0388
+index 00000000..a676878d
 --- /dev/null
 +++ b/src/wm/screenshot.vala
-@@ -0,0 +1,338 @@
+@@ -0,0 +1,349 @@
 +/*
 + * This file is part of budgie-desktop
 + *
@@ -427,23 +427,34 @@ index 00000000..629a0388
 +			if (GLib.ByteOrder.HOST == GLib.ByteOrder.LITTLE_ENDIAN) {
 +				//gnome shell uses CLUTTER_CAIRO_FORMAT_ARGB32 - in the cairo header
 +				//this is defined depending on the architecture and maps to a pixel format
-+				stage.paint_to_buffer (
-+					{x, y, width, height},
-+					scale,
-+					image.get_data(),
-+					image.get_stride (),
-+					Cogl.PixelFormat.BGRA_8888_PRE,
-+					paint_flags
-+				);
++				try {
++					stage.paint_to_buffer (
++						{x, y, width, height},
++						scale,
++						image.get_data(),
++						image.get_stride (),
++						Cogl.PixelFormat.BGRA_8888_PRE,
++						paint_flags
++					);
++				}
++				catch (Error e) {
++					message("Unable to paint_to_buffer (BGRA): %s", e.message);
++				}
++
 +			} else {
-+				stage.paint_to_buffer (
-+					{x, y, width, height},
-+					scale,
-+					image.get_data(),
-+					image.get_stride (),
-+					Cogl.PixelFormat.ARGB_8888_PRE,
-+					paint_flags
-+				);
++				try {
++					stage.paint_to_buffer (
++						{x, y, width, height},
++						scale,
++						image.get_data(),
++						image.get_stride (),
++						Cogl.PixelFormat.ARGB_8888_PRE,
++						paint_flags
++					);
++				}
++				catch (Error e) {
++					message("Unable to paint_to_buffer (ARGB): %s", e.message);
++				}
 +			}
 +
 +			if (include_cursor) {
