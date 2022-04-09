@@ -500,6 +500,37 @@ namespace NewScreenshotApp {
                 pickdir_combo.show();
                 act_ondropdown = true;
             }
+            //////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////
+
+            void save_customdir (Gtk.Dialog dialog, int response_id) {
+                var save_dialog = dialog as Gtk.FileChooserDialog;
+                if (response_id == Gtk.ResponseType.ACCEPT) {
+                    File file = save_dialog.get_file();
+                    FileInfo info = file.query_info("standard::icon", 0);
+                    Icon icon = info.get_icon();
+                    //  string ic_name = icon.to_string().split(" ")[2]; // again: dirty!
+                    // hmmm, maybe just check if it's in deafult list, if not -> standar folder icon?
+                    string ic_name = icon.to_string();
+                    custompath = file.get_path();
+                    print(@"custompath: $custompath, icon: $ic_name\n");
+                    // ^^^ add to liststore, update combobox
+                }
+                dialog.destroy ();
+            }
+
+            private void get_customdir() {
+                Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(
+                    "Open Folder", this, Gtk.FileChooserAction.SELECT_FOLDER,
+                    ("Cancel"), Gtk.ResponseType.CANCEL, ("Open"),
+                    Gtk.ResponseType.ACCEPT, null
+                );
+                dialog.response.connect(save_customdir);
+                dialog.show();
+            }
+            //////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////
+
 
             private void set_margins(
                 Gtk.Grid grid, int left, int right, int top, int bottom
@@ -510,13 +541,17 @@ namespace NewScreenshotApp {
                 grid.set_margin_bottom(bottom);
             }
 
-            void item_changed (Gtk.ComboBox combo) { 
+            void item_changed (Gtk.ComboBox combo) {
                 // ditch this function? No! it should change gsettings AND...
                 // ...we need to fetch custom path
                 if (act_ondropdown) {
                     int combo_index = combo.get_active();
                     string found_dir = dirpaths[combo_index];
                     print (@"You chose: $combo_index, $found_dir\n");
+                    if (found_dir == "#pick_custom_path") {
+                        get_customdir();
+                    }
+
                 }
             }
         }
