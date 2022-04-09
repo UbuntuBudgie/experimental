@@ -117,11 +117,10 @@ namespace NewScreenshotApp {
                 toplefty = areageo[1];
                 width = areageo[2];
                 height = areageo[3];
-                //  print(@"latest_update: $topleftx, $toplefty, $width, $height\n");
                 // update
                 Gdk.Window window = this.get_window();
-                var region = window.get_clip_region ();
-                window.invalidate_region (region, true);
+                var region = window.get_clip_region();
+                window.invalidate_region(region, true);
                 return true;
             }
 
@@ -184,6 +183,9 @@ namespace NewScreenshotApp {
                 int scale = get_scaling();
                 bool success = false;
                 string filename_used = "";
+                // if we just click, forget to drag, set w/h to 1px
+                (height == 0)? height = 1 : height = height;
+                (width == 0)? width = 1 : width = width;
                 yield client.ScreenshotArea (
                     topleftx*scale, toplefty*scale, width*scale, height*scale, false, true, "",
                     out success, out filename_used
@@ -241,9 +243,11 @@ namespace NewScreenshotApp {
 
 
             // Just for testing, we are running it now from cli
+            // finally don't start mainloop here!
             Gtk.init(ref args);
             int delay;
             (args.length != 1)? delay = int.parse(args[1]) : delay = 0;
+            // finally don't initiate here
             new SelectLayer(delay);
             Gtk.main();
             return 0;
@@ -263,6 +267,7 @@ namespace NewScreenshotApp {
             VolumeMonitor monitor;
             string[] dirpaths;
             bool act_ondropdown = true;
+            string? custompath = null;
 
 
             enum Column {
@@ -309,9 +314,6 @@ namespace NewScreenshotApp {
                     }
                     decisionbuttons += decisionbutton;
                 }
-                decisionbuttons[0].clicked.connect(()=> {
-                    this.destroy();
-                });
                 decisionbuttons[1].get_style_context().add_class(
                     Gtk.STYLE_CLASS_SUGGESTED_ACTION
                 );
@@ -322,8 +324,6 @@ namespace NewScreenshotApp {
                 Gtk.Image img = resize_pixbuf(pxb, scale);
                 maingrid.attach(img, 0, 0, 1, 1);
                 ///////////////////////////////////////////////
-
-
                 this.add(maingrid);
                 set_margins(maingrid, 25, 25, 25, 25);
                 Gtk.Grid directorygrid = new Gtk.Grid();
@@ -336,8 +336,15 @@ namespace NewScreenshotApp {
                 filenamelabel.xalign = 0;
                 filenamelabel.set_size_request(80, 10);
                 filenamebox.pack_start(filenamelabel);
+
+
                 Entry filenameentry = new Gtk.Entry();
+                //  filenameentry.ellipsize = Pango.EllipsizeMode.START;
+                //  cell.set_fixed_size(15, -1);
+
+
                 filenameentry.set_size_request(265, 10);
+                filenameentry.set_text(get_scrshotname());
                 filenamebox.pack_end(filenameentry);
                 directorygrid.attach(filenamebox, 0, 0, 1, 1);
 
@@ -363,8 +370,33 @@ namespace NewScreenshotApp {
                 update_dropdown();
                 pickdir_combo.changed.connect(item_changed);
                 maingrid.attach(directorygrid, 0, 1, 1, 1);
+
+                // set headerbar button actions
+                decisionbuttons[0].clicked.connect(this.destroy);
+                decisionbuttons[1].clicked.connect(()=> {
+                    save_tofile(filenameentry, pickdir_combo, pxb);
+                });
+                //////////////////////////////////////////////
                 this.show_all();
             }
+
+            private string get_scrshotname() {
+                GLib.DateTime now = new GLib.DateTime.now_local();
+                return now.format("Snapshot_%F_%H-%M-%S.png");
+            }
+
+            private void save_tofile(
+                Gtk.Entry entry, ComboBox combo, Pixbuf pxb
+            ) {
+                // todo: make extension arbitrary (gsettings)
+                // todo: take care of custom path, add to liststore, show in dropdown, find out (g)icon
+                string filename = entry.get_text();
+                int combo_index = combo.get_active();
+                string found_dir = dirpaths[combo_index];
+
+                pxb.save(@"$found_dir/$filename", "png");
+            }
+
 
             private Gtk.Image resize_pixbuf(Pixbuf pxb, int scale) {
                 // Since this will be used by multiple, move to a higher scope
@@ -384,7 +416,6 @@ namespace NewScreenshotApp {
                 Gdk.Pixbuf resized = pxb.scale_simple (dest_width, dest_height, InterpType.BILINEAR);
                 return new Gtk.Image.from_pixbuf(resized);
             }
-
 
             private void create_row(
                 string? path, string? mention,
@@ -479,7 +510,9 @@ namespace NewScreenshotApp {
                 grid.set_margin_bottom(bottom);
             }
 
-            void item_changed (Gtk.ComboBox combo) {;
+            void item_changed (Gtk.ComboBox combo) { 
+                // ditch this function? No! it should change gsettings AND...
+                // ...we need to fetch custom path
                 if (act_ondropdown) {
                     int combo_index = combo.get_active();
                     string found_dir = dirpaths[combo_index];
