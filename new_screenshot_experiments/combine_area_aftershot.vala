@@ -197,7 +197,7 @@ namespace NewScreenshotApp {
                 (height == 0)? height = 1 : height = height;
                 (width == 0)? width = 1 : width = width;
                 yield client.ScreenshotArea (
-                    topleftx*scale, toplefty*scale, width*scale, height*scale, false, true, "",
+                    topleftx*scale, toplefty*scale, width*scale, height*scale, true, true, "",
                     out success, out filename_used
                 );
                 play_shuttersound();
@@ -275,7 +275,6 @@ namespace NewScreenshotApp {
             Gtk.ListStore dir_liststore;
             Gtk.ComboBox pickdir_combo;
             VolumeMonitor monitor;
-            string[] dirpaths;
             bool act_ondropdown = true;
             string? custompath = null;
 
@@ -350,10 +349,6 @@ namespace NewScreenshotApp {
 
 
                 Entry filenameentry = new Gtk.Entry();
-                //  filenameentry.ellipsize = Pango.EllipsizeMode.START;
-                //  cell.set_fixed_size(15, -1);
-
-
                 filenameentry.set_size_request(265, 10);
                 filenameentry.set_text(get_scrshotname());
                 filenamebox.pack_end(filenameentry);
@@ -387,7 +382,6 @@ namespace NewScreenshotApp {
                 decisionbuttons[1].clicked.connect(()=> {
                     save_tofile(filenameentry, pickdir_combo, pxb);
                 });
-                //////////////////////////////////////////////
                 this.show_all();
             }
 
@@ -401,10 +395,12 @@ namespace NewScreenshotApp {
             ) {
                 // todo: make extension arbitrary (gsettings)
                 // todo: take care of custom path, add to liststore, show in dropdown, find out (g)icon
+                Gtk.TreeIter iter;
+                GLib.Value val;
+                combo.get_active_iter(out iter);
+                dir_liststore.get_value(iter, 0, out val);
+                string? found_dir = (string)val;
                 string filename = entry.get_text();
-                int combo_index = combo.get_active();
-                string found_dir = dirpaths[combo_index];
-
                 pxb.save(@"$found_dir/$filename", "png");
             }
 
@@ -463,7 +459,6 @@ namespace NewScreenshotApp {
                 // temporarily surpass dropdown-connect
                 act_ondropdown = false;
                 // - and clean up stuff
-                dirpaths = {};
                 pickdir_combo.clear();
                 dir_liststore.clear();
                 // look up user dirs & add
@@ -475,7 +470,6 @@ namespace NewScreenshotApp {
                 int n_dirs = UserDirectory.N_DIRECTORIES;
                 for(int i=0; i<n_dirs; i++) {
                     string path = Environment.get_user_special_dir(i);
-                    dirpaths += path; //
                     string[] dirmention = path.split("/");
                     string mention = dirmention[dirmention.length-1];
                     string iconname = userdir_iconnames[i];
@@ -483,28 +477,23 @@ namespace NewScreenshotApp {
                 }
                 // separator
                 create_row(null, null, null, true);
-                dirpaths += "";
                 // look up mounted volumes
                 bool add_separator = false;
                 List<Mount> mounts = monitor.get_mounts ();
                 foreach (Mount mount in mounts) {
                     add_separator = true;
                     GLib.Icon icon = mount.get_icon();
-                    //  string ic_name = icon.to_string().split(" ")[2]; // seems awfully dirty...
                     string ic_name = get_icon_fromgicon(icon);
                     string displayedname = mount.get_name();
                     string dirpath = mount.get_default_location ().get_path ();
-                    dirpaths += dirpath;
                     create_row(dirpath, displayedname, ic_name, false);
                 }
                 // only add separator if there are volumes to list
                 if (add_separator) {
                     create_row(null, null, null, true);
-                    dirpaths += "";
                 }
                 // Other -> call Filebrowser
                 create_row(null, "Other...", null, false);
-                dirpaths += "#pick_custom_path";
                 // set separator
                 pickdir_combo.set_row_separator_func(is_separator);
                 // populate dropdown
@@ -532,8 +521,7 @@ namespace NewScreenshotApp {
                     Icon icon = info.get_icon();
                     string ic_name = get_icon_fromgicon(icon);
                     custompath = file.get_path();
-                    int dir_index = find_stringindex(custompath, dirpaths);
-                    print(@"custompath: $custompath, index: $dir_index, icon: $ic_name\n");
+                    //  print(@"custompath: $custompath, index: $dir_index, icon: $ic_name\n");
                     // ^^^ add to liststore, update combobox
                 }
                 dialog.destroy ();
@@ -574,15 +562,22 @@ namespace NewScreenshotApp {
                 grid.set_margin_bottom(bottom);
             }
 
-            void item_changed (Gtk.ComboBox combo) {
+            private void item_changed (Gtk.ComboBox combo) {
                 // ditch this function? No! it should change gsettings AND...
                 // ...we need to fetch custom path
                 if (act_ondropdown) {
-                    int combo_index = combo.get_active();
-                    string found_dir = dirpaths[combo_index];
-                    print (@"You chose: $combo_index, $found_dir\n");
-                    if (found_dir == "#pick_custom_path") {
+                    Gtk.TreeIter iter;
+                    GLib.Value val;
+                    combo.get_active_iter(out iter);
+                    dir_liststore.get_value(iter, 0, out val);
+                    string? found_dir = (string)val;
+                    stdout.printf("Selection is '%s'\n", found_dir);
+                    if (found_dir == null) {
                         get_customdir();
+                        // add to liststore, update liststore
+                    }
+                    else {
+                        custompath = null;
                     }
                 }
             }
