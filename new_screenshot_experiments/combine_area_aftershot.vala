@@ -5,6 +5,16 @@ using Gst;
 
 // valac --pkg cairo --pkg gtk+-3.0 --pkg gdk-3.0 --pkg gstreamer-1.0 --pkg gio-2.0
 
+//// below spare parts to use for opening in default app
+//  var file = File.new_for_path (file_path);
+//  if (file.query_exists ()) {
+//      try {
+//          AppInfo.launch_default_for_uri (file.get_uri (), null);
+//      } catch (Error e) {
+//          warning ("Unable to launch %s", file_path);
+//      }
+//  }
+
 namespace NewScreenshotApp {
 
     BudgieScreenshotClient client;
@@ -290,12 +300,13 @@ namespace NewScreenshotApp {
                 string[] header_imagenames = {
                     "trash-shot-symbolic",
                     "save-shot-symbolic",
-                    "clipboard-shot-symbolic"
+                    "clipboard-shot-symbolic",
+                    "edit-shot-symbolic"
                 };
                 bool left = true;
                 foreach (string s in header_imagenames) {
                     Button decisionbutton = new Gtk.Button();
-                    //  decisionbutton.set_size_request(,10);
+                    decisionbutton.set_can_focus(false);
                     Grid buttongrid = new Gtk.Grid();
                     Gtk.Image decisionimage = new Gtk.Image.from_icon_name(
                         s, Gtk.IconSize.BUTTON
@@ -438,6 +449,15 @@ namespace NewScreenshotApp {
                 return (bool)is_sep;
             }
 
+            private int find_stringindex(string str, string[] arr) {
+                for(int i=0; i<arr.length; i++) {
+                    if (str == arr[i]) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+
             private void update_dropdown() {
                 // on adding/removing a volume, update the dropdown
                 // temporarily surpass dropdown-connect
@@ -470,7 +490,8 @@ namespace NewScreenshotApp {
                 foreach (Mount mount in mounts) {
                     add_separator = true;
                     GLib.Icon icon = mount.get_icon();
-                    string ic_name = icon.to_string().split(" ")[2]; // seems awfully dirty...
+                    //  string ic_name = icon.to_string().split(" ")[2]; // seems awfully dirty...
+                    string ic_name = get_icon_fromgicon(icon);
                     string displayedname = mount.get_name();
                     string dirpath = mount.get_default_location ().get_path ();
                     dirpaths += dirpath;
@@ -509,14 +530,26 @@ namespace NewScreenshotApp {
                     File file = save_dialog.get_file();
                     FileInfo info = file.query_info("standard::icon", 0);
                     Icon icon = info.get_icon();
-                    //  string ic_name = icon.to_string().split(" ")[2]; // again: dirty!
-                    // hmmm, maybe just check if it's in deafult list, if not -> standar folder icon?
-                    string ic_name = icon.to_string();
+                    string ic_name = get_icon_fromgicon(icon);
                     custompath = file.get_path();
-                    print(@"custompath: $custompath, icon: $ic_name\n");
+                    int dir_index = find_stringindex(custompath, dirpaths);
+                    print(@"custompath: $custompath, index: $dir_index, icon: $ic_name\n");
                     // ^^^ add to liststore, update combobox
                 }
                 dialog.destroy ();
+            }
+
+            private string get_icon_fromgicon(GLib.Icon ic) {
+                /*
+                * kind of dirty, we should find a cleaner one
+                * if gicon holds ThemedIcon info, it starts with "". ThemedIcon",
+                * so we pick first icon after that from the list
+                * in other cases, single icon name is the only data in gicon.
+                */
+                string found_icon = "";
+                string[] iconinfo = ic.to_string().split(" ");
+                (iconinfo.length >=3)? found_icon = iconinfo[2] : found_icon = iconinfo[0];
+                return found_icon;
             }
 
             private void get_customdir() {
@@ -551,7 +584,6 @@ namespace NewScreenshotApp {
                     if (found_dir == "#pick_custom_path") {
                         get_customdir();
                     }
-
                 }
             }
         }
