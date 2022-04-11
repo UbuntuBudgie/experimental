@@ -276,7 +276,7 @@ namespace NewScreenshotApp {
             Gtk.ComboBox pickdir_combo;
             VolumeMonitor monitor;
             bool act_ondropdown = true;
-            string? custompath = null;
+            string[]? custompath_row = null;
 
 
             enum Column {
@@ -330,10 +330,9 @@ namespace NewScreenshotApp {
                 this.set_titlebar(decisionbar);
                 // grids
                 Gtk.Grid maingrid = new Gtk.Grid();
-                ///////////////////////////////////////////////
+                // create resized image for preview
                 Gtk.Image img = resize_pixbuf(pxb, scale);
                 maingrid.attach(img, 0, 0, 1, 1);
-                ///////////////////////////////////////////////
                 this.add(maingrid);
                 set_margins(maingrid, 25, 25, 25, 25);
                 Gtk.Grid directorygrid = new Gtk.Grid();
@@ -374,7 +373,11 @@ namespace NewScreenshotApp {
                 monitor.mount_added.connect(update_dropdown);
                 monitor.mount_removed.connect(update_dropdown);
                 update_dropdown();
-                pickdir_combo.changed.connect(item_changed);
+                pickdir_combo.changed.connect(()=> {
+                    if (act_ondropdown) {
+                        item_changed(pickdir_combo);
+                    }
+                });
                 maingrid.attach(directorygrid, 0, 1, 1, 1);
 
                 // set headerbar button actions
@@ -385,7 +388,17 @@ namespace NewScreenshotApp {
                 this.show_all();
             }
 
+            private string? get_path_fromcombo(Gtk.ComboBox combo) {
+                // get the info from liststore from selected item
+                Gtk.TreeIter iter;
+                GLib.Value val;
+                combo.get_active_iter(out iter);
+                dir_liststore.get_value(iter, 0, out val);
+                return (string)val;
+            }
+
             private string get_scrshotname() {
+                // create timestamped name
                 GLib.DateTime now = new GLib.DateTime.now_local();
                 return now.format("Snapshot_%F_%H-%M-%S.png");
             }
@@ -395,15 +408,10 @@ namespace NewScreenshotApp {
             ) {
                 // todo: make extension arbitrary (gsettings)
                 // todo: take care of custom path, add to liststore, show in dropdown, find out (g)icon
-                Gtk.TreeIter iter;
-                GLib.Value val;
-                combo.get_active_iter(out iter);
-                dir_liststore.get_value(iter, 0, out val);
-                string? found_dir = (string)val;
+                string? found_dir = get_path_fromcombo(combo);
                 string filename = entry.get_text();
                 pxb.save(@"$found_dir/$filename", "png");
             }
-
 
             private Gtk.Image resize_pixbuf(Pixbuf pxb, int scale) {
                 // Since this will be used by multiple, move to a higher scope
@@ -420,11 +428,12 @@ namespace NewScreenshotApp {
                 }
                 int dest_width = (int)(scaled_width * resize);
                 int dest_height = (int)(scaled_height * resize);
-                Gdk.Pixbuf resized = pxb.scale_simple (dest_width, dest_height, InterpType.BILINEAR);
+                Gdk.Pixbuf resized = pxb.scale_simple(dest_width, dest_height, InterpType.BILINEAR);
                 return new Gtk.Image.from_pixbuf(resized);
             }
 
             private void create_row(
+                // the labor work to add a row
                 string? path, string? mention,
                 string? iconname, bool separator = false) {
                 // create a liststore-row
@@ -475,6 +484,15 @@ namespace NewScreenshotApp {
                     string iconname = userdir_iconnames[i];
                     create_row(path, mention, iconname, false);
                 }
+                // possible custom dir
+                if (custompath_row != null) {
+                    print("setting custom row\n");
+                    create_row(null, null, null, true);
+                    create_row(
+                        custompath_row[0], custompath_row[1],
+                        custompath_row[2], false
+                    );
+                }
                 // separator
                 create_row(null, null, null, true);
                 // look up mounted volumes
@@ -492,7 +510,7 @@ namespace NewScreenshotApp {
                 if (add_separator) {
                     create_row(null, null, null, true);
                 }
-                // Other -> call Filebrowser
+                // Other -> call Filebrowser (path = null)
                 create_row(null, "Other...", null, false);
                 // set separator
                 pickdir_combo.set_row_separator_func(is_separator);
@@ -510,19 +528,23 @@ namespace NewScreenshotApp {
                 pickdir_combo.show();
                 act_ondropdown = true;
             }
-            //////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////
 
             void save_customdir (Gtk.Dialog dialog, int response_id) {
+                // setting user response on dialog as custom path (the labor work)
                 var save_dialog = dialog as Gtk.FileChooserDialog;
                 if (response_id == Gtk.ResponseType.ACCEPT) {
                     File file = save_dialog.get_file();
                     FileInfo info = file.query_info("standard::icon", 0);
                     Icon icon = info.get_icon();
                     string ic_name = get_icon_fromgicon(icon);
-                    custompath = file.get_path();
-                    //  print(@"custompath: $custompath, index: $dir_index, icon: $ic_name\n");
-                    // ^^^ add to liststore, update combobox
+                    // so, the actual path
+                    string custompath = file.get_path();
+                    // ...and its mention in the dropdown
+                    string[] custompath_data = custompath.split("/");
+                    string mention = custompath_data[custompath_data.length - 1];
+                    // delivering info to set new row
+                    custompath_row = {custompath, mention, ic_name};
+                    update_dropdown();
                 }
                 dialog.destroy ();
             }
@@ -541,6 +563,7 @@ namespace NewScreenshotApp {
             }
 
             private void get_customdir() {
+                // set custom dir to found dir
                 Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(
                     "Open Folder", this, Gtk.FileChooserAction.SELECT_FOLDER,
                     ("Cancel"), Gtk.ResponseType.CANCEL, ("Open"),
@@ -549,13 +572,11 @@ namespace NewScreenshotApp {
                 dialog.response.connect(save_customdir);
                 dialog.show();
             }
-            //////////////////////////////////////////////////////////////////////////
-            //////////////////////////////////////////////////////////////////////////
-
 
             private void set_margins(
                 Gtk.Grid grid, int left, int right, int top, int bottom
             ) {
+                // settin g margins for a grid
                 grid.set_margin_start(left);
                 grid.set_margin_end(right);
                 grid.set_margin_top(top);
@@ -563,22 +584,15 @@ namespace NewScreenshotApp {
             }
 
             private void item_changed (Gtk.ComboBox combo) {
-                // ditch this function? No! it should change gsettings AND...
-                // ...we need to fetch custom path
-                if (act_ondropdown) {
-                    Gtk.TreeIter iter;
-                    GLib.Value val;
-                    combo.get_active_iter(out iter);
-                    dir_liststore.get_value(iter, 0, out val);
-                    string? found_dir = (string)val;
-                    stdout.printf("Selection is '%s'\n", found_dir);
-                    if (found_dir == null) {
-                        get_customdir();
-                        // add to liststore, update liststore
-                    }
-                    else {
-                        custompath = null;
-                    }
+                /*
+                * on combo selection change, check if we need to add custom
+                * path. selected item then has null for field path
+                */
+                if (get_path_fromcombo(combo) == null) {
+                    get_customdir();
+                }
+                else {
+                    custompath_row = null;
                 }
             }
         }
