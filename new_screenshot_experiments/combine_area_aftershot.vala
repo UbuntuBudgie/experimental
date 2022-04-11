@@ -476,6 +476,7 @@ namespace NewScreenshotApp {
                     "folder-music", "folder-pictures", "folder-publicshare",
                     "folder-templates", "folder-videos"
                 }; // do we need fallbacks?
+                // first section: user-dirs
                 int n_dirs = UserDirectory.N_DIRECTORIES;
                 for(int i=0; i<n_dirs; i++) {
                     string path = Environment.get_user_special_dir(i);
@@ -484,6 +485,7 @@ namespace NewScreenshotApp {
                     string iconname = userdir_iconnames[i];
                     create_row(path, mention, iconname, false);
                 }
+                // second section: (possible) custom path
                 // possible custom dir
                 if (custompath_row != null) {
                     print("setting custom row\n");
@@ -495,7 +497,7 @@ namespace NewScreenshotApp {
                 }
                 // separator
                 create_row(null, null, null, true);
-                // look up mounted volumes
+                // third section: look up mounted volumes
                 bool add_separator = false;
                 List<Mount> mounts = monitor.get_mounts ();
                 foreach (Mount mount in mounts) {
@@ -525,6 +527,10 @@ namespace NewScreenshotApp {
                 pickdir_combo.set_attributes (cell, "text", Column.DISPLAYEDNAME);
                 pickdir_combo.set_attributes (cell_pb, "icon_name", Column.ICON);
                 pickdir_combo.set_active(0); // change! needs a gsettings check
+                // if we picked a custom dir, set it active
+                if (custompath_row != null) {
+                    pickdir_combo.set_active(n_dirs + 1);
+                }
                 pickdir_combo.show();
                 act_ondropdown = true;
             }
