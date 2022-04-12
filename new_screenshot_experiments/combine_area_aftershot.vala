@@ -281,6 +281,7 @@ namespace NewScreenshotApp {
             bool act_ondropdown = true;
             string[]? custompath_row = null;
             string[] alldirs = {};
+            Button[] decisionbuttons = {};
 
 
             enum Column {
@@ -298,7 +299,7 @@ namespace NewScreenshotApp {
                 // headerbar
                 HeaderBar decisionbar = new Gtk.HeaderBar();
                 decisionbar.show_close_button = false;
-                Button[] decisionbuttons = {};
+                //  Button[] decisionbuttons = {};
                 string[] header_imagenames = {
                     "trash-shot-symbolic",
                     "save-shot-symbolic",
@@ -309,15 +310,7 @@ namespace NewScreenshotApp {
                 foreach (string s in header_imagenames) {
                     Button decisionbutton = new Gtk.Button();
                     decisionbutton.set_can_focus(false);
-                    Grid buttongrid = new Gtk.Grid();
-                    Gtk.Image decisionimage = new Gtk.Image.from_icon_name(
-                        s, Gtk.IconSize.BUTTON
-                    );
-                    decisionimage.pixel_size = 24;
-                    buttongrid.attach(decisionimage, 0, 0, 1, 1);
-                    set_margins(buttongrid, 8, 8, 0, 0);
-                    decisionbutton.add(buttongrid);
-                    buttongrid.show_all();
+                    set_buttoncontent(decisionbutton, s);
                     if (left) {
                         decisionbar.pack_start(decisionbutton);
                         left = false;
@@ -331,7 +324,6 @@ namespace NewScreenshotApp {
                 decisionbuttons[1].get_style_context().add_class(
                     Gtk.STYLE_CLASS_SUGGESTED_ACTION
                 );
-
                 this.set_titlebar(decisionbar);
                 // grids
                 Gtk.Grid maingrid = new Gtk.Grid();
@@ -384,7 +376,6 @@ namespace NewScreenshotApp {
                 decisionbuttons[0].clicked.connect(this.destroy);
                 // - save to file
                 decisionbuttons[1].clicked.connect(()=> {
-                    // Todo, check if no permission error etc
                     save_tofile(filenameentry, pickdir_combo, pxb);
                 });
                 // copy to clipboard
@@ -421,7 +412,23 @@ namespace NewScreenshotApp {
                 }
                 catch (Error e) {
                     stderr.printf ("%s\n", e.message);
+                    set_buttoncontent(decisionbuttons[1], "error-app-symbolic");
                 }
+            }
+
+            private void set_buttoncontent(Button b, string icon) {
+                foreach (Widget w in b.get_children()) {
+                    w.destroy();
+                }
+                Grid buttongrid = new Gtk.Grid();
+                Gtk.Image buttonimage = new Gtk.Image.from_icon_name(
+                    icon, Gtk.IconSize.BUTTON
+                );
+                buttonimage.pixel_size = 24;
+                buttongrid.attach(buttonimage, 0, 0, 1, 1);
+                set_margins(buttongrid, 8, 8, 0, 0);
+                b.add(buttongrid);
+                buttongrid.show_all();
             }
 
             private Gtk.Image resize_pixbuf(Pixbuf pxb, int scale) {
@@ -609,6 +616,8 @@ namespace NewScreenshotApp {
                 * on combo selection change, check if we need to add custom
                 * path. selected item then has null for field path
                 */
+                // if we change directory, reset save button's icon
+                set_buttoncontent(decisionbuttons[1], "save-shot-symbolic");
                 if (get_path_fromcombo(combo) == null) {
                     get_customdir();
                 }
