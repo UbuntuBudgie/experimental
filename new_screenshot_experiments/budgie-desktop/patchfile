@@ -1,5 +1,5 @@
 diff --git a/src/daemon/manager.vala b/src/daemon/manager.vala
-index 2711824e..d9909a39 100644
+index 3f622351..3e05c2de 100644
 --- a/src/daemon/manager.vala
 +++ b/src/daemon/manager.vala
 @@ -23,6 +23,7 @@ namespace Budgie {
@@ -548,7 +548,7 @@ index 3b48f237..a0372d8d 100644
  			display = wm.get_display();
  			display.accelerator_activated.connect(on_accelerator_activated);
 diff --git a/src/wm/wm.vala b/src/wm/wm.vala
-index 0f2d409a..38b987a3 100644
+index 447149ab..6d773c7a 100644
 --- a/src/wm/wm.vala
 +++ b/src/wm/wm.vala
 @@ -36,6 +36,10 @@ namespace Budgie {
@@ -639,8 +639,8 @@ index 0f2d409a..38b987a3 100644
  			} catch (SpawnError e) {
  				print("Error: %s\n", e.message);
  			}
-@@ -343,6 +378,17 @@ namespace Budgie {
- 			}
+@@ -352,6 +387,17 @@ namespace Budgie {
+ 			});
  		}
  
 +		/* Set up the proxy when raven appears */
@@ -657,7 +657,7 @@ index 0f2d409a..38b987a3 100644
  		/* Set up the proxy when raven appears */
  		void has_raven() {
  			if (raven_proxy == null) {
-@@ -478,6 +524,11 @@ namespace Budgie {
+@@ -490,6 +536,11 @@ namespace Budgie {
  			Bus.watch_name(BusType.SESSION, SWITCHER_DBUS_NAME, BusNameWatcherFlags.NONE,
  				has_switcher, lost_switcher);
  
@@ -669,7 +669,7 @@ index 0f2d409a..38b987a3 100644
  			/* Keep an eye out for systemd stuffs */
  			if (have_logind()) {
  				get_logind();
-@@ -513,6 +564,9 @@ namespace Budgie {
+@@ -525,6 +576,9 @@ namespace Budgie {
  			keyboard.hook_extra();
  
  			display.get_workspace_manager().override_workspace_layout(Meta.DisplayCorner.TOPLEFT, false, 1, -1);
