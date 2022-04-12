@@ -204,7 +204,6 @@ namespace NewScreenshotApp {
                 if (success) {
                     Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
                     Pixbuf pxb = clp.wait_for_image();
-                    print("we did it\n");
                     new AfterShot.AfterShotWindow(pxb, scale);
                 }
             }
@@ -269,6 +268,10 @@ namespace NewScreenshotApp {
     ////////////////////////////////////////////////////////////
 
     namespace AfterShot {
+        /*
+        * after the screenshot was taken, we need to present user a window
+        * with a preview. from there we can decide what to do with it
+        */
 
         class AfterShotWindow : Gtk.Window {
 
@@ -277,6 +280,8 @@ namespace NewScreenshotApp {
             VolumeMonitor monitor;
             bool act_ondropdown = true;
             string[]? custompath_row = null;
+            string[] alldirs = {};
+            Button[] decisionbuttons = {};
 
 
             enum Column {
@@ -294,8 +299,7 @@ namespace NewScreenshotApp {
                 // headerbar
                 HeaderBar decisionbar = new Gtk.HeaderBar();
                 decisionbar.show_close_button = false;
-                //  Box decisionbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-                Button[] decisionbuttons = {};
+                //  Button[] decisionbuttons = {};
                 string[] header_imagenames = {
                     "trash-shot-symbolic",
                     "save-shot-symbolic",
@@ -306,15 +310,7 @@ namespace NewScreenshotApp {
                 foreach (string s in header_imagenames) {
                     Button decisionbutton = new Gtk.Button();
                     decisionbutton.set_can_focus(false);
-                    Grid buttongrid = new Gtk.Grid();
-                    Gtk.Image decisionimage = new Gtk.Image.from_icon_name(
-                        s, Gtk.IconSize.BUTTON
-                    );
-                    decisionimage.pixel_size = 24;
-                    buttongrid.attach(decisionimage, 0, 0, 1, 1);
-                    set_margins(buttongrid, 8, 8, 0, 0);
-                    decisionbutton.add(buttongrid);
-                    buttongrid.show_all();
+                    set_buttoncontent(decisionbutton, s);
                     if (left) {
                         decisionbar.pack_start(decisionbutton);
                         left = false;
@@ -324,6 +320,7 @@ namespace NewScreenshotApp {
                     }
                     decisionbuttons += decisionbutton;
                 }
+                // save to file is suggested action
                 decisionbuttons[1].get_style_context().add_class(
                     Gtk.STYLE_CLASS_SUGGESTED_ACTION
                 );
@@ -338,21 +335,17 @@ namespace NewScreenshotApp {
                 Gtk.Grid directorygrid = new Gtk.Grid();
                 directorygrid.set_row_spacing(8);
                 set_margins(directorygrid, 0, 0, 25, 0);
-
                 // dir-entry (in a box)
                 Box filenamebox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
                 Label filenamelabel = new Gtk.Label("Name" + ":");
                 filenamelabel.xalign = 0;
                 filenamelabel.set_size_request(80, 10);
                 filenamebox.pack_start(filenamelabel);
-
-
                 Entry filenameentry = new Gtk.Entry();
                 filenameentry.set_size_request(265, 10);
                 filenameentry.set_text(get_scrshotname());
                 filenamebox.pack_end(filenameentry);
                 directorygrid.attach(filenamebox, 0, 0, 1, 1);
-
                 // combo (in a box)
                 dir_liststore = new Gtk.ListStore (
                     4, typeof (string), typeof (string), typeof (string), typeof (bool)
@@ -367,7 +360,6 @@ namespace NewScreenshotApp {
                 pickdir_combo.set_size_request(265, 10);
                 pickdirbox.pack_end(pickdir_combo);
                 directorygrid.attach(pickdirbox, 0, 1, 1, 1);
-
                 // volume monitor
                 monitor = VolumeMonitor.get();
                 monitor.mount_added.connect(update_dropdown);
@@ -379,11 +371,17 @@ namespace NewScreenshotApp {
                     }
                 });
                 maingrid.attach(directorygrid, 0, 1, 1, 1);
-
                 // set headerbar button actions
+                // - trash button: cancel
                 decisionbuttons[0].clicked.connect(this.destroy);
+                // - save to file
                 decisionbuttons[1].clicked.connect(()=> {
                     save_tofile(filenameentry, pickdir_combo, pxb);
+                });
+                // copy to clipboard
+                decisionbuttons[2].clicked.connect(()=> {
+                    Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+                    clp.set_image(pxb);
                 });
                 this.show_all();
             }
@@ -407,10 +405,30 @@ namespace NewScreenshotApp {
                 Gtk.Entry entry, ComboBox combo, Pixbuf pxb
             ) {
                 // todo: make extension arbitrary (gsettings)
-                // todo: take care of custom path, add to liststore, show in dropdown, find out (g)icon
                 string? found_dir = get_path_fromcombo(combo);
                 string filename = entry.get_text();
-                pxb.save(@"$found_dir/$filename", "png");
+                try {
+                    pxb.save(@"$found_dir/$filename", "png");
+                }
+                catch (Error e) {
+                    stderr.printf ("%s\n", e.message);
+                    set_buttoncontent(decisionbuttons[1], "error-app-symbolic");
+                }
+            }
+
+            private void set_buttoncontent(Button b, string icon) {
+                foreach (Widget w in b.get_children()) {
+                    w.destroy();
+                }
+                Grid buttongrid = new Gtk.Grid();
+                Gtk.Image buttonimage = new Gtk.Image.from_icon_name(
+                    icon, Gtk.IconSize.BUTTON
+                );
+                buttonimage.pixel_size = 24;
+                buttongrid.attach(buttonimage, 0, 0, 1, 1);
+                set_margins(buttongrid, 8, 8, 0, 0);
+                b.add(buttongrid);
+                buttongrid.show_all();
             }
 
             private Gtk.Image resize_pixbuf(Pixbuf pxb, int scale) {
@@ -443,6 +461,8 @@ namespace NewScreenshotApp {
                 dir_liststore.set (iter, Column.DISPLAYEDNAME, mention);
                 dir_liststore.set (iter, Column.ICON, iconname);
                 dir_liststore.set (iter, Column.ISSEPARATOR, separator);
+                (path == null)? path = "#None" : path = path;
+                alldirs += path;
             }
 
             private bool is_separator (
@@ -464,6 +484,7 @@ namespace NewScreenshotApp {
             }
 
             private void update_dropdown() {
+                alldirs = {};
                 // on adding/removing a volume, update the dropdown
                 // temporarily surpass dropdown-connect
                 act_ondropdown = false;
@@ -485,19 +506,8 @@ namespace NewScreenshotApp {
                     string iconname = userdir_iconnames[i];
                     create_row(path, mention, iconname, false);
                 }
-                // second section: (possible) custom path
-                // possible custom dir
-                if (custompath_row != null) {
-                    print("setting custom row\n");
-                    create_row(null, null, null, true);
-                    create_row(
-                        custompath_row[0], custompath_row[1],
-                        custompath_row[2], false
-                    );
-                }
-                // separator
                 create_row(null, null, null, true);
-                // third section: look up mounted volumes
+                // second section: look up mounted volumes
                 bool add_separator = false;
                 List<Mount> mounts = monitor.get_mounts ();
                 foreach (Mount mount in mounts) {
@@ -508,10 +518,22 @@ namespace NewScreenshotApp {
                     string dirpath = mount.get_default_location ().get_path ();
                     create_row(dirpath, displayedname, ic_name, false);
                 }
-                // only add separator if there are volumes to list
-                if (add_separator) {
-                    create_row(null, null, null, true);
+                // second section: (possible) custom path
+                int r_index = -1;
+                if (custompath_row != null) {
+                    string c_path = custompath_row[0];
+                    // check if the picked dir is already listed
+                    r_index = find_stringindex(c_path, alldirs);
+                    if (r_index == -1) {
+                        create_row(null, null, null, true);
+                        create_row(
+                            c_path, custompath_row[1], custompath_row[2], false
+                        );
+                        // now update the index to set new dir active
+                        r_index = find_stringindex(c_path, alldirs);
+                    }
                 }
+                create_row(null, null, null, true);
                 // Other -> call Filebrowser (path = null)
                 create_row(null, "Other...", null, false);
                 // set separator
@@ -528,8 +550,8 @@ namespace NewScreenshotApp {
                 pickdir_combo.set_attributes (cell_pb, "icon_name", Column.ICON);
                 pickdir_combo.set_active(0); // change! needs a gsettings check
                 // if we picked a custom dir, set it active
-                if (custompath_row != null) {
-                    pickdir_combo.set_active(n_dirs + 1);
+                if (r_index != -1) {
+                    pickdir_combo.set_active(r_index);
                 }
                 pickdir_combo.show();
                 act_ondropdown = true;
@@ -594,6 +616,8 @@ namespace NewScreenshotApp {
                 * on combo selection change, check if we need to add custom
                 * path. selected item then has null for field path
                 */
+                // if we change directory, reset save button's icon
+                set_buttoncontent(decisionbuttons[1], "save-shot-symbolic");
                 if (get_path_fromcombo(combo) == null) {
                     get_customdir();
                 }
