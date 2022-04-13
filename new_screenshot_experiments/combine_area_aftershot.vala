@@ -71,7 +71,7 @@ namespace NewScreenshotApp {
             // connect button & move
             this.button_press_event.connect(determine_startpoint);
             this.button_release_event.connect(()=> {
-                take_shot(delay);
+                take_shot.begin(delay);
                 return true;
             });
             this.motion_notify_event.connect(update_preview);
@@ -224,7 +224,7 @@ namespace NewScreenshotApp {
             this.destroy();
             // make sure the colored preview selection is gone before we shoot
             GLib.Timeout.add(100 + (delay*1000), ()=> {
-                shoot_area();
+                shoot_area.begin();
                 return false;
             });
             return true;
