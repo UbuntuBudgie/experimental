@@ -17,7 +17,7 @@ using Gst;
 
 namespace NewScreenshotApp {
 
-    GLib.Settings? screenshot_settings; /////////////////////////////////////////////////////////////////////////////////////
+    GLib.Settings? screenshot_settings;
 
     BudgieScreenshotClient client;
 
@@ -189,7 +189,7 @@ namespace NewScreenshotApp {
             int curr_scale = gdkmon.get_scale_factor();
             return curr_scale;
         }
-////////////////////////////////////////////////////////////////////////////////////////////
+
         async void shoot_area () {
             int scale = get_scaling();
             bool success = false;
@@ -213,12 +213,6 @@ namespace NewScreenshotApp {
                 new AfterShotWindow(pxb, scale);
             }
         }
-        ////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////
-        //  private void dotheshot () {
-        //      // do the labour work to take the shot
-        //      shoot_area();
-        //  }
 
         async bool take_shot(int delay) {
             this.destroy();
@@ -229,8 +223,6 @@ namespace NewScreenshotApp {
             });
             return true;
         }
-        ////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////
 
         private void play_shuttersound (string[]? args=null) {
             // todo: we should probably not hardcode the soundfile?
@@ -425,7 +417,9 @@ namespace NewScreenshotApp {
             }
             catch (Error e) {
                 stderr.printf ("%s\n", e.message);
-                set_buttoncontent(decisionbuttons[1], "saveshot-noaccess-symbolic");
+                set_buttoncontent(
+                    decisionbuttons[1], "saveshot-noaccess-symbolic"
+                );
             }
         }
 
@@ -512,7 +506,6 @@ namespace NewScreenshotApp {
             }; // do we need fallbacks?
             // first section: user-dirs
             int n_dirs = UserDirectory.N_DIRECTORIES;
-
             for(int i=0; i<n_dirs; i++) {
                 string path = Environment.get_user_special_dir(i);
                 string[] dirmention = path.split("/");
@@ -520,7 +513,6 @@ namespace NewScreenshotApp {
                 string iconname = userdir_iconnames[i];
                 create_row(path, mention, iconname, false);
             }
-
             create_row(null, null, null, true);
             // second section: look up mounted volumes
             bool add_separator = false;
@@ -533,23 +525,24 @@ namespace NewScreenshotApp {
                 string dirpath = mount.get_default_location ().get_path ();
                 create_row(dirpath, displayedname, ic_name, false);
             }
+            if (add_separator) {
+                create_row(null, null, null, true);
+            }
             // second section: (possible) custom path
-
-            int r_index = -1; /////////////////////////////////////////////////////////////////////////////////////////
+            int r_index = -1;
             if (custompath_row != null) {
                 string c_path = custompath_row[0];
                 // check if the picked dir is already listed
                 r_index = find_stringindex(c_path, alldirs);
                 if (r_index == -1) {
-                    create_row(null, null, null, true);
                     create_row(
                         c_path, custompath_row[1], custompath_row[2], false
                     );
                     // now update the index to set new dir active
                     r_index = find_stringindex(c_path, alldirs);
+                    create_row(null, null, null, true);
                 }
             }
-            create_row(null, null, null, true);
             // Other -> call Filebrowser (path = null)
             create_row(null, "Other...", null, false);
             // set separator
@@ -566,7 +559,6 @@ namespace NewScreenshotApp {
             pickdir_combo.set_attributes (cell_pb, "icon_name", Column.ICON);
             pickdir_combo.set_active(0); // change! needs a gsettings check
             // if we picked a custom dir, set it active
-
             if (r_index != -1) {
                 pickdir_combo.set_active(r_index);
             }
@@ -578,17 +570,9 @@ namespace NewScreenshotApp {
             // setting user response on dialog as custom path (the labor work)
             var save_dialog = dialog as Gtk.FileChooserDialog;
             if (response_id == Gtk.ResponseType.ACCEPT) {
-                //  try {
-                    File file = save_dialog.get_file();
-                    FileInfo info = file.query_info("standard::icon", 0);
-                    Icon icon = info.get_icon();
-                //  }
-                //  catch (Error e) {
-                //      stderr.printf ("%s\n", e.message);
-                //  }
-                //  File file = save_dialog.get_file();
-                //  FileInfo info = file.query_info("standard::icon", 0);
-                //  Icon icon = info.get_icon();
+                File file = save_dialog.get_file();
+                FileInfo info = file.query_info("standard::icon", 0);
+                Icon icon = info.get_icon();
                 string ic_name = get_icon_fromgicon(icon);
                 // so, the actual path
                 string custompath = file.get_path();
@@ -651,14 +635,4 @@ namespace NewScreenshotApp {
             }
         }
     }
-
-
-
-
-
-
-
-
-
-
 }
