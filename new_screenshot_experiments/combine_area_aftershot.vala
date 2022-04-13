@@ -425,7 +425,7 @@ namespace NewScreenshotApp {
             }
             catch (Error e) {
                 stderr.printf ("%s\n", e.message);
-                set_buttoncontent(decisionbuttons[1], "error-app-symbolic");
+                set_buttoncontent(decisionbuttons[1], "saveshot-noaccess-symbolic");
             }
         }
 
