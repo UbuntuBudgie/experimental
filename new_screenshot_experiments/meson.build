@@ -50,14 +50,19 @@ resource_data = files(
   'icons/save-shot-symbolic.svg',
   'icons/selectselection-symbolic.svg',
   'icons/shootscreen-symbolic.svg',
+  'icons/saveshot-noaccess-symbolic.svg',
 )
 
 sources = [
-  'aftershot.vala',
+  'combine_area_aftershot.vala',
 ]
 
 ScreenshotDependencies = [
 dependency('gtk+-3.0'),
+dependency('gstreamer-1.0'),
+dependency('cairo'),
+dependency('gdk-3.0'),
+dependency('gio-2.0'),
 meson.get_compiler('c').find_library('m', required: false)
 ]
 
@@ -80,3 +85,10 @@ executable(
     vala_args: ScreenshotValaArgs,
     install_dir: join_paths(libdir, 'budgie-desktop', 'screenshot'),
 )
+
+install_data('schema/org.buddiesofbudgie.screenshot.gschema.xml',
+    install_dir: '/usr/share/glib-2.0/schemas'
+)
+
+
+meson.add_install_script('meson_post_install.py')

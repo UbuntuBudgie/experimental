@@ -10,5 +10,6 @@
     <file alias="save-shot-symbolic.svg">icons/save-shot-symbolic.svg</file>
     <file alias="selectselection-symbolic.svg">icons/selectselection-symbolic.svg</file>
     <file alias="shootscreen-symbolic.svg">icons/shootscreen-symbolic.svg</file>
+    <file alias="saveshot-noaccess-symbolic.svg">icons/saveshot-noaccess-symbolic.svg</file>
   </gresource>
 </gresources>

@@ -449,9 +449,11 @@ namespace NewScreenshotApp {
                 w.destroy();
             }
             Grid buttongrid = new Gtk.Grid();
-            Gtk.Image buttonimage = new Gtk.Image.from_icon_name(
-                icon, Gtk.IconSize.BUTTON
-            );
+            var theme = Gtk.IconTheme.get_default();
+            theme.add_resource_path ("/org/buddiesofbudgie/Screenshot/icons/scalable/apps/");
+            var iconfile =  new ThemedIcon(name=icon);
+            Gtk.Image buttonimage = new Gtk.Image.from_gicon(iconfile,Gtk.IconSize.BUTTON);
+
             buttonimage.pixel_size = 24;
             buttongrid.attach(buttonimage, 0, 0, 1, 1);
             set_margins(buttongrid, 8, 8, 0, 0);
