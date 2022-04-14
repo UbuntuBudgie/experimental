@@ -48,7 +48,9 @@ namespace AfterShot {
                 var iconfile =  new ThemedIcon(name=s);
                 Gtk.Image decisionimage = new Gtk.Image.from_gicon(iconfile,Gtk.IconSize.BUTTON);
                 buttongrid.attach(decisionimage, 0, 0, 1, 1);
-                set_margins(buttongrid, 8, 8, 0, 0);
+                set_margins(buttongrid, 0, 0, 0, 0);
+                buttongrid.set_row_homogeneous(true);
+                buttongrid.set_column_homogeneous(true);
                 decisionbutton.add(buttongrid);
                 buttongrid.show_all();
                 if (left) {
