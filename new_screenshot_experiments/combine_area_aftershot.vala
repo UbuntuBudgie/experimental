@@ -287,6 +287,8 @@ namespace NewScreenshotApp {
         string[]? custompath_row = null;
         string[] alldirs = {};
         Button[] decisionbuttons = {};
+        string? extension;
+        int n_dirs;
 
 
         enum Column {
@@ -402,8 +404,9 @@ namespace NewScreenshotApp {
 
         private string get_scrshotname() {
             // create timestamped name
+            extension = screenshot_settings.get_string("file-type");
             GLib.DateTime now = new GLib.DateTime.now_local();
-            return now.format("Snapshot_%F_%H-%M-%S.png");
+            return now.format(@"Snapshot_%F_%H-%M-%S.$extension");
         }
 
         private void save_tofile(
@@ -411,9 +414,9 @@ namespace NewScreenshotApp {
         ) {
             // todo: make extension arbitrary (gsettings)
             string? found_dir = get_path_fromcombo(combo);
-            string filename = entry.get_text();
+            string filename = entry.get_text().split(".")[0];
             try {
-                pxb.save(@"$found_dir/$filename", "png");
+                pxb.save(@"$found_dir/$filename.$extension", extension);
             }
             catch (Error e) {
                 stderr.printf ("%s\n", e.message);
@@ -492,7 +495,7 @@ namespace NewScreenshotApp {
 
         private void update_dropdown() {
             alldirs = {};
-            // on adding/removing a volume, update the dropdown
+            // see what is the default dir to activate
             // temporarily surpass dropdown-connect
             act_ondropdown = false;
             // - and clean up stuff
@@ -505,11 +508,11 @@ namespace NewScreenshotApp {
                 "folder-templates", "folder-videos"
             }; // do we need fallbacks?
             // first section: user-dirs
-            int n_dirs = UserDirectory.N_DIRECTORIES;
+            n_dirs = UserDirectory.N_DIRECTORIES;
             for(int i=0; i<n_dirs; i++) {
                 string path = Environment.get_user_special_dir(i);
                 string[] dirmention = path.split("/");
-                string mention = dirmention[dirmention.length-1]; /// get "pictures" from this section
+                string mention = dirmention[dirmention.length-1];
                 string iconname = userdir_iconnames[i];
                 create_row(path, mention, iconname, false);
             }
@@ -559,9 +562,12 @@ namespace NewScreenshotApp {
             pickdir_combo.set_attributes (cell_pb, "icon_name", Column.ICON);
             pickdir_combo.set_active(0); // change! needs a gsettings check
             // if we picked a custom dir, set it active
-            if (r_index != -1) {
-                pickdir_combo.set_active(r_index);
-            }
+            int active_row;
+            active_row = screenshot_settings.get_int("last-save-directory");
+            // prevent segfault error on incorrect gsettings value
+            (active_row > n_dirs)? active_row = 0 : active_row;
+            (r_index != -1)? active_row = r_index : active_row;
+            pickdir_combo.set_active(active_row);
             pickdir_combo.show();
             act_ondropdown = true;
         }
@@ -625,6 +631,12 @@ namespace NewScreenshotApp {
             * on combo selection change, check if we need to add custom
             * path. selected item then has null for field path
             */
+            // remember picked enum. no need for vice versa, since this is
+            // set after window is called, and selection is set.
+            int new_selection = combo.get_active();
+            if (new_selection <= n_dirs) {
+                screenshot_settings.set_int("last-save-directory", new_selection);
+            }
             // if we change directory, reset save button's icon
             set_buttoncontent(decisionbuttons[1], "save-shot-symbolic");
             if (get_path_fromcombo(combo) == null) {
