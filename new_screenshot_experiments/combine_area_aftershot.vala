@@ -390,7 +390,23 @@ namespace NewScreenshotApp {
                 Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
                 clp.set_image(pxb);
             });
+            // - save to file
+            decisionbuttons[3].clicked.connect(()=> {
+                string usedpath = save_tofile(filenameentry, pickdir_combo, pxb);
+                open_indefaultapp(usedpath);
+            });
             this.show_all();
+        }
+
+        private void open_indefaultapp(string path) {
+            File file = File.new_for_path (path);
+            if (file.query_exists ()) {
+                try {
+                    AppInfo.launch_default_for_uri (file.get_uri (), null);
+                } catch (Error e) {
+                    warning ("Unable to launch %s", path);
+                }
+            }
         }
 
         private string? get_path_fromcombo(Gtk.ComboBox combo) {
@@ -409,14 +425,15 @@ namespace NewScreenshotApp {
             return now.format(@"Snapshot_%F_%H-%M-%S.$extension");
         }
 
-        private void save_tofile(
+        private string save_tofile(
             Gtk.Entry entry, ComboBox combo, Pixbuf pxb
         ) {
             // todo: make extension arbitrary (gsettings)
             string? found_dir = get_path_fromcombo(combo);
-            string filename = entry.get_text().split(".")[0];
+            string filename = entry.get_text().split(".")[0]; // make more robust, what if user includes dots in filename?
+            string usedpath = @"$found_dir/$filename.$extension";
             try {
-                pxb.save(@"$found_dir/$filename.$extension", extension);
+                pxb.save(usedpath, extension);
             }
             catch (Error e) {
                 stderr.printf ("%s\n", e.message);
@@ -424,6 +441,7 @@ namespace NewScreenshotApp {
                     decisionbuttons[1], "saveshot-noaccess-symbolic"
                 );
             }
+            return usedpath;
         }
 
         private void set_buttoncontent(Button b, string icon) {
