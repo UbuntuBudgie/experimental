@@ -7,7 +7,7 @@ using Pango;
 
 namespace AfterShot {
 
-    class AfterShotWindow : Gtk.Window {
+    class AfterShotWindow : Gtk.ApplicationWindow {
 
         Gtk.ListStore dir_liststore;
         Gtk.ComboBox pickdir_combo;
@@ -24,7 +24,8 @@ namespace AfterShot {
         }
 
 
-        public AfterShotWindow() {
+        public AfterShotWindow(Gtk.Application app) {
+            Object (application: app, title: "Gtk.MessageDialog Example");
             this.set_resizable(false);
             this.set_default_size(100, 100);
             // headerbar
@@ -33,19 +34,22 @@ namespace AfterShot {
             Box decisionbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             Button[] decisionbuttons = {};
             string[] header_imagenames = {
-                "trash-shot-symbolic",
-                "save-shot-symbolic",
-                "clipboard-shot-symbolic"
+                "trash-shot-symbolic.svg",
+                "save-shot-symbolic.svg",
+                "clipboard-shot-symbolic.svg"
             };
             bool left = true;
             foreach (string s in header_imagenames) {
                 Button decisionbutton = new Gtk.Button();
                 //  decisionbutton.set_size_request(,10);
                 Grid buttongrid = new Gtk.Grid();
-                Gtk.Image decisionimage = new Gtk.Image.from_icon_name(
-                    s, Gtk.IconSize.BUTTON
-                );
-                decisionimage.pixel_size = 24;
+                Gtk.Image decisionimage = new Gtk.Image.from_resource(
+                    "/org/buddiesofbudgie/Screenshot/icons/scalable/apps/" + s);
+                var pixbuf = decisionimage.get_pixbuf();
+                //huh Gtk.IconSize.BUTTON should be used - but here it is size 4 px
+                //so temporarily hardcode 24px
+                var scaled_pixbuf = pixbuf.scale_simple(24,24,Gdk.InterpType.BILINEAR);
+                decisionimage.set_from_pixbuf(scaled_pixbuf);
                 buttongrid.attach(decisionimage, 0, 0, 1, 1);
                 set_margins(buttongrid, 8, 8, 0, 0);
                 decisionbutton.add(buttongrid);
@@ -205,11 +209,22 @@ namespace AfterShot {
         }
     }
 
-    public static void main(string[] args) {
-        Gtk.init(ref args);
-        new AfterShotWindow();
-        Gtk.main();
+    public class MyApplication: Gtk.Application {
+        public MyApplication () {
+            Object(application_id: "testing.my.application",
+                    flags: ApplicationFlags.FLAGS_NONE);
+        }
+
+        protected override void activate () {
+            Gtk.ApplicationWindow window = new AfterShotWindow (this);
+            window.show_all();
+        }
     }
+
+    public static int main (string[] args) {
+        Gtk.init(ref args);
+		return new MyApplication().run (args);
+	}
 }
 
 
