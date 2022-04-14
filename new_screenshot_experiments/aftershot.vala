@@ -34,22 +34,19 @@ namespace AfterShot {
             Box decisionbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
             Button[] decisionbuttons = {};
             string[] header_imagenames = {
-                "trash-shot-symbolic.svg",
-                "save-shot-symbolic.svg",
-                "clipboard-shot-symbolic.svg"
+                "trash-shot-symbolic",
+                "save-shot-symbolic",
+                "clipboard-shot-symbolic"
             };
             bool left = true;
             foreach (string s in header_imagenames) {
                 Button decisionbutton = new Gtk.Button();
                 //  decisionbutton.set_size_request(,10);
                 Grid buttongrid = new Gtk.Grid();
-                Gtk.Image decisionimage = new Gtk.Image.from_resource(
-                    "/org/buddiesofbudgie/Screenshot/icons/scalable/apps/" + s);
-                var pixbuf = decisionimage.get_pixbuf();
-                //huh Gtk.IconSize.BUTTON should be used - but here it is size 4 px
-                //so temporarily hardcode 24px
-                var scaled_pixbuf = pixbuf.scale_simple(24,24,Gdk.InterpType.BILINEAR);
-                decisionimage.set_from_pixbuf(scaled_pixbuf);
+                var theme = Gtk.IconTheme.get_default();
+                theme.add_resource_path ("/org/buddiesofbudgie/Screenshot/icons/scalable/apps/");
+                var iconfile =  new ThemedIcon(name=s);
+                Gtk.Image decisionimage = new Gtk.Image.from_gicon(iconfile,Gtk.IconSize.BUTTON);
                 buttongrid.attach(decisionimage, 0, 0, 1, 1);
                 set_margins(buttongrid, 8, 8, 0, 0);
                 decisionbutton.add(buttongrid);
@@ -225,6 +222,3 @@ namespace AfterShot {
 		return new MyApplication().run (args);
 	}
 }
-
-
-
