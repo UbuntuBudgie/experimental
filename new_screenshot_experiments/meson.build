@@ -78,17 +78,30 @@ ScreenshotValaArgs = [
     '--target-glib=2.38',
 ]
 
+SCREENSHOT_PATH=join_paths(libdir, 'budgie-desktop', 'screenshot')
+
 executable(
     'budgie-screenshot', sources,
     dependencies: ScreenshotDependencies,
     install: true,
     vala_args: ScreenshotValaArgs,
-    install_dir: join_paths(libdir, 'budgie-desktop', 'screenshot'),
+    install_dir: SCREENSHOT_PATH,
 )
 
 install_data('schema/org.buddiesofbudgie.screenshot.gschema.xml',
-    install_dir: '/usr/share/glib-2.0/schemas'
+    install_dir: join_paths(datadir, 'glib-2.0', 'schemas')
 )
 
+substprog = find_program('subst.py')
+podir=''
+
+desktop_file = 'org.buddiesofbudgie.screenshot.desktop'
+mytargetw = custom_target('screenshot',
+  output : desktop_file,
+  input : desktop_file + '.in',
+  command : [substprog, '@INPUT@', SCREENSHOT_PATH, '@OUTPUT@', podir],
+  install : true,
+  install_dir : join_paths(datadir, 'applications')
+)
 
 meson.add_install_script('meson_post_install.py')

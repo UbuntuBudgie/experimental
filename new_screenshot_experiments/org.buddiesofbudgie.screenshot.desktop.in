@@ -3,7 +3,7 @@
 Type=Application
 Name=Budgie Screenshot
 Comment=Basic screenshot app
-Exec=/home/jacob/Desktop/experimental2/new_screenshot_experiments/mainwindow
+Exec=PATH_LOC/screenshot
 Icon=org.ubuntubudgie.screenshot
 Categories=Utility;
 Keywords=Screenshot
