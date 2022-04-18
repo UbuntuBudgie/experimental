@@ -42,7 +42,6 @@ endif
 
 resource_data = files(
   'icons/clipboard-shot-symbolic.svg',
-  'icons/org.ubuntubudgie.screenshot.svg',
   'icons/selectscreen-symbolic.svg',
   'icons/selectwindow-symbolic.svg',
   'icons/trash-shot-symbolic.svg',
@@ -52,6 +51,11 @@ resource_data = files(
   'icons/shootscreen-symbolic.svg',
   'icons/saveshot-noaccess-symbolic.svg',
 )
+
+install_data('icons/org.buddiesofbudgie.screenshot.svg',
+    install_dir: join_paths(datadir, 'icons', 'hicolor', 'scalable', 'apps')
+)
+
 
 sources = [
   'combine_area_aftershot.vala',

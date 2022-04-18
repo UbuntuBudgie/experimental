@@ -1,9 +1,8 @@
-#!/usr/bin/env xdg-open
 [Desktop Entry]
 Type=Application
 Name=Budgie Screenshot
-Comment=Basic screenshot app
-Exec=PATH_LOC/screenshot
-Icon=org.ubuntubudgie.screenshot
+Comment=Budgie screenshot app
+Exec=PATH_LOC/budgie-screenshot
+Icon=org.buddiesofbudgie.screenshot
 Categories=Utility;
 Keywords=Screenshot
