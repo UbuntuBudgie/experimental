@@ -36,6 +36,11 @@
             <description>The filetype for the screenshot to be saved in</description>
             <default>"png"</default>
         </key>
+         <key type="b" name="include-frame">
+            <summary>Include window frame in the screenshot</summary>
+            <description>Wether to include the window frame in the screenshot or not</description>
+            <default>true</default>
+        </key>
         <key type="b" name="include-cursor">
             <summary>Include the cursor in the screenshot</summary>
             <description>Wether to include the cursor in the screenshot or not</description>

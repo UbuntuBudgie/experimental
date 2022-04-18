@@ -3,34 +3,443 @@ using Gdk;
 using Cairo;
 using Gst;
 
+/*
+Budgie Screenshot
+Author: Jacob Vlijm
+Copyright © 2022 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or any later version. This
+program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details. You
+should have received a copy of the GNU General Public License along with this
+program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 // valac --pkg cairo --pkg gtk+-3.0 --pkg gdk-3.0 --pkg gstreamer-1.0 --pkg gio-2.0
 
-//// below spare parts to use for opening in default app
-//  var file = File.new_for_path (file_path);
-//  if (file.query_exists ()) {
-//      try {
-//          AppInfo.launch_default_for_uri (file.get_uri (), null);
-//      } catch (Error e) {
-//          warning ("Unable to launch %s", file_path);
-//      }
-//  }
 
 namespace NewScreenshotApp {
 
-    GLib.Settings? screenshot_settings;
 
+    GLib.Settings? screenshot_settings;
     BudgieScreenshotClient client;
+    CurrentState windowstate;
+    int newstate;
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
 
     public interface BudgieScreenshotClient : GLib.Object {
-
         public abstract async void ScreenshotArea (
             int x, int y, int width, int height, bool include_cursor,
             bool flash, string filename, out bool success, out string filename_used
         ) throws Error;
+        public abstract async void Screenshot (
+            bool include_cursor, bool flash, string filename, out bool success,
+            out string filename_used
+        ) throws Error;
+        public abstract async void ScreenshotWindow (
+            bool include_frame, bool include_cursor, bool flash, string filename,
+            out bool success, out string filename_used
+        ) throws Error;
     }
 
+    enum WindowState {
+        NONE,
+        MAINWINDOW,
+        SELECTINGAREA,
+        AFTERSHOT,
+        WAITINGFORSHOT,
+    }
+
+    private class CurrentState : GLib.Object {
+        public signal void changed();
+        public void statechanged(int n) {
+            newstate = n;
+            print(@"newstate $newstate\n"); // remove
+            changed();
+        }
+    }
+
+    class MakeScreenshot {
+
+        int delay;
+        int scale;
+        int[]? area;
+        string screenshot_mode;
+        bool include_cursor;
+        bool include_frame;
+
+        public MakeScreenshot(int[]? area) {
+            this.area = area;
+            scale = get_scaling();
+            delay = screenshot_settings.get_int("delay");
+            screenshot_mode = screenshot_settings.get_string("screenshot-mode");
+            include_cursor = screenshot_settings.get_boolean("include-cursor");
+            include_frame = screenshot_settings.get_boolean("include-frame");
+            switch (screenshot_mode) {
+                case "Selection":
+                GLib.Timeout.add(100 + (delay*1000), ()=> {
+                    shoot_area.begin();
+                    return false;
+                });
+                break;
+                case "Screen":
+                GLib.Timeout.add(100 + (delay*1000), ()=> {
+                    shoot_screen.begin();
+                    return false;
+                });
+                break;
+                case "Window":
+                GLib.Timeout.add(100 + (delay*1000), ()=> {
+                    shoot_window.begin();
+                    return false;
+                });
+                break;
+            }
+        }
+
+        async void shoot_window() {
+            bool success = false;
+            string filename_used = "";
+                play_shuttersound(200);
+            try {
+                yield client.ScreenshotWindow (
+                    include_frame, include_cursor, true, "", out success, out filename_used
+                );
+            }
+            catch (Error e) {
+                stderr.printf ("%s, failed to make screenhot\n", e.message);
+                windowstate.statechanged(WindowState.NONE);
+            }
+            if (success) {
+                new AfterShotWindow();
+            }
+        }
+
+        private async void shoot_screen() {
+            bool success = false;
+            string filename_used = "";
+            play_shuttersound(200);
+            try {
+                yield client.Screenshot (
+                    include_cursor, true, "", out success, out filename_used
+                );
+            }
+            catch (Error e) {
+                stderr.printf ("%s, failed to make screenhot\n", e.message);
+                windowstate.statechanged(WindowState.NONE);
+            }
+            if (success) {
+                new AfterShotWindow();
+            }
+        }
+
+        async void shoot_area () {
+            play_shuttersound(0);
+            bool success = false;
+            string filename_used = "";
+            int topleftx = this.area[0];
+            int toplefty = this.area[1];
+            int width = this.area[2];
+            int height = this.area[3];
+            // if we just click, forget to drag, set w/h to 1px
+            (height == 0)? height = 1 : height;
+            (width == 0)? width = 1 : width;
+            try {
+                yield client.ScreenshotArea (
+                    topleftx*scale, toplefty*scale, width*scale, height*scale,
+                    include_cursor, true, "", out success, out filename_used
+                );
+            }
+            catch (Error e) {
+                stderr.printf ("%s, failed to make screenhot\n", e.message);
+                windowstate.statechanged(WindowState.NONE);
+            }
+            if (success) {
+                new AfterShotWindow();
+            }
+        }
+
+        private void play_shuttersound (int timeout, string[]? args=null) {
+            // todo: we should probably not hardcode the soundfile?
+            Gst.init(ref args);
+            Gst.Element pipeline;
+            try {
+                pipeline = Gst.parse_launch(
+                    "playbin uri=file:///usr/share/sounds/freedesktop/stereo/screen-capture.oga"
+                );
+            }
+            catch (Error e) {
+                error ("Error: %s", e.message);
+            }
+            GLib.Timeout.add(timeout, ()=> {
+                // fake thread to make sure flash and shutter are in sync
+                pipeline.set_state(State.PLAYING);
+                Gst.Bus bus = pipeline.get_bus();
+                bus.timed_pop_filtered(
+                    Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS
+                );
+                pipeline.set_state (Gst.State.NULL);
+                return false;
+            });
+        }
+    }
+
+    /////////////////// 1 /////////////////////////
+
+    class ScreenshotHomeWindow : Gtk.Window {
+
+        GLib.Settings? buttonplacement;
+        Gtk.HeaderBar topbar;
+        int selectmode = 0;
+        bool ignore = false;
+
+        public ScreenshotHomeWindow() {
+            //////////////////////////////////////////////////////////////////////////// newsignal
+            windowstate.statechanged(WindowState.MAINWINDOW);
+            windowstate.changed.connect(()=> {
+                this.destroy();
+            });
+            // we'll also need to update if user just closes mainwindow by X
+            this.destroy.connect(()=> {
+                if (newstate == WindowState.MAINWINDOW) {
+                    windowstate.statechanged(WindowState.NONE);
+                }
+            });
+
+            this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
+            this.set_resizable(false);
+
+            string home_css = """
+            .buttonlabel {
+                margin-top: -12px;
+            }
+            .centerbutton {
+                border-radius: 0px 0px 0px 0px;
+                border-width: 0px;
+            }
+            .optionslabel {
+                margin-left: 12px;
+                margin-bottom: 2px;
+            }
+            """;
+
+            topbar = new Gtk.HeaderBar();
+            topbar.show_close_button = true;
+            this.set_titlebar(topbar);
+            /*
+            / left or right windowbuttons, that's the question when
+            / (re-?) arranging headerbar buttons
+            */
+            buttonplacement = new GLib.Settings(
+                "com.solus-project.budgie-wm"
+            );
+            buttonplacement.changed["button-style"].connect(()=> {
+                rearrange_headerbar();
+            });
+            rearrange_headerbar();
+
+            // css stuff
+            Gdk.Screen screen = this.get_screen();
+            Gtk.CssProvider css_provider = new Gtk.CssProvider();
+            try {
+                css_provider.load_from_data(home_css);
+                Gtk.StyleContext.add_provider_for_screen(
+                    screen, css_provider, Gtk.STYLE_PROVIDER_PRIORITY_USER
+                );
+            }
+            catch (Error e) {
+                // not much to be done
+                print("Error loading css data\n");
+            }
+            // so, let's add some content - areabuttons
+            Grid maingrid = new Gtk.Grid();
+            maingrid.set_row_spacing(10);
+            set_margins(maingrid, 25, 25, 25, 25);
+            Gtk.Box areabuttonbox = setup_areabuttons();
+            maingrid.attach(areabuttonbox, 0, 0, 1, 1);
+            maingrid.attach(new Label(""), 0, 1, 1, 1);
+            // - show pointer
+            Gtk.Box showpointerbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            Gtk.Grid showpointerswitchgrid = new Gtk.Grid();
+            Gtk.Switch showpointerswitch = new Gtk.Switch();
+            screenshot_settings.bind(
+                "include-cursor", showpointerswitch, "state",
+                SettingsBindFlags.GET|SettingsBindFlags.SET
+            );
+            showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
+            showpointerbox.pack_end(showpointerswitchgrid);
+            Label showpointerlabel = new Label("Show Pointer");
+            // let's set a larger width than the actual, so font size won't matter
+            showpointerlabel.set_size_request(290, 10);
+            showpointerlabel.get_style_context().add_class("optionslabel");
+            showpointerlabel.xalign = 0;
+            showpointerbox.pack_start(showpointerlabel);
+            maingrid.attach(showpointerbox, 0, 2, 1, 1);
+            // - delay
+            Gtk.Box delaybox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            Gtk.Grid spinbuttongrid = new Gtk.Grid();
+            Gtk.SpinButton delayspin = new Gtk.SpinButton.with_range(0, 60, 1);
+            screenshot_settings.bind(
+                "delay", delayspin, "value",
+                SettingsBindFlags.GET|SettingsBindFlags.SET
+            );
+            spinbuttongrid.attach(delayspin, 1, 0, 1, 1);
+            delaybox.pack_end(spinbuttongrid);
+            Label delaylabel = new Label("Delay in seconds");
+            // let's set a larger width than the actual, so font size won't matter
+            delaylabel.set_size_request(230, 10);
+            delaylabel.get_style_context().add_class("optionslabel");
+            delaylabel.xalign = 0;
+            delaybox.pack_start(delaylabel);
+            maingrid.attach(delaybox, 0, 3, 1, 1);
+            this.add(maingrid);
+            this.show_all();
+        }
+
+        private void rearrange_headerbar() {
+            /*
+            / we want screenshot button and help button arranged
+            / outside > inside, so order depends on button positions
+            */
+            string buttonpos = buttonplacement.get_string("button-style");
+            foreach (Widget w in topbar.get_children()) {
+                w.destroy();
+            }
+            /*
+            / all the things you need to do to work around Gtk peculiarities:
+            / if you set an image on a button, button gets crazy roundings,
+            / if you set border radius, you get possible theming issues,
+            / so.. add icon to grid, grid to button, button behaves. pfff.
+            */
+            Gtk.Button shootbutton = new Gtk.Button();
+            Gtk.Image shootimage = new Gtk.Image.from_icon_name(
+                "shootscreen-symbolic", Gtk.IconSize.DND);
+            shootimage.pixel_size = 24;
+            Gtk.Grid shootgrid = new Gtk.Grid();
+            shootgrid.attach(shootimage, 0, 0, 1, 1);
+            shootbutton.add(shootgrid);
+            set_margins(shootgrid, 10, 10, 0, 0);
+            shootbutton.get_style_context().add_class(
+                Gtk.STYLE_CLASS_SUGGESTED_ACTION
+            );
+
+            shootbutton.clicked.connect(()=> {
+                string shootmode = screenshot_settings.get_string("screenshot-mode");
+                switch (shootmode) {
+                    case "Selection":
+                    new SelectLayer();
+                    break;
+                    case "Screen":
+                    windowstate.statechanged(WindowState.WAITINGFORSHOT);
+                    new MakeScreenshot(null);
+                    break;
+                    case "Window":
+                    windowstate.statechanged(WindowState.WAITINGFORSHOT);
+                    new MakeScreenshot(null);
+                    break;
+                }
+            });
+
+            Gtk.Button helpbutton = new Gtk.Button();
+            helpbutton.label = "･･･";
+            helpbutton.get_style_context().add_class(
+                Gtk.STYLE_CLASS_RAISED
+            );
+            if (buttonpos == "left") {
+                topbar.pack_end(shootbutton);
+                topbar.pack_end(helpbutton);
+            }
+            else {
+                topbar.pack_start(shootbutton);
+                topbar.pack_start(helpbutton);
+            }
+            this.show_all();
+        }
+
+        private Gtk.Box setup_areabuttons() {
+            Gtk.Box areabuttonbox = new Gtk.Box(
+                Gtk.Orientation.HORIZONTAL, 0
+            );
+            // translate!
+            string[] areabuttons_labels = {
+                "Screen", "Window", "Selection"
+            };
+            string[] icon_names = {
+                "selectscreen-symbolic",
+                "selectwindow-symbolic",
+                "selectselection-symbolic"
+            };
+            int i = 0;
+            ToggleButton[] selectbuttons = {};
+            foreach (string s in areabuttons_labels) {
+                Gtk.Image selecticon = new Gtk.Image.from_icon_name(
+                    icon_names[i], Gtk.IconSize.DIALOG
+                );
+                selecticon.pixel_size = 60;
+                Grid buttongrid = new Gtk.Grid();
+                buttongrid.attach(selecticon, 0, 0, 1, 1);
+                // label
+                Label selectionlabel = new Label(s);
+                selectionlabel.set_size_request(90, 10); ////
+                selectionlabel.xalign = (float)0.5;
+                selectionlabel.get_style_context().add_class("buttonlabel");
+                buttongrid.attach(selectionlabel, 0, 1, 1, 1);
+                // grid in button
+                ToggleButton b = new Gtk.ToggleButton();
+                b.get_style_context().add_class("centerbutton");
+                b.add(buttongrid);
+                areabuttonbox.pack_start(b);
+                selectbuttons += b;
+                b.clicked.connect(()=> {
+                    if (!ignore) {
+                        ignore = true;
+                        select_action(b, selectbuttons);
+                        b.set_active(true);
+                        GLib.Timeout.add(200, ()=> {
+                            ignore = false;
+                            return false;
+                        });
+                    }
+                });
+                i += 1;
+            }
+            return areabuttonbox;
+        }
+
+        private void select_action(
+            ToggleButton b, ToggleButton[] btns
+        ) {
+            string[] selectmodes = {"Screen", "Window", "Selection"};
+            int i = 0;
+            foreach (ToggleButton bt in btns) {
+                if (bt != b) {
+                    bt.set_active(false);
+                }
+                else {
+                    selectmode = i;
+                    screenshot_settings.set_string(
+                        "screenshot-mode", selectmodes[i]
+                    );
+                }
+                i += 1;
+            }
+        }
+
+        private void set_margins(
+            Gtk.Grid grid, int left, int right, int top, int bottom
+        ) {
+            grid.set_margin_start(left);
+            grid.set_margin_end(right);
+            grid.set_margin_top(top);
+            grid.set_margin_bottom(bottom);
+        }
+    }
+
+    //////////////////// 2 ///////////////////////////////
 
     class SelectLayer : Gtk.Window {
 
@@ -46,13 +455,11 @@ namespace NewScreenshotApp {
         GLib.Settings? theme_settings;
 
         public SelectLayer() {
-            int delay = screenshot_settings.get_int("delay");
-            setup_client();
+            windowstate.statechanged(WindowState.SELECTINGAREA); // signal, no need to set connect, since it destroys itself after shot (-signal from)
             theme_settings = new GLib.Settings("org.gnome.desktop.interface");
             theme_settings.changed["gtk-theme"].connect(()=> {
                 get_theme_fillcolor();
             });
-            //  this.destroy.connect(Gtk.main_quit); // not in final version?
             this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
             this.fullscreen();
             this.set_keep_above(true);
@@ -71,25 +478,13 @@ namespace NewScreenshotApp {
             // connect button & move
             this.button_press_event.connect(determine_startpoint);
             this.button_release_event.connect(()=> {
-                take_shot.begin(delay);
+                take_shot.begin();
                 return true;
             });
             this.motion_notify_event.connect(update_preview);
             set_win_transparent();
             this.show_all();
             change_cursor();
-        }
-
-        private void setup_client() {
-            try {
-                client = GLib.Bus.get_proxy_sync (
-                    BusType.SESSION, "org.buddiesofbudgie.Screenshot",
-                    ("/org/buddiesofbudgie/Screenshot")
-                );
-            }
-            catch (Error e) {
-                stderr.printf ("%s\n", e.message);
-            }
         }
 
         private void get_theme_fillcolor(){
@@ -183,96 +578,15 @@ namespace NewScreenshotApp {
             this.get_window().set_cursor(selectcursor);
         }
 
-        private int get_scaling() {
-            // not very sophisticated, but for now, we'll assume one scale
-            Gdk.Monitor gdkmon = Gdk.Display.get_default().get_monitor(0);
-            int curr_scale = gdkmon.get_scale_factor();
-            return curr_scale;
-        }
-
-        async void shoot_area () {
-            int scale = get_scaling();
-            bool success = false;
-            string filename_used = "";
-            // if we just click, forget to drag, set w/h to 1px
-            (height == 0)? height = 1 : height;
-            (width == 0)? width = 1 : width;
-            try {
-                yield client.ScreenshotArea (
-                    topleftx*scale, toplefty*scale, width*scale, height*scale, true, true, "",
-                    out success, out filename_used
-                );
-            }
-            catch (Error e) {
-                stderr.printf ("%s\n", e.message);
-            }
-            play_shuttersound();
-            if (success) {
-                Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
-                Pixbuf pxb = clp.wait_for_image();
-                new AfterShotWindow(pxb, scale);
-            }
-        }
-
-        async bool take_shot(int delay) {
+        async void take_shot() {
             this.destroy();
-            // make sure the colored preview selection is gone before we shoot
-            GLib.Timeout.add(100 + (delay*1000), ()=> {
-                shoot_area.begin();
-                return false;
-            });
-            return true;
-        }
-
-        private void play_shuttersound (string[]? args=null) {
-            // todo: we should probably not hardcode the soundfile?
-            Gst.init(ref args);
-            Gst.Element pipeline;
-            try {
-                pipeline = Gst.parse_launch(
-                    "playbin uri=file:///usr/share/sounds/freedesktop/stereo/screen-capture.oga"
-                );
-            }
-            catch (Error e) {
-                error ("Error: %s", e.message);
-            }
-            pipeline.set_state (State.PLAYING);
-            Gst.Bus bus = pipeline.get_bus();
-            bus.timed_pop_filtered(
-                Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS
-            );
-            pipeline.set_state (Gst.State.NULL);
+            windowstate.statechanged(WindowState.NONE);
+            int[] area = {topleftx, toplefty, width, height};
+            new MakeScreenshot(area);
         }
     }
 
-    public static int main(string[] args) {
-        try {
-            client = GLib.Bus.get_proxy_sync (
-                BusType.SESSION, "org.UbuntuBudgie.ShufflerInfoDaemon",
-                ("/org/ubuntubudgie/shufflerinfodaemon")
-            );
-        }
-        catch (Error e) {
-            stderr.printf ("%s\n", e.message);
-        }
-        // settings
-        screenshot_settings = new GLib.Settings(
-            "org.buddiesofbudgie.screenshot"
-        );
-        // Just for testing, we are running it now from cli
-        // finally don't start mainloop here!
-        Gtk.init(ref args);
-        // finally don't initiate here
-        new SelectLayer();
-        Gtk.main();
-        return 0;
-    }
-
-
-    ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////
-
+    ///////////////////////// 3 /////////////////////////////////
 
     class AfterShotWindow : Gtk.Window {
      /*
@@ -290,7 +604,6 @@ namespace NewScreenshotApp {
         string? extension;
         int n_dirs;
 
-
         enum Column {
             DIRPATH,
             DISPLAYEDNAME,
@@ -298,8 +611,12 @@ namespace NewScreenshotApp {
             ISSEPARATOR
         }
 
-
-        public AfterShotWindow(Gdk.Pixbuf pxb, int scale) {
+        public AfterShotWindow() {
+            int scale = get_scaling();
+            Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+            Pixbuf pxb = clp.wait_for_image();
+            windowstate.statechanged(WindowState.AFTERSHOT);
+            windowstate.changed.connect(this.destroy);
             this.set_resizable(false);
             this.set_default_size(100, 100);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
@@ -380,20 +697,26 @@ namespace NewScreenshotApp {
             maingrid.attach(directorygrid, 0, 1, 1, 1);
             // set headerbar button actions
             // - trash button: cancel
-            decisionbuttons[0].clicked.connect(this.destroy);
+            decisionbuttons[0].clicked.connect(()=> {;
+                windowstate.statechanged(WindowState.NONE);;
+            });
             // - save to file
             decisionbuttons[1].clicked.connect(()=> {
                 save_tofile(filenameentry, pickdir_combo, pxb);
+                windowstate.statechanged(WindowState.NONE);
             });
-            // copy to clipboard
+            // - copy to clipboard
             decisionbuttons[2].clicked.connect(()=> {
-                Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
+                windowstate.statechanged(WindowState.NONE);
+                //  Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
                 clp.set_image(pxb);
+                windowstate.statechanged(WindowState.NONE);
             });
             // - save to file
             decisionbuttons[3].clicked.connect(()=> {
                 string usedpath = save_tofile(filenameentry, pickdir_combo, pxb);
                 open_indefaultapp(usedpath);
+                windowstate.statechanged(WindowState.NONE);
             });
             this.show_all();
         }
@@ -450,10 +773,13 @@ namespace NewScreenshotApp {
             }
             Grid buttongrid = new Gtk.Grid();
             var theme = Gtk.IconTheme.get_default();
-            theme.add_resource_path ("/org/buddiesofbudgie/Screenshot/icons/scalable/apps/");
+            theme.add_resource_path (
+                "/org/buddiesofbudgie/Screenshot/icons/scalable/apps/"
+            );
             var iconfile =  new ThemedIcon(name=icon);
-            Gtk.Image buttonimage = new Gtk.Image.from_gicon(iconfile,Gtk.IconSize.BUTTON);
-
+            Gtk.Image buttonimage = new Gtk.Image.from_gicon(
+                iconfile,Gtk.IconSize.BUTTON
+            );
             buttonimage.pixel_size = 24;
             buttongrid.attach(buttonimage, 0, 0, 1, 1);
             set_margins(buttongrid, 8, 8, 0, 0);
@@ -462,9 +788,10 @@ namespace NewScreenshotApp {
         }
 
         private Gtk.Image resize_pixbuf(Pixbuf pxb, int scale) {
-            // Since this will be used by multiple, move to a higher scope
-            // before showing the image, resize it to fit the max available
-            // space in the decision window (345 x 345)
+            /*
+            * before showing the image, resize it to fit the max available
+            * availabble space in the decision window (345 x 345)
+            */
             int maxw_h = 345;
             float resize = 1;
             int scaled_width = (int)(pxb.get_width()/scale);
@@ -515,7 +842,6 @@ namespace NewScreenshotApp {
 
         private void update_dropdown() {
             alldirs = {};
-            // see what is the default dir to activate
             // temporarily surpass dropdown-connect
             act_ondropdown = false;
             // - and clean up stuff
@@ -580,7 +906,6 @@ namespace NewScreenshotApp {
             pickdir_combo.pack_end (cell_pb, false);
             pickdir_combo.set_attributes (cell, "text", Column.DISPLAYEDNAME);
             pickdir_combo.set_attributes (cell_pb, "icon_name", Column.ICON);
-            pickdir_combo.set_active(0); // change! needs a gsettings check
             // if we picked a custom dir, set it active
             int active_row;
             active_row = screenshot_settings.get_int("last-save-directory");
@@ -639,7 +964,7 @@ namespace NewScreenshotApp {
         private void set_margins(
             Gtk.Grid grid, int left, int right, int top, int bottom
         ) {
-            // settin g margins for a grid
+            // setting margins for a grid
             grid.set_margin_start(left);
             grid.set_margin_end(right);
             grid.set_margin_top(top);
@@ -649,10 +974,10 @@ namespace NewScreenshotApp {
         private void item_changed (Gtk.ComboBox combo) {
             /*
             * on combo selection change, check if we need to add custom
-            * path. selected item then has null for field path
+            * path. selected item then has null for field path.
+            * remember picked enum. no need for vice versa, since this is
+            * set after window is called, and selection is set.
             */
-            // remember picked enum. no need for vice versa, since this is
-            // set after window is called, and selection is set.
             int new_selection = combo.get_active();
             if (new_selection <= n_dirs) {
                 screenshot_settings.set_int("last-save-directory", new_selection);
@@ -667,4 +992,35 @@ namespace NewScreenshotApp {
             }
         }
     }
+
+    private int get_scaling() {
+        // not very sophisticated, but for now, we'll assume one scale
+        Gdk.Monitor gdkmon = Gdk.Display.get_default().get_monitor(0);
+        int curr_scale = gdkmon.get_scale_factor();
+        return curr_scale;
+    }
+
+    public static int main(string[] args) {
+        // set windowstate signal and initial state
+        Gtk.init(ref args);
+        windowstate = new CurrentState();
+        newstate = 0;
+        try {
+            client = GLib.Bus.get_proxy_sync (
+                BusType.SESSION, "org.buddiesofbudgie.Screenshot",
+                ("/org/buddiesofbudgie/Screenshot")
+            );
+        }
+        catch (Error e) {
+            stderr.printf ("%s\n", e.message);
+        }
+        screenshot_settings = new GLib.Settings(
+            "org.buddiesofbudgie.screenshot"
+        );
+        new ScreenshotHomeWindow(); // just for testing
+        Gtk.main();
+        return 0;
+    }
 }
+
+// 1090
