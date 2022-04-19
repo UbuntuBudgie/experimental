@@ -23,6 +23,7 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace BudgieScreenshotControl {
 
+
     [DBus (name = "org.UbuntuBudgie.BudgieScreenshotControl")]
 
     public class BudgieScreenshotServer : GLib.Object {
