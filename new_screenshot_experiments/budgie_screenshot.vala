@@ -35,8 +35,14 @@ namespace BudgieScreenshotControl {
 
     public class BudgieScreenshotServer : GLib.Object {
 
-        public int getcurrentstate() throws Error {
+        private int getcurrentstate() throws Error {
             return NewScreenshotApp.newstate;
+        }
+
+        private void set_target(string target) {
+            GLib.Settings settings = NewScreenshotApp.screenshot_settings;
+            settings.set_string("screenshot-mode", target);
+            settings.set_int("delay", 0);
         }
 
         public void startmainwindow() throws Error {
@@ -47,18 +53,21 @@ namespace BudgieScreenshotControl {
 
         public void startareaselect() throws Error {
             if (getcurrentstate() == 0) {
-                GLib.Settings settings = NewScreenshotApp.screenshot_settings;
-                settings.set_string("screenshot-mode", "Selection");
-                settings.set_int("delay", 0);
+                set_target("Selection");
                 new NewScreenshotApp.SelectLayer();
+            }
+        }
+
+        public void startwindowshot() throws Error {
+            if (getcurrentstate() == 0) {
+                set_target("Window");
+                new NewScreenshotApp.MakeScreenshot(null);
             }
         }
 
         public void startscreenshot() throws Error {
             if (getcurrentstate() == 0) {
-                GLib.Settings settings = NewScreenshotApp.screenshot_settings;
-                settings.set_string("screenshot-mode", "Screen");
-                settings.set_int("delay", 0);
+                set_target("Screen");
                 new NewScreenshotApp.MakeScreenshot(null);
             }
         }
