@@ -22,53 +22,54 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 /*
 * if daemon is running, use below to call its methods:
-* dbus-send --session --type=method_call --dest=org.UbuntuBudgie.BudgieScreenshotControl /org/UbuntuBudgie/BudgieScreenshotControl org.UbuntuBudgie.BudgieScreenshotControl.Startmainwindow
-* dbus-send --session --type=method_call --dest=org.UbuntuBudgie.BudgieScreenshotControl /org/UbuntuBudgie/BudgieScreenshotControl org.UbuntuBudgie.BudgieScreenshotControl.Startareaselect
-* dbus-send --session --type=method_call --dest=org.UbuntuBudgie.BudgieScreenshotControl /org/UbuntuBudgie/BudgieScreenshotControl org.UbuntuBudgie.BudgieScreenshotControl.Startscreenshot
+* dbus-send --session --type=method_call --dest=org.buddiesofbudgie.ScreenshotControl /org/buddiesofbudgie/ScreenshotControl org.buddiesofbudgie.ScreenshotControl.StartMainWindow
+* dbus-send --session --type=method_call --dest=org.buddiesofbudgie.ScreenshotControl /org/buddiesofbudgie/ScreenshotControl org.buddiesofbudgie.ScreenshotControl.StartAreaSelect
+* dbus-send --session --type=method_call --dest=org.buddiesofbudgie.ScreenshotControl /org/buddiesofbudgie/ScreenshotControl org.buddiesofbudgie.ScreenshotControl.StartFullScreenshot
+* dbus-send --session --type=method_call --dest=org.buddiesofbudgie.ScreenshotControl /org/buddiesofbudgie/ScreenshotControl org.buddiesofbudgie.ScreenshotControl.StartWindowScreenshot
 */
 
 
 namespace BudgieScreenshotControl {
 
 
-    [DBus (name = "org.UbuntuBudgie.BudgieScreenshotControl")]
+    [DBus (name = "org.buddiesofbudgie.ScreenshotControl")]
 
     public class BudgieScreenshotServer : GLib.Object {
 
         private int getcurrentstate() throws Error {
-            return NewScreenshotApp.newstate;
+            return ScreenshotApp.newstate;
         }
 
         private void set_target(string target) {
-            GLib.Settings settings = NewScreenshotApp.screenshot_settings;
+            GLib.Settings settings = ScreenshotApp.screenshot_settings;
             settings.set_string("screenshot-mode", target);
             settings.set_int("delay", 0);
         }
 
-        public void startmainwindow() throws Error {
+        public void StartMainWindow() throws Error {
             if (getcurrentstate() == 0) {
-                new NewScreenshotApp.ScreenshotHomeWindow();
+                new ScreenshotApp.ScreenshotHomeWindow();
             }
         }
 
-        public void startareaselect() throws Error {
+        public void StartAreaSelect() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Selection");
-                new NewScreenshotApp.SelectLayer();
+                new ScreenshotApp.SelectLayer();
             }
         }
 
-        public void startwindowshot() throws Error {
+        public void StartWindowScreenshot() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Window");
-                new NewScreenshotApp.MakeScreenshot(null);
+                new ScreenshotApp.MakeScreenshot(null);
             }
         }
 
-        public void startscreenshot() throws Error {
+        public void StartFullScreenshot() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Screen");
-                new NewScreenshotApp.MakeScreenshot(null);
+                new ScreenshotApp.MakeScreenshot(null);
             }
         }
     }
@@ -77,7 +78,7 @@ namespace BudgieScreenshotControl {
     void on_bus_acquired (DBusConnection conn) {
         // register the bus
         try {
-            conn.register_object ("/org/UbuntuBudgie/BudgieScreenshotControl",
+            conn.register_object ("/org/buddiesofbudgie/ScreenshotControl",
                 new BudgieScreenshotServer ());
         }
         catch (IOError e) {
@@ -87,23 +88,23 @@ namespace BudgieScreenshotControl {
 
     public void setup_dbus () {
         GLib.Bus.own_name (
-            BusType.SESSION, "org.UbuntuBudgie.BudgieScreenshotControl",
+            BusType.SESSION, "org.buddiesofbudgie.ScreenshotControl",
             BusNameOwnerFlags.NONE, on_bus_acquired,
             () => {}, () => stderr.printf ("Could not acquire name\n"));
     }
 }
 
 
-namespace NewScreenshotApp {
+namespace ScreenshotApp {
 
     GLib.Settings? screenshot_settings;
-    BudgieScreenshotClient client;
+    ScreenshotClient client;
     CurrentState windowstate;
     int newstate;
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
 
-    public interface BudgieScreenshotClient : GLib.Object {
+    public interface ScreenshotClient : GLib.Object {
         public abstract async void ScreenshotArea (
             int x, int y, int width, int height, bool include_cursor,
             bool flash, string filename, out bool success, out string filename_used

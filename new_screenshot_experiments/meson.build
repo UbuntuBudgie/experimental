@@ -58,7 +58,7 @@ install_data('icons/org.buddiesofbudgie.screenshot.svg',
 
 
 sources = [
-  'combine_area_aftershot.vala',
+  'budgie_screenshot.vala',
 ]
 
 ScreenshotDependencies = [
