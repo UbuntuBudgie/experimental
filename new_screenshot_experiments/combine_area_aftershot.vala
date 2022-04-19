@@ -20,6 +20,13 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 // valac --pkg cairo --pkg gtk+-3.0 --pkg gdk-3.0 --pkg gstreamer-1.0 --pkg gio-2.0
 
+/*
+* if daemon is running, use below to call its methods:
+* dbus-send --session --type=method_call --dest=org.UbuntuBudgie.BudgieScreenshotControl /org/UbuntuBudgie/BudgieScreenshotControl org.UbuntuBudgie.BudgieScreenshotControl.Startmainwindow
+* dbus-send --session --type=method_call --dest=org.UbuntuBudgie.BudgieScreenshotControl /org/UbuntuBudgie/BudgieScreenshotControl org.UbuntuBudgie.BudgieScreenshotControl.Startareaselect
+* dbus-send --session --type=method_call --dest=org.UbuntuBudgie.BudgieScreenshotControl /org/UbuntuBudgie/BudgieScreenshotControl org.UbuntuBudgie.BudgieScreenshotControl.Startscreenshot
+*/
+
 
 namespace BudgieScreenshotControl {
 
@@ -1075,7 +1082,6 @@ namespace NewScreenshotApp {
         screenshot_settings = new GLib.Settings(
             "org.buddiesofbudgie.screenshot"
         );
-        new ScreenshotHomeWindow(); // just for testing
         // server:
         BudgieScreenshotControl.setup_dbus();
         Gtk.main();
