@@ -21,8 +21,63 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 // valac --pkg cairo --pkg gtk+-3.0 --pkg gdk-3.0 --pkg gstreamer-1.0 --pkg gio-2.0
 
 
-namespace NewScreenshotApp {
+namespace BudgieScreenshotControl {
 
+    [DBus (name = "org.UbuntuBudgie.BudgieScreenshotControl")]
+
+    public class BudgieScreenshotServer : GLib.Object {
+
+        public int getcurrentstate() throws Error {
+            return NewScreenshotApp.newstate;
+        }
+
+        public void startmainwindow() throws Error {
+            if (getcurrentstate() == 0) {
+                new NewScreenshotApp.ScreenshotHomeWindow();
+            }
+        }
+
+        public void startareaselect() throws Error {
+            if (getcurrentstate() == 0) {
+                GLib.Settings settings = NewScreenshotApp.screenshot_settings;
+                settings.set_string("screenshot-mode", "Selection");
+                settings.set_int("delay", 0);
+                new NewScreenshotApp.SelectLayer();
+            }
+        }
+
+        public void startscreenshot() throws Error {
+            if (getcurrentstate() == 0) {
+                GLib.Settings settings = NewScreenshotApp.screenshot_settings;
+                settings.set_string("screenshot-mode", "Screen");
+                settings.set_int("delay", 0);
+                new NewScreenshotApp.MakeScreenshot(null);
+            }
+        }
+    }
+
+    // setup dbus
+    void on_bus_acquired (DBusConnection conn) {
+        // register the bus
+        try {
+            conn.register_object ("/org/UbuntuBudgie/BudgieScreenshotControl",
+                new BudgieScreenshotServer ());
+        }
+        catch (IOError e) {
+            stderr.printf ("Could not register service\n");
+        }
+    }
+
+    public void setup_dbus () {
+        GLib.Bus.own_name (
+            BusType.SESSION, "org.UbuntuBudgie.BudgieScreenshotControl",
+            BusNameOwnerFlags.NONE, on_bus_acquired,
+            () => {}, () => stderr.printf ("Could not acquire name\n"));
+    }
+}
+
+
+namespace NewScreenshotApp {
 
     GLib.Settings? screenshot_settings;
     BudgieScreenshotClient client;
@@ -188,8 +243,6 @@ namespace NewScreenshotApp {
         }
     }
 
-    /////////////////// 1 /////////////////////////
-
     class ScreenshotHomeWindow : Gtk.Window {
 
         GLib.Settings? buttonplacement;
@@ -198,7 +251,6 @@ namespace NewScreenshotApp {
         bool ignore = false;
 
         public ScreenshotHomeWindow() {
-            //////////////////////////////////////////////////////////////////////////// newsignal
             windowstate.statechanged(WindowState.MAINWINDOW);
             windowstate.changed.connect(()=> {
                 this.destroy();
@@ -364,6 +416,10 @@ namespace NewScreenshotApp {
             Gtk.Box areabuttonbox = new Gtk.Box(
                 Gtk.Orientation.HORIZONTAL, 0
             );
+            string mode = screenshot_settings.get_string("screenshot-mode");
+            // we cannot use areabuttons_labels, since these will be translated
+            string[] mode_options =  {"Screen", "Window", "Selection"};
+            int active = find_stringindex(mode, mode_options);
             // translate!
             string[] areabuttons_labels = {
                 "Screen", "Window", "Selection"
@@ -392,6 +448,9 @@ namespace NewScreenshotApp {
                 ToggleButton b = new Gtk.ToggleButton();
                 b.get_style_context().add_class("centerbutton");
                 b.add(buttongrid);
+                if (i == active) {
+                    b.set_active(true);
+                }
                 areabuttonbox.pack_start(b);
                 selectbuttons += b;
                 b.clicked.connect(()=> {
@@ -439,7 +498,6 @@ namespace NewScreenshotApp {
         }
     }
 
-    //////////////////// 2 ///////////////////////////////
 
     class SelectLayer : Gtk.Window {
 
@@ -454,8 +512,9 @@ namespace NewScreenshotApp {
         double blue = 1; // fallback
         GLib.Settings? theme_settings;
 
-        public SelectLayer() {
-            windowstate.statechanged(WindowState.SELECTINGAREA); // signal, no need to set connect, since it destroys itself after shot (-signal from)
+        public SelectLayer(int? overrule_delay=null) {
+            // signal, no need to set connect, since it destroys itself after shot (-signal from)
+            windowstate.statechanged(WindowState.SELECTINGAREA);
             theme_settings = new GLib.Settings("org.gnome.desktop.interface");
             theme_settings.changed["gtk-theme"].connect(()=> {
                 get_theme_fillcolor();
@@ -586,14 +645,12 @@ namespace NewScreenshotApp {
         }
     }
 
-    ///////////////////////// 3 /////////////////////////////////
 
     class AfterShotWindow : Gtk.Window {
-     /*
-    * after the screenshot was taken, we need to present user a window
-    * with a preview. from there we can decide what to do with it
-    */
-
+        /*
+        * after the screenshot was taken, we need to present user a window
+        * with a preview. from there we can decide what to do with it
+        */
         Gtk.ListStore dir_liststore;
         Gtk.ComboBox pickdir_combo;
         VolumeMonitor monitor;
@@ -831,15 +888,6 @@ namespace NewScreenshotApp {
             return (bool)is_sep;
         }
 
-        private int find_stringindex(string str, string[] arr) {
-            for(int i=0; i<arr.length; i++) {
-                if (str == arr[i]) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
         private void update_dropdown() {
             alldirs = {};
             // temporarily surpass dropdown-connect
@@ -1000,6 +1048,15 @@ namespace NewScreenshotApp {
         return curr_scale;
     }
 
+    private int find_stringindex(string str, string[] arr) {
+        for(int i=0; i<arr.length; i++) {
+            if (str == arr[i]) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public static int main(string[] args) {
         // set windowstate signal and initial state
         Gtk.init(ref args);
@@ -1018,6 +1075,8 @@ namespace NewScreenshotApp {
             "org.buddiesofbudgie.screenshot"
         );
         new ScreenshotHomeWindow(); // just for testing
+        // server:
+        BudgieScreenshotControl.setup_dbus();
         Gtk.main();
         return 0;
     }
