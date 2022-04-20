@@ -689,7 +689,6 @@ namespace ScreenshotApp {
             Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
             Pixbuf pxb = clp.wait_for_image();
             windowstate.statechanged(WindowState.AFTERSHOT);
-            windowstate.changed.connect(this.destroy);
             this.set_resizable(false);
             this.set_default_size(100, 100);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
@@ -741,11 +740,15 @@ namespace ScreenshotApp {
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
-            buttonplacement.changed["button-style"].connect(()=> {
+            ulong handler_id = buttonplacement.changed["button-style"].connect(()=> {
                 decisionbuttons = {};
                 setup_headerbar(decisionbar, filenameentry, clp, pxb);
             });
             setup_headerbar(decisionbar, filenameentry, clp, pxb);
+            windowstate.changed.connect(()=> {
+                this.destroy();
+                buttonplacement.disconnect(handler_id);
+            });
         }
 
         private void setup_headerbar(
@@ -808,7 +811,6 @@ namespace ScreenshotApp {
             this.set_titlebar(bar);
             this.show_all();
         }
-
 
         private void open_indefaultapp(string path) {
             File file = File.new_for_path (path);
