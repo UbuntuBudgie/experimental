@@ -98,6 +98,7 @@ namespace BudgieScreenshotControl {
 namespace ScreenshotApp {
 
     GLib.Settings? screenshot_settings;
+    GLib.Settings? buttonplacement;
     ScreenshotClient client;
     CurrentState windowstate;
     int newstate;
@@ -154,19 +155,19 @@ namespace ScreenshotApp {
             include_frame = screenshot_settings.get_boolean("include-frame");
             switch (screenshot_mode) {
                 case "Selection":
-                GLib.Timeout.add(100 + (delay*1000), ()=> {
+                GLib.Timeout.add(200 + (delay*1000), ()=> {
                     shoot_area.begin();
                     return false;
                 });
                 break;
                 case "Screen":
-                GLib.Timeout.add(100 + (delay*1000), ()=> {
+                GLib.Timeout.add(200 + (delay*1000), ()=> {
                     shoot_screen.begin();
                     return false;
                 });
                 break;
                 case "Window":
-                GLib.Timeout.add(100 + (delay*1000), ()=> {
+                GLib.Timeout.add(200 + (delay*1000), ()=> {
                     shoot_window.begin();
                     return false;
                 });
@@ -263,7 +264,7 @@ namespace ScreenshotApp {
 
     class ScreenshotHomeWindow : Gtk.Window {
 
-        GLib.Settings? buttonplacement;
+        //  GLib.Settings? buttonplacement;
         Gtk.HeaderBar topbar;
         int selectmode = 0;
         bool ignore = false;
@@ -304,9 +305,6 @@ namespace ScreenshotApp {
             / left or right windowbuttons, that's the question when
             / (re-?) arranging headerbar buttons
             */
-            buttonplacement = new GLib.Settings(
-                "com.solus-project.budgie-wm"
-            );
             buttonplacement.changed["button-style"].connect(()=> {
                 rearrange_headerbar();
             });
@@ -695,35 +693,7 @@ namespace ScreenshotApp {
             this.set_resizable(false);
             this.set_default_size(100, 100);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
-            // headerbar
-            HeaderBar decisionbar = new Gtk.HeaderBar();
-            decisionbar.show_close_button = false;
-            //  Button[] decisionbuttons = {};
-            string[] header_imagenames = {
-                "trash-shot-symbolic",
-                "save-shot-symbolic",
-                "clipboard-shot-symbolic",
-                "edit-shot-symbolic"
-            };
-            bool left = true;
-            foreach (string s in header_imagenames) {
-                Button decisionbutton = new Gtk.Button();
-                decisionbutton.set_can_focus(false);
-                set_buttoncontent(decisionbutton, s);
-                if (left) {
-                    decisionbar.pack_start(decisionbutton);
-                    left = false;
-                }
-                else {
-                    decisionbar.pack_end(decisionbutton);
-                }
-                decisionbuttons += decisionbutton;
-            }
-            // save to file is suggested action
-            decisionbuttons[1].get_style_context().add_class(
-                Gtk.STYLE_CLASS_SUGGESTED_ACTION
-            );
-            this.set_titlebar(decisionbar);
+            // general window furniture
             // grids
             Gtk.Grid maingrid = new Gtk.Grid();
             // create resized image for preview
@@ -765,15 +735,58 @@ namespace ScreenshotApp {
             monitor.mount_removed.connect(update_dropdown);
             update_dropdown();
             pickdir_combo.changed.connect(()=> {
-                if (act_ondropdown) {
-                    item_changed(pickdir_combo);
-                }
+                if (act_ondropdown) {item_changed(pickdir_combo);}
             });
             maingrid.attach(directorygrid, 0, 1, 1, 1);
+            // headerbar
+            HeaderBar decisionbar = new Gtk.HeaderBar();
+            decisionbar.show_close_button = false;
+            buttonplacement.changed["button-style"].connect(()=> {
+                decisionbuttons = {};
+                setup_headerbar(decisionbar, filenameentry, clp, pxb);
+            });
+            setup_headerbar(decisionbar, filenameentry, clp, pxb);
+        }
+
+        private void setup_headerbar(
+            HeaderBar bar, Entry filenameentry, Clipboard clp, Pixbuf pxb
+        ) {
+            foreach (Widget w in bar.get_children()) {
+                w.destroy();
+            }
+            string buttonpos = buttonplacement.get_string("button-style");
+            string[] header_imagenames = {
+                "trash-shot-symbolic",
+                "save-shot-symbolic",
+                "clipboard-shot-symbolic",
+                "edit-shot-symbolic"
+            };
+            foreach (string s in header_imagenames) {
+                Button decisionbutton = new Gtk.Button();
+                decisionbutton.set_can_focus(false);
+                set_buttoncontent(decisionbutton, s);
+                decisionbuttons += decisionbutton;
+            }
+            decisionbuttons[1].get_style_context().add_class(
+                Gtk.STYLE_CLASS_SUGGESTED_ACTION
+            );
+            // aligned headerbar buttons
+            string[] align = {"left", "right", "right", "right"};
+            (buttonpos == "left")? align = {"right", "left", "left", "left"} : align;
+            int b_index = 0;
+            foreach (Button b in decisionbuttons) {
+                if (align[b_index] == "left") {
+                    bar.pack_end(b);
+                }
+                else {
+                    bar.pack_start(b);
+                }
+                b_index += 1;
+            }
             // set headerbar button actions
             // - trash button: cancel
-            decisionbuttons[0].clicked.connect(()=> {;
-                windowstate.statechanged(WindowState.NONE);;
+            decisionbuttons[0].clicked.connect(()=> {
+                windowstate.statechanged(WindowState.NONE);
             });
             // - save to file
             decisionbuttons[1].clicked.connect(()=> {
@@ -783,7 +796,6 @@ namespace ScreenshotApp {
             // - copy to clipboard
             decisionbuttons[2].clicked.connect(()=> {
                 windowstate.statechanged(WindowState.NONE);
-                //  Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
                 clp.set_image(pxb);
                 windowstate.statechanged(WindowState.NONE);
             });
@@ -793,8 +805,10 @@ namespace ScreenshotApp {
                 open_indefaultapp(usedpath);
                 windowstate.statechanged(WindowState.NONE);
             });
+            this.set_titlebar(bar);
             this.show_all();
         }
+
 
         private void open_indefaultapp(string path) {
             File file = File.new_for_path (path);
@@ -1091,6 +1105,9 @@ namespace ScreenshotApp {
         }
         screenshot_settings = new GLib.Settings(
             "org.buddiesofbudgie.screenshot"
+        );
+        buttonplacement = new GLib.Settings(
+            "com.solus-project.budgie-wm"
         );
         // server:
         BudgieScreenshotControl.setup_dbus();
