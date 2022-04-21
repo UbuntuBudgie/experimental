@@ -699,7 +699,6 @@ namespace Budgie {
             Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
             Pixbuf pxb = clp.wait_for_image();
             windowstate.statechanged(WindowState.AFTERSHOT);
-            windowstate.changed.connect(this.destroy);
             this.set_resizable(false);
             this.set_default_size(100, 100);
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
@@ -751,11 +750,15 @@ namespace Budgie {
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
-            buttonplacement.changed["button-style"].connect(()=> {
+            ulong handler_id = buttonplacement.changed["button-style"].connect(()=> {
                 decisionbuttons = {};
                 setup_headerbar(decisionbar, filenameentry, clp, pxb);
             });
             setup_headerbar(decisionbar, filenameentry, clp, pxb);
+            windowstate.changed.connect(()=> {
+                this.destroy();
+                buttonplacement.disconnect(handler_id);
+            });
         }
 
         private void setup_headerbar(
@@ -819,7 +822,6 @@ namespace Budgie {
             this.show_all();
         }
 
-
         private void open_indefaultapp(string path) {
             File file = File.new_for_path (path);
             if (file.query_exists ()) {
@@ -850,10 +852,10 @@ namespace Budgie {
         private string save_tofile(
             Gtk.Entry entry, ComboBox combo, Pixbuf pxb
         ) {
-            // todo: make extension arbitrary (gsettings)
             string? found_dir = get_path_fromcombo(combo);
-            string filename = entry.get_text().split(".")[0]; // make more robust, what if user includes dots in filename?
-            string usedpath = @"$found_dir/$filename.$extension";
+            string fname = entry.get_text();
+            (fname.has_suffix(@".$extension"))? fname : fname = @"$fname.$extension";
+            string usedpath = @"$found_dir/$fname";
             try {
                 pxb.save(usedpath, extension);
             }
