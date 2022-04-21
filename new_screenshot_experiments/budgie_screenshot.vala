@@ -37,39 +37,39 @@ namespace BudgieScreenshotControl {
     public class BudgieScreenshotServer : GLib.Object {
 
         private int getcurrentstate() throws Error {
-            return ScreenshotApp.newstate;
+            return Budgie.newstate;
         }
 
         private void set_target(string target) {
-            GLib.Settings settings = ScreenshotApp.screenshot_settings;
+            GLib.Settings settings = Budgie.screenshot_settings;
             settings.set_string("screenshot-mode", target);
             settings.set_int("delay", 0);
         }
 
         public void StartMainWindow() throws Error {
             if (getcurrentstate() == 0) {
-                new ScreenshotApp.ScreenshotHomeWindow();
+                new Budgie.ScreenshotHomeWindow();
             }
         }
 
         public void StartAreaSelect() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Selection");
-                new ScreenshotApp.SelectLayer();
+                new Budgie.SelectLayer();
             }
         }
 
         public void StartWindowScreenshot() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Window");
-                new ScreenshotApp.MakeScreenshot(null);
+                new Budgie.MakeScreenshot(null);
             }
         }
 
         public void StartFullScreenshot() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Screen");
-                new ScreenshotApp.MakeScreenshot(null);
+                new Budgie.MakeScreenshot(null);
             }
         }
     }
@@ -95,7 +95,7 @@ namespace BudgieScreenshotControl {
 }
 
 
-namespace ScreenshotApp {
+namespace Budgie {
 
     GLib.Settings? screenshot_settings;
     GLib.Settings? buttonplacement;
@@ -262,12 +262,22 @@ namespace ScreenshotApp {
         }
     }
 
+    [GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/ui/screenshothome.ui")]
     class ScreenshotHomeWindow : Gtk.Window {
 
         //  GLib.Settings? buttonplacement;
         Gtk.HeaderBar topbar;
         int selectmode = 0;
         bool ignore = false;
+
+        [GtkChild]
+        private unowned Gtk.Grid? maingrid;
+
+        [GtkChild]
+        private unowned Gtk.SpinButton? delayspin;
+
+        [GtkChild]
+        private unowned Gtk.Switch? showpointerswitch;
 
         public ScreenshotHomeWindow() {
             windowstate.statechanged(WindowState.MAINWINDOW);
@@ -281,8 +291,8 @@ namespace ScreenshotApp {
                 }
             });
 
-            this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
-            this.set_resizable(false);
+            //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
+            //this.set_resizable(false);
 
             string home_css = """
             .buttonlabel {
@@ -324,47 +334,47 @@ namespace ScreenshotApp {
                 print("Error loading css data\n");
             }
             // so, let's add some content - areabuttons
-            Grid maingrid = new Gtk.Grid();
-            maingrid.set_row_spacing(10);
-            set_margins(maingrid, 25, 25, 25, 25);
+            //Grid maingrid = new Gtk.Grid();
+            //maingrid.set_row_spacing(10);
+            //set_margins(maingrid, 25, 25, 25, 25);
             Gtk.Box areabuttonbox = setup_areabuttons();
             maingrid.attach(areabuttonbox, 0, 0, 1, 1);
-            maingrid.attach(new Label(""), 0, 1, 1, 1);
+            //maingrid.attach(new Label(""), 0, 1, 1, 1);
             // - show pointer
-            Gtk.Box showpointerbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            Gtk.Grid showpointerswitchgrid = new Gtk.Grid();
-            Gtk.Switch showpointerswitch = new Gtk.Switch();
+            //Gtk.Box showpointerbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            //Gtk.Grid showpointerswitchgrid = new Gtk.Grid();
+            //Gtk.Switch showpointerswitch = new Gtk.Switch();
             screenshot_settings.bind(
                 "include-cursor", showpointerswitch, "state",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
-            showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
-            showpointerbox.pack_end(showpointerswitchgrid);
-            Label showpointerlabel = new Label("Show Pointer");
+            //showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
+            //showpointerbox.pack_end(showpointerswitchgrid);
+            //Label showpointerlabel = new Label("Show Pointer");
             // let's set a larger width than the actual, so font size won't matter
-            showpointerlabel.set_size_request(290, 10);
-            showpointerlabel.get_style_context().add_class("optionslabel");
-            showpointerlabel.xalign = 0;
-            showpointerbox.pack_start(showpointerlabel);
-            maingrid.attach(showpointerbox, 0, 2, 1, 1);
+            //showpointerlabel.set_size_request(290, 10);
+            //showpointerlabel.get_style_context().add_class("optionslabel");
+            //showpointerlabel.xalign = 0;
+            //showpointerbox.pack_start(showpointerlabel);
+            //maingrid.attach(showpointerbox, 0, 2, 1, 1);
             // - delay
-            Gtk.Box delaybox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            Gtk.Grid spinbuttongrid = new Gtk.Grid();
-            Gtk.SpinButton delayspin = new Gtk.SpinButton.with_range(0, 60, 1);
+            //Gtk.Box delaybox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            //Gtk.Grid spinbuttongrid = new Gtk.Grid();
+            //Gtk.SpinButton delayspin = new Gtk.SpinButton.with_range(0, 60, 1);
             screenshot_settings.bind(
                 "delay", delayspin, "value",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
-            spinbuttongrid.attach(delayspin, 1, 0, 1, 1);
-            delaybox.pack_end(spinbuttongrid);
-            Label delaylabel = new Label("Delay in seconds");
+            //spinbuttongrid.attach(delayspin, 1, 0, 1, 1);
+            //delaybox.pack_end(spinbuttongrid);
+            //Label delaylabel = new Label("Delay in seconds");
             // let's set a larger width than the actual, so font size won't matter
-            delaylabel.set_size_request(230, 10);
-            delaylabel.get_style_context().add_class("optionslabel");
-            delaylabel.xalign = 0;
-            delaybox.pack_start(delaylabel);
-            maingrid.attach(delaybox, 0, 3, 1, 1);
-            this.add(maingrid);
+            //delaylabel.set_size_request(230, 10);
+            //delaylabel.get_style_context().add_class("optionslabel");
+            //delaylabel.xalign = 0;
+            //delaybox.pack_start(delaylabel);
+            //maingrid.attach(delaybox, 0, 3, 1, 1);
+            //this.add(maingrid);
             this.show_all();
         }
 

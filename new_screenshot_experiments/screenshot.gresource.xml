@@ -11,4 +11,7 @@
     <file alias="shootscreen-symbolic.svg">icons/shootscreen-symbolic.svg</file>
     <file alias="saveshot-noaccess-symbolic.svg">icons/saveshot-noaccess-symbolic.svg</file>
   </gresource>
+  <gresource prefix="/org/buddiesofbudgie/Screenshot">
+    <file preprocess="xml-stripblanks" compressed="true">ui/screenshothome.ui</file>
+  </gresource>
 </gresources>
