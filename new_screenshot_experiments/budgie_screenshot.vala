@@ -842,10 +842,10 @@ namespace ScreenshotApp {
         private string save_tofile(
             Gtk.Entry entry, ComboBox combo, Pixbuf pxb
         ) {
-            // todo: make extension arbitrary (gsettings)
             string? found_dir = get_path_fromcombo(combo);
-            string filename = entry.get_text().split(".")[0]; // make more robust, what if user includes dots in filename?
-            string usedpath = @"$found_dir/$filename.$extension";
+            string fname = entry.get_text();
+            (fname.has_suffix(@".$extension"))? fname : fname = @"$fname.$extension";
+            string usedpath = @"$found_dir/$fname";
             try {
                 pxb.save(usedpath, extension);
             }
