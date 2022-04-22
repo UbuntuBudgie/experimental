@@ -102,6 +102,9 @@ namespace ScreenshotApp {
     ScreenshotClient client;
     CurrentState windowstate;
     int newstate;
+    //  ulong? connect_mainwindowheader;
+    ulong? connect_aftershotheader;
+
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
 
@@ -129,11 +132,14 @@ namespace ScreenshotApp {
     }
 
     private class CurrentState : GLib.Object {
-        public signal void changed();
+        //  public signal void changed();
         public void statechanged(int n) {
             newstate = n;
+            if (connect_aftershotheader != null) {
+                buttonplacement.disconnect(connect_aftershotheader);
+                connect_aftershotheader = null;
+            }
             print(@"newstate $newstate\n"); // remove
-            changed();
         }
     }
 
@@ -268,22 +274,25 @@ namespace ScreenshotApp {
         Gtk.HeaderBar topbar;
         int selectmode = 0;
         bool ignore = false;
+        GLib.Settings? buttonplacement;
 
         public ScreenshotHomeWindow() {
             windowstate.statechanged(WindowState.MAINWINDOW);
-            windowstate.changed.connect(()=> {
-                this.destroy();
-            });
-            // we'll also need to update if user just closes mainwindow by X
             this.destroy.connect(()=> {
-                if (newstate == WindowState.MAINWINDOW) {
-                    windowstate.statechanged(WindowState.NONE);
-                }
+                print(@"destroying mainwin\n"); // remove
+                // prevent WindowState.NONE if follow up button is pressed
+                GLib.Timeout.add(100, ()=> {
+                    if (newstate == WindowState.MAINWINDOW) {
+                        windowstate.statechanged(WindowState.NONE);
+                    }
+                    return false;
+                });
             });
-
+            buttonplacement = new GLib.Settings(
+                "com.solus-project.budgie-wm"
+            );
             this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             this.set_resizable(false);
-
             string home_css = """
             .buttonlabel {
                 margin-top: -12px;
@@ -306,6 +315,7 @@ namespace ScreenshotApp {
             / (re-?) arranging headerbar buttons
             */
             buttonplacement.changed["button-style"].connect(()=> {
+                print("rearranging mainwin\n"); // remove
                 rearrange_headerbar();
             });
             rearrange_headerbar();
@@ -394,22 +404,33 @@ namespace ScreenshotApp {
             shootbutton.get_style_context().add_class(
                 Gtk.STYLE_CLASS_SUGGESTED_ACTION
             );
-
             shootbutton.clicked.connect(()=> {
-                string shootmode = screenshot_settings.get_string("screenshot-mode");
-                switch (shootmode) {
-                    case "Selection":
-                    new SelectLayer();
-                    break;
-                    case "Screen":
-                    windowstate.statechanged(WindowState.WAITINGFORSHOT);
-                    new MakeScreenshot(null);
-                    break;
-                    case "Window":
-                    windowstate.statechanged(WindowState.WAITINGFORSHOT);
-                    new MakeScreenshot(null);
-                    break;
-                }
+                print("run action from shootbutton\n");
+                this.close();
+                string shootmode = screenshot_settings.get_string(
+                    "screenshot-mode"
+                );
+                // allow the window to gracefully disappear
+                GLib.Timeout.add(100, ()=> {
+                    switch (shootmode) {
+                        case "Selection":
+                        new SelectLayer();
+                        break;
+                        case "Screen":
+                        windowstate.statechanged(
+                            WindowState.WAITINGFORSHOT
+                        );
+                        new MakeScreenshot(null);
+                        break;
+                        case "Window":
+                        windowstate.statechanged(
+                            WindowState.WAITINGFORSHOT
+                        );
+                        new MakeScreenshot(null);
+                        break;
+                    }
+                    return false;
+                });
             });
 
             Gtk.Button helpbutton = new Gtk.Button();
@@ -456,7 +477,7 @@ namespace ScreenshotApp {
                 buttongrid.attach(selecticon, 0, 0, 1, 1);
                 // label
                 Label selectionlabel = new Label(s);
-                selectionlabel.set_size_request(90, 10); ////
+                selectionlabel.set_size_request(90, 10);
                 selectionlabel.xalign = (float)0.5;
                 selectionlabel.get_style_context().add_class("buttonlabel");
                 buttongrid.attach(selectionlabel, 0, 1, 1, 1);
@@ -528,8 +549,9 @@ namespace ScreenshotApp {
         double blue = 1; // fallback
         GLib.Settings? theme_settings;
 
+
         public SelectLayer(int? overrule_delay=null) {
-            // signal, no need to set connect, since it destroys itself after shot (-signal from)
+
             windowstate.statechanged(WindowState.SELECTINGAREA);
             theme_settings = new GLib.Settings("org.gnome.desktop.interface");
             theme_settings.changed["gtk-theme"].connect(()=> {
@@ -655,7 +677,7 @@ namespace ScreenshotApp {
 
         async void take_shot() {
             this.destroy();
-            windowstate.statechanged(WindowState.NONE);
+            windowstate.statechanged(WindowState.WAITINGFORSHOT);
             int[] area = {topleftx, toplefty, width, height};
             new MakeScreenshot(area);
         }
@@ -740,15 +762,14 @@ namespace ScreenshotApp {
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
-            ulong handler_id = buttonplacement.changed["button-style"].connect(()=> {
+            connect_aftershotheader = buttonplacement.changed[
+                "button-style"
+            ].connect(()=> {
+                print("running action on button placement change\n"); // remove
                 decisionbuttons = {};
                 setup_headerbar(decisionbar, filenameentry, clp, pxb);
             });
             setup_headerbar(decisionbar, filenameentry, clp, pxb);
-            windowstate.changed.connect(()=> {
-                this.destroy();
-                buttonplacement.disconnect(handler_id);
-            });
         }
 
         private void setup_headerbar(
@@ -790,23 +811,26 @@ namespace ScreenshotApp {
             // - trash button: cancel
             decisionbuttons[0].clicked.connect(()=> {
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             // - save to file
             decisionbuttons[1].clicked.connect(()=> {
                 save_tofile(filenameentry, pickdir_combo, pxb);
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             // - copy to clipboard
             decisionbuttons[2].clicked.connect(()=> {
-                windowstate.statechanged(WindowState.NONE);
                 clp.set_image(pxb);
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             // - save to file
             decisionbuttons[3].clicked.connect(()=> {
                 string usedpath = save_tofile(filenameentry, pickdir_combo, pxb);
                 open_indefaultapp(usedpath);
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             this.set_titlebar(bar);
             this.show_all();
@@ -887,7 +911,6 @@ namespace ScreenshotApp {
             float resize = 1;
             int scaled_width = (int)(pxb.get_width()/scale);
             int scaled_height = (int)(pxb.get_height()/scale);
-
             if (scaled_width > maxw_h || scaled_height > maxw_h) {
                 (scaled_width >= scaled_height)? resize = (float)maxw_h/scaled_width : resize;
                 (scaled_height >= scaled_width)? resize = (float)maxw_h/scaled_height : resize;
@@ -1111,7 +1134,6 @@ namespace ScreenshotApp {
         buttonplacement = new GLib.Settings(
             "com.solus-project.budgie-wm"
         );
-        // server:
         BudgieScreenshotControl.setup_dbus();
         Gtk.main();
         return 0;
