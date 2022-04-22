@@ -671,14 +671,25 @@ namespace Budgie {
         }
     }
 
-
+    [GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/ui/aftershot.ui")]
     class AfterShotWindow : Gtk.Window {
         /*
         * after the screenshot was taken, we need to present user a window
         * with a preview. from there we can decide what to do with it
         */
-        Gtk.ListStore dir_liststore;
-        Gtk.ComboBox pickdir_combo;
+
+        [GtkChild]
+        private unowned Gtk.Entry? filenameentry;
+
+        [GtkChild]
+        private unowned Gtk.ComboBox? pickdir_combo;
+
+        [GtkChild]
+        private unowned Gtk.ListStore? dir_liststore;
+
+        [GtkChild]
+        private unowned Gtk.Image? img;
+
         VolumeMonitor monitor;
         bool act_ondropdown = true;
         string[]? custompath_row = null;
@@ -699,45 +710,46 @@ namespace Budgie {
             Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
             Pixbuf pxb = clp.wait_for_image();
             windowstate.statechanged(WindowState.AFTERSHOT);
-            this.set_resizable(false);
-            this.set_default_size(100, 100);
-            this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
+            //this.set_resizable(false);
+            //this.set_default_size(100, 100);
+            //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             // general window furniture
             // grids
-            Gtk.Grid maingrid = new Gtk.Grid();
+            //Gtk.Grid maingrid = new Gtk.Grid();
             // create resized image for preview
-            Gtk.Image img = resize_pixbuf(pxb, scale);
-            maingrid.attach(img, 0, 0, 1, 1);
-            this.add(maingrid);
-            set_margins(maingrid, 25, 25, 25, 25);
-            Gtk.Grid directorygrid = new Gtk.Grid();
-            directorygrid.set_row_spacing(8);
-            set_margins(directorygrid, 0, 0, 25, 0);
+            var pixbuf = resize_pixbuf(pxb, scale);
+            img.set_from_pixbuf(pixbuf);
+            //maingrid.attach(img, 0, 0, 1, 1);
+            //this.add(maingrid);
+            //set_margins(maingrid, 25, 25, 25, 25);
+            //Gtk.Grid directorygrid = new Gtk.Grid();
+            //directorygrid.set_row_spacing(8);
+            //set_margins(directorygrid, 0, 0, 25, 0);
             // dir-entry (in a box)
-            Box filenamebox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            Label filenamelabel = new Gtk.Label("Name" + ":");
-            filenamelabel.xalign = 0;
-            filenamelabel.set_size_request(80, 10);
-            filenamebox.pack_start(filenamelabel);
-            Entry filenameentry = new Gtk.Entry();
-            filenameentry.set_size_request(265, 10);
+            //Box filenamebox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            //Label filenamelabel = new Gtk.Label("Name" + ":");
+            //filenamelabel.xalign = 0;
+            //filenamelabel.set_size_request(80, 10);
+            //filenamebox.pack_start(filenamelabel);
+            //Entry filenameentry = new Gtk.Entry();
+            //filenameentry.set_size_request(265, 10);
             filenameentry.set_text(get_scrshotname());
-            filenamebox.pack_end(filenameentry);
-            directorygrid.attach(filenamebox, 0, 0, 1, 1);
+            //filenamebox.pack_end(filenameentry);
+            //directorygrid.attach(filenamebox, 0, 0, 1, 1);
             // combo (in a box)
-            dir_liststore = new Gtk.ListStore (
-                4, typeof (string), typeof (string), typeof (string), typeof (bool)
-            );
-            Box pickdirbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            Label pickdirlabel = new Gtk.Label("Folder" + ":");
-            pickdirlabel.xalign = 0;
-            pickdirlabel.set_size_request(80, 10);
-            pickdirbox.pack_start(pickdirlabel);
-            pickdir_combo = new Gtk.ComboBox.with_model (dir_liststore);
-            pickdir_combo.set_popup_fixed_width(true);
-            pickdir_combo.set_size_request(265, 10);
-            pickdirbox.pack_end(pickdir_combo);
-            directorygrid.attach(pickdirbox, 0, 1, 1, 1);
+            //dir_liststore = new Gtk.ListStore (
+            //    4, typeof (string), typeof (string), typeof (string), typeof (bool)
+            //);
+            //Box pickdirbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
+            //Label pickdirlabel = new Gtk.Label("Folder" + ":");
+            //pickdirlabel.xalign = 0;
+            //pickdirlabel.set_size_request(80, 10);
+            //pickdirbox.pack_start(pickdirlabel);
+            //pickdir_combo = new Gtk.ComboBox.with_model (dir_liststore);
+            //pickdir_combo.set_popup_fixed_width(true);
+            //pickdir_combo.set_size_request(265, 10);
+            //pickdirbox.pack_end(pickdir_combo);
+            //directorygrid.attach(pickdirbox, 0, 1, 1, 1);
             // volume monitor
             monitor = VolumeMonitor.get();
             monitor.mount_added.connect(update_dropdown);
@@ -746,7 +758,7 @@ namespace Budgie {
             pickdir_combo.changed.connect(()=> {
                 if (act_ondropdown) {item_changed(pickdir_combo);}
             });
-            maingrid.attach(directorygrid, 0, 1, 1, 1);
+            //maingrid.attach(directorygrid, 0, 1, 1, 1);
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
@@ -888,7 +900,7 @@ namespace Budgie {
             buttongrid.show_all();
         }
 
-        private Gtk.Image resize_pixbuf(Pixbuf pxb, int scale) {
+        private Gdk.Pixbuf resize_pixbuf(Pixbuf pxb, int scale) {
             /*
             * before showing the image, resize it to fit the max available
             * availabble space in the decision window (345 x 345)
@@ -905,7 +917,7 @@ namespace Budgie {
             int dest_width = (int)(scaled_width * resize);
             int dest_height = (int)(scaled_height * resize);
             Gdk.Pixbuf resized = pxb.scale_simple(dest_width, dest_height, InterpType.BILINEAR);
-            return new Gtk.Image.from_pixbuf(resized);
+            return resized;//new Gtk.Image.from_pixbuf(resized);
         }
 
         private void create_row(

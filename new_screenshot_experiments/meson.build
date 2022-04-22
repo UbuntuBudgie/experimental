@@ -51,6 +51,7 @@ resource_data = files(
   'icons/shootscreen-symbolic.svg',
   'icons/saveshot-noaccess-symbolic.svg',
   'ui/screenshothome.ui',
+  'ui/aftershot.ui',
 )
 
 install_data('icons/org.buddiesofbudgie.screenshot.svg',

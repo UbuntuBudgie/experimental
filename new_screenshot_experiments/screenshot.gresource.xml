@@ -13,5 +13,6 @@
   </gresource>
   <gresource prefix="/org/buddiesofbudgie/Screenshot">
     <file preprocess="xml-stripblanks" compressed="true">ui/screenshothome.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">ui/aftershot.ui</file>
   </gresource>
 </gresources>
