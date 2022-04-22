@@ -102,6 +102,10 @@ namespace Budgie {
     ScreenshotClient client;
     CurrentState windowstate;
     int newstate;
+    //  ulong? connect_mainwindowheader;
+    ulong? connect_aftershotheader;
+    ulong? incl_cursor_sensitive;
+
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
 
@@ -129,11 +133,18 @@ namespace Budgie {
     }
 
     private class CurrentState : GLib.Object {
-        public signal void changed();
+        //  public signal void changed();
         public void statechanged(int n) {
             newstate = n;
+            if (connect_aftershotheader != null) {
+                buttonplacement.disconnect(connect_aftershotheader);
+                connect_aftershotheader = null;
+            }
+            if (incl_cursor_sensitive != null) {
+                screenshot_settings.disconnect(incl_cursor_sensitive);
+                incl_cursor_sensitive = null;
+            }
             print(@"newstate $newstate\n"); // remove
-            changed();
         }
     }
 
@@ -269,6 +280,7 @@ namespace Budgie {
         Gtk.HeaderBar topbar;
         int selectmode = 0;
         bool ignore = false;
+        GLib.Settings? buttonplacement;
 
         [GtkChild]
         private unowned Gtk.Grid? maingrid;
@@ -279,21 +291,16 @@ namespace Budgie {
         [GtkChild]
         private unowned Gtk.Switch? showpointerswitch;
 
+        [GtkChild]
+        private unowned Gtk.Box? showpointerbox;
+
         public ScreenshotHomeWindow() {
             windowstate.statechanged(WindowState.MAINWINDOW);
-            windowstate.changed.connect(()=> {
-                this.destroy();
-            });
-            // we'll also need to update if user just closes mainwindow by X
-            this.destroy.connect(()=> {
-                if (newstate == WindowState.MAINWINDOW) {
-                    windowstate.statechanged(WindowState.NONE);
-                }
-            });
-
+            buttonplacement = new GLib.Settings(
+                "com.solus-project.budgie-wm"
+            );
             //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             //this.set_resizable(false);
-
             string home_css = """
             .buttonlabel {
                 margin-top: -12px;
@@ -315,7 +322,8 @@ namespace Budgie {
             / left or right windowbuttons, that's the question when
             / (re-?) arranging headerbar buttons
             */
-            buttonplacement.changed["button-style"].connect(()=> {
+            buttonplacement.changed["button-style"].connect(()=> { // disconnected on destroy
+                print("rearranging mainwin\n"); // remove
                 rearrange_headerbar();
             });
             rearrange_headerbar();
@@ -348,6 +356,12 @@ namespace Budgie {
                 "include-cursor", showpointerswitch, "state",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
+            incl_cursor_sensitive = screenshot_settings.changed["screenshot-mode"].connect(()=> { // disconnected on destroy
+                print("setting cursor\n");
+                showpointerbox.set_sensitive(
+                    screenshot_settings.get_string("screenshot-mode") != "Window"
+                );
+            });
             //showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
             //showpointerbox.pack_end(showpointerswitchgrid);
             //Label showpointerlabel = new Label("Show Pointer");
@@ -365,9 +379,21 @@ namespace Budgie {
                 "delay", delayspin, "value",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
+            this.destroy.connect(()=> {
+                print(@"destroying mainwin\n"); // remove
+                // prevent WindowState.NONE if follow up button is pressed
+                GLib.Timeout.add(100, ()=> {
+                    if (newstate == WindowState.MAINWINDOW) {
+                        windowstate.statechanged(WindowState.NONE);
+                    }
+                    return false;
+                });
+                // to make sure, let's unbind
+                //  screenshot_settings.unbind(delayspin, "value");
+            });
             //spinbuttongrid.attach(delayspin, 1, 0, 1, 1);
             //delaybox.pack_end(spinbuttongrid);
-            //Label delaylabel = new Label("Delay in seconds");
+            // delaylabel = new Label("Delay in seconds");
             // let's set a larger width than the actual, so font size won't matter
             //delaylabel.set_size_request(230, 10);
             //delaylabel.get_style_context().add_class("optionslabel");
@@ -404,22 +430,33 @@ namespace Budgie {
             shootbutton.get_style_context().add_class(
                 Gtk.STYLE_CLASS_SUGGESTED_ACTION
             );
-
             shootbutton.clicked.connect(()=> {
-                string shootmode = screenshot_settings.get_string("screenshot-mode");
-                switch (shootmode) {
-                    case "Selection":
-                    new SelectLayer();
-                    break;
-                    case "Screen":
-                    windowstate.statechanged(WindowState.WAITINGFORSHOT);
-                    new MakeScreenshot(null);
-                    break;
-                    case "Window":
-                    windowstate.statechanged(WindowState.WAITINGFORSHOT);
-                    new MakeScreenshot(null);
-                    break;
-                }
+                print("run action from shootbutton\n");
+                this.close();
+                string shootmode = screenshot_settings.get_string(
+                    "screenshot-mode"
+                );
+                // allow the window to gracefully disappear
+                GLib.Timeout.add(100, ()=> {
+                    switch (shootmode) {
+                        case "Selection":
+                        new SelectLayer();
+                        break;
+                        case "Screen":
+                        windowstate.statechanged(
+                            WindowState.WAITINGFORSHOT
+                        );
+                        new MakeScreenshot(null);
+                        break;
+                        case "Window":
+                        windowstate.statechanged(
+                            WindowState.WAITINGFORSHOT
+                        );
+                        new MakeScreenshot(null);
+                        break;
+                    }
+                    return false;
+                });
             });
 
             Gtk.Button helpbutton = new Gtk.Button();
@@ -444,7 +481,7 @@ namespace Budgie {
             );
             string mode = screenshot_settings.get_string("screenshot-mode");
             // we cannot use areabuttons_labels, since these will be translated
-            string[] mode_options =  {"Screen", "Window", "Selection"};
+            string[] mode_options =  {"Screen", "Window", "Selection"}; // don't translate, internal use
             int active = find_stringindex(mode, mode_options);
             // translate!
             string[] areabuttons_labels = {
@@ -466,7 +503,7 @@ namespace Budgie {
                 buttongrid.attach(selecticon, 0, 0, 1, 1);
                 // label
                 Label selectionlabel = new Label(s);
-                selectionlabel.set_size_request(90, 10); ////
+                selectionlabel.set_size_request(90, 10);
                 selectionlabel.xalign = (float)0.5;
                 selectionlabel.get_style_context().add_class("buttonlabel");
                 buttongrid.attach(selectionlabel, 0, 1, 1, 1);
@@ -475,7 +512,7 @@ namespace Budgie {
                 b.get_style_context().add_class("centerbutton");
                 b.add(buttongrid);
                 if (i == active) {
-                    b.set_active(true);
+                    b.set_active(true); /////////////////////////////////////////////////////////
                 }
                 areabuttonbox.pack_start(b);
                 selectbuttons += b;
@@ -538,13 +575,14 @@ namespace Budgie {
         double blue = 1; // fallback
         GLib.Settings? theme_settings;
 
+
         public SelectLayer(int? overrule_delay=null) {
-            // signal, no need to set connect, since it destroys itself after shot (-signal from)
+
             windowstate.statechanged(WindowState.SELECTINGAREA);
             theme_settings = new GLib.Settings("org.gnome.desktop.interface");
-            theme_settings.changed["gtk-theme"].connect(()=> {
-                get_theme_fillcolor();
-            });
+            //  theme_settings.changed["gtk-theme"].connect(()=> { // change theme during select area, seriously?
+            //      get_theme_fillcolor();
+            //  });
             this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
             this.fullscreen();
             this.set_keep_above(true);
@@ -665,7 +703,7 @@ namespace Budgie {
 
         async void take_shot() {
             this.destroy();
-            windowstate.statechanged(WindowState.NONE);
+            windowstate.statechanged(WindowState.WAITINGFORSHOT);
             int[] area = {topleftx, toplefty, width, height};
             new MakeScreenshot(area);
         }
@@ -762,15 +800,14 @@ namespace Budgie {
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
-            ulong handler_id = buttonplacement.changed["button-style"].connect(()=> {
+            connect_aftershotheader = buttonplacement.changed[ // disconnected on destroy
+                "button-style"
+            ].connect(()=> {
+                print("running action on button placement change\n"); // remove
                 decisionbuttons = {};
                 setup_headerbar(decisionbar, filenameentry, clp, pxb);
             });
             setup_headerbar(decisionbar, filenameentry, clp, pxb);
-            windowstate.changed.connect(()=> {
-                this.destroy();
-                buttonplacement.disconnect(handler_id);
-            });
         }
 
         private void setup_headerbar(
@@ -812,23 +849,26 @@ namespace Budgie {
             // - trash button: cancel
             decisionbuttons[0].clicked.connect(()=> {
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             // - save to file
             decisionbuttons[1].clicked.connect(()=> {
                 save_tofile(filenameentry, pickdir_combo, pxb);
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             // - copy to clipboard
             decisionbuttons[2].clicked.connect(()=> {
-                windowstate.statechanged(WindowState.NONE);
                 clp.set_image(pxb);
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             // - save to file
             decisionbuttons[3].clicked.connect(()=> {
                 string usedpath = save_tofile(filenameentry, pickdir_combo, pxb);
                 open_indefaultapp(usedpath);
                 windowstate.statechanged(WindowState.NONE);
+                this.close();
             });
             this.set_titlebar(bar);
             this.show_all();
@@ -909,7 +949,6 @@ namespace Budgie {
             float resize = 1;
             int scaled_width = (int)(pxb.get_width()/scale);
             int scaled_height = (int)(pxb.get_height()/scale);
-
             if (scaled_width > maxw_h || scaled_height > maxw_h) {
                 (scaled_width >= scaled_height)? resize = (float)maxw_h/scaled_width : resize;
                 (scaled_height >= scaled_width)? resize = (float)maxw_h/scaled_height : resize;
@@ -1133,7 +1172,6 @@ namespace Budgie {
         buttonplacement = new GLib.Settings(
             "com.solus-project.budgie-wm"
         );
-        // server:
         BudgieScreenshotControl.setup_dbus();
         Gtk.main();
         return 0;
