@@ -104,6 +104,7 @@ namespace ScreenshotApp {
     int newstate;
     //  ulong? connect_mainwindowheader;
     ulong? connect_aftershotheader;
+    ulong? incl_cursor_sensitive;
 
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
@@ -138,6 +139,10 @@ namespace ScreenshotApp {
             if (connect_aftershotheader != null) {
                 buttonplacement.disconnect(connect_aftershotheader);
                 connect_aftershotheader = null;
+            }
+            if (incl_cursor_sensitive != null) {
+                screenshot_settings.disconnect(incl_cursor_sensitive);
+                incl_cursor_sensitive = null;
             }
             print(@"newstate $newstate\n"); // remove
         }
@@ -278,16 +283,6 @@ namespace ScreenshotApp {
 
         public ScreenshotHomeWindow() {
             windowstate.statechanged(WindowState.MAINWINDOW);
-            this.destroy.connect(()=> {
-                print(@"destroying mainwin\n"); // remove
-                // prevent WindowState.NONE if follow up button is pressed
-                GLib.Timeout.add(100, ()=> {
-                    if (newstate == WindowState.MAINWINDOW) {
-                        windowstate.statechanged(WindowState.NONE);
-                    }
-                    return false;
-                });
-            });
             buttonplacement = new GLib.Settings(
                 "com.solus-project.budgie-wm"
             );
@@ -314,7 +309,7 @@ namespace ScreenshotApp {
             / left or right windowbuttons, that's the question when
             / (re-?) arranging headerbar buttons
             */
-            buttonplacement.changed["button-style"].connect(()=> {
+            buttonplacement.changed["button-style"].connect(()=> { // disconnected on destroy
                 print("rearranging mainwin\n"); // remove
                 rearrange_headerbar();
             });
@@ -348,6 +343,12 @@ namespace ScreenshotApp {
                 "include-cursor", showpointerswitch, "state",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
+            incl_cursor_sensitive = screenshot_settings.changed["screenshot-mode"].connect(()=> { // disconnected on destroy
+                print("setting cursor\n");
+                showpointerbox.set_sensitive(
+                    screenshot_settings.get_string("screenshot-mode") != "Window"
+                );
+            });
             showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
             showpointerbox.pack_end(showpointerswitchgrid);
             Label showpointerlabel = new Label("Show Pointer");
@@ -365,6 +366,18 @@ namespace ScreenshotApp {
                 "delay", delayspin, "value",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
+            this.destroy.connect(()=> {
+                print(@"destroying mainwin\n"); // remove
+                // prevent WindowState.NONE if follow up button is pressed
+                GLib.Timeout.add(100, ()=> {
+                    if (newstate == WindowState.MAINWINDOW) {
+                        windowstate.statechanged(WindowState.NONE);
+                    }
+                    return false;
+                });
+                // to make sure, let's unbind
+                //  screenshot_settings.unbind(delayspin, "value");
+            });
             spinbuttongrid.attach(delayspin, 1, 0, 1, 1);
             delaybox.pack_end(spinbuttongrid);
             Label delaylabel = new Label("Delay in seconds");
@@ -455,7 +468,7 @@ namespace ScreenshotApp {
             );
             string mode = screenshot_settings.get_string("screenshot-mode");
             // we cannot use areabuttons_labels, since these will be translated
-            string[] mode_options =  {"Screen", "Window", "Selection"};
+            string[] mode_options =  {"Screen", "Window", "Selection"}; // don't translate, internal use
             int active = find_stringindex(mode, mode_options);
             // translate!
             string[] areabuttons_labels = {
@@ -486,7 +499,7 @@ namespace ScreenshotApp {
                 b.get_style_context().add_class("centerbutton");
                 b.add(buttongrid);
                 if (i == active) {
-                    b.set_active(true);
+                    b.set_active(true); /////////////////////////////////////////////////////////
                 }
                 areabuttonbox.pack_start(b);
                 selectbuttons += b;
@@ -554,9 +567,9 @@ namespace ScreenshotApp {
 
             windowstate.statechanged(WindowState.SELECTINGAREA);
             theme_settings = new GLib.Settings("org.gnome.desktop.interface");
-            theme_settings.changed["gtk-theme"].connect(()=> {
-                get_theme_fillcolor();
-            });
+            //  theme_settings.changed["gtk-theme"].connect(()=> { // change theme during select area, seriously?
+            //      get_theme_fillcolor();
+            //  });
             this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
             this.fullscreen();
             this.set_keep_above(true);
@@ -762,7 +775,7 @@ namespace ScreenshotApp {
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
-            connect_aftershotheader = buttonplacement.changed[
+            connect_aftershotheader = buttonplacement.changed[ // disconnected on destroy
                 "button-style"
             ].connect(()=> {
                 print("running action on button placement change\n"); // remove
