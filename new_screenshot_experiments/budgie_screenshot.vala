@@ -145,12 +145,9 @@ namespace ScreenshotApp {
                 screenshot_settings.disconnect(incl_cursor_sensitive);
                 incl_cursor_sensitive = null;
             }
-            if (newstate == 0) {
-                startedfromgui = false;
-            }
-            if (newstate == 1) {
-                startedfromgui = true;
-            }
+
+            (newstate == 0)?  startedfromgui = false : startedfromgui;
+            (newstate == 1)?  startedfromgui = true : startedfromgui;
             print(@"newstate $newstate\n"); // remove
             print(@"$startedfromgui\n");
         }
