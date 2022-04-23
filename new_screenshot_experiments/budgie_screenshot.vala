@@ -105,6 +105,7 @@ namespace Budgie {
     //  ulong? connect_mainwindowheader;
     ulong? connect_aftershotheader;
     ulong? incl_cursor_sensitive;
+    bool startedfromgui = false;
 
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
@@ -144,7 +145,11 @@ namespace Budgie {
                 screenshot_settings.disconnect(incl_cursor_sensitive);
                 incl_cursor_sensitive = null;
             }
+
+            (newstate == 0)?  startedfromgui = false : startedfromgui;
+            (newstate == 1)?  startedfromgui = true : startedfromgui;
             print(@"newstate $newstate\n"); // remove
+            print(@"$startedfromgui\n");
         }
     }
 
@@ -281,6 +286,7 @@ namespace Budgie {
         int selectmode = 0;
         bool ignore = false;
         GLib.Settings? buttonplacement;
+        Label[] shortcutlabels;
 
         [GtkChild]
         private unowned Gtk.Grid? maingrid;
@@ -313,8 +319,11 @@ namespace Budgie {
                 margin-left: 12px;
                 margin-bottom: 2px;
             }
+            .popoverheader {
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
             """;
-
             topbar = new Gtk.HeaderBar();
             topbar.show_close_button = true;
             this.set_titlebar(topbar);
@@ -404,6 +413,64 @@ namespace Budgie {
             this.show_all();
         }
 
+        private void update_current_shortcuts() {
+            GLib.Settings scrshot_shortcuts = new GLib.Settings(
+                "com.solus-project.budgie-wm"
+            );
+            string[] keyvals = {
+                "take-full-screenshot",
+                "take-window-screenshot",
+                "take-region-screenshot"
+            };
+            int currshot = 0;
+            foreach (string s in keyvals) {
+                Variant shc = scrshot_shortcuts.get_strv(s);
+                string shc_action = (string)shc.get_child_value(0);
+                string newaction = shc_action.replace("<", "").replace(">", " + ");
+                // let's do capital
+                string[] newaction_steps = newaction.split(" + ");
+                int action_len = newaction_steps.length;
+                if (action_len == 2 && newaction_steps[1].length == 1) {
+                    newaction = newaction.replace(
+                        newaction_steps[1], newaction_steps[1].up()
+                    );
+                }
+                shortcutlabels[currshot].set_text(newaction);
+                currshot += 1;
+            }
+        }
+
+        private Popover make_info_popover(Button b) {
+            Popover newpopover = new Gtk.Popover(b);
+            Grid popovergrid = new Gtk.Grid();
+            set_margins(popovergrid, 15, 15, 15, 15);
+            //  string[] currshortcuts = get_current_shortcuts();
+
+            Label[] shortcutnames = {
+                new Label("Screenshot entire screen:\t"),
+                new Label("Screenshot selected area:\t"),
+                new Label("Screenshot active window:\t"),
+            };
+            shortcutlabels = {};
+            Label header = new Label("Shortcuts:");
+            header.get_style_context().add_class("popoverheader");
+            header.xalign = 0;
+            int ypos = 1;
+            popovergrid.attach(header, 0, 0, 1, 1);
+            foreach(Label l in shortcutnames) {
+                l.xalign = 0;
+                popovergrid.attach(l, 0, ypos, 1, 1);
+                Label newshortcutlabel = new Label("");
+                newshortcutlabel.xalign = 0;
+                shortcutlabels += newshortcutlabel;
+                popovergrid.attach(newshortcutlabel, 1, ypos, 1, 1);
+                ypos += 1;
+            }
+            newpopover.add(popovergrid);
+            popovergrid.show_all();
+            return newpopover;
+        }
+
         private void rearrange_headerbar() {
             /*
             / we want screenshot button and help button arranged
@@ -460,6 +527,15 @@ namespace Budgie {
             });
 
             Gtk.Button helpbutton = new Gtk.Button();
+            Popover helppopover = make_info_popover(helpbutton);
+            helpbutton.clicked.connect (() => {
+                print("updating shortcuts\n");
+                update_current_shortcuts();
+                //  foreach (string s in currshortcuts) {
+                //      print(@"$string\n");
+                //  }
+                helppopover.set_visible (true);
+            });
             helpbutton.label = "･･･";
             helpbutton.get_style_context().add_class(
                 Gtk.STYLE_CLASS_RAISED
@@ -512,7 +588,7 @@ namespace Budgie {
                 b.get_style_context().add_class("centerbutton");
                 b.add(buttongrid);
                 if (i == active) {
-                    b.set_active(true); /////////////////////////////////////////////////////////
+                    b.set_active(true);
                 }
                 areabuttonbox.pack_start(b);
                 selectbuttons += b;
@@ -848,8 +924,15 @@ namespace Budgie {
             // set headerbar button actions
             // - trash button: cancel
             decisionbuttons[0].clicked.connect(()=> {
-                windowstate.statechanged(WindowState.NONE);
-                this.close();
+                if (!startedfromgui) {
+                    windowstate.statechanged(WindowState.NONE);
+                    this.close();
+                }
+                else {
+                    windowstate.statechanged(WindowState.MAINWINDOW);
+                    this.close();
+                    new ScreenshotHomeWindow();
+                }
             });
             // - save to file
             decisionbuttons[1].clicked.connect(()=> {
