@@ -46,7 +46,6 @@ namespace Budgie {
         ctx = new OptionContext("- Budgie Screenshot");
         ctx.set_help_enabled(true);
         ctx.add_main_entries(options, null);
-        ctx.add_group(Gtk.get_option_group(false));
 
         try {
             ctx.parse(ref args);
