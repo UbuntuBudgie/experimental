@@ -412,7 +412,7 @@ namespace ScreenshotApp {
                 // let's do capital
                 string[] newaction_steps = newaction.split(" + ");
                 int action_len = newaction_steps.length;
-                if (action_len == 2) {
+                if (action_len == 2 && newaction_steps[1].length == 1) {
                     newaction = newaction.replace(
                         newaction_steps[1], newaction_steps[1].up()
                     );
