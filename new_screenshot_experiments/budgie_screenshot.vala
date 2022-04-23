@@ -105,6 +105,7 @@ namespace ScreenshotApp {
     //  ulong? connect_mainwindowheader;
     ulong? connect_aftershotheader;
     ulong? incl_cursor_sensitive;
+    bool startedfromgui = false;
 
 
     [DBus (name = "org.buddiesofbudgie.Screenshot")]
@@ -144,7 +145,14 @@ namespace ScreenshotApp {
                 screenshot_settings.disconnect(incl_cursor_sensitive);
                 incl_cursor_sensitive = null;
             }
+            if (newstate == 0) {
+                startedfromgui = false;
+            }
+            if (newstate == 1) {
+                startedfromgui = true;
+            }
             print(@"newstate $newstate\n"); // remove
+            print(@"$startedfromgui\n");
         }
     }
 
@@ -894,8 +902,15 @@ namespace ScreenshotApp {
             // set headerbar button actions
             // - trash button: cancel
             decisionbuttons[0].clicked.connect(()=> {
-                windowstate.statechanged(WindowState.NONE);
-                this.close();
+                if (!startedfromgui) {
+                    windowstate.statechanged(WindowState.NONE);
+                    this.close();
+                }
+                else {
+                    windowstate.statechanged(WindowState.MAINWINDOW);
+                    this.close();
+                    new ScreenshotHomeWindow();
+                }
             });
             // - save to file
             decisionbuttons[1].clicked.connect(()=> {
