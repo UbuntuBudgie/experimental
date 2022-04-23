@@ -2,7 +2,7 @@
 Type=Application
 Name=Budgie Screenshot
 Comment=Budgie screenshot app
-Exec=PATH_LOC/budgie-screenshot
+Exec=PATH_LOC/budgie-screenshot -i
 Icon=org.buddiesofbudgie.screenshot
 Categories=Utility;
 Keywords=Screenshot

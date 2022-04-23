@@ -59,11 +59,11 @@ install_data('icons/org.buddiesofbudgie.screenshot.svg',
 )
 
 
-sources = [
+control_sources = [
   'budgie_screenshot.vala',
 ]
 
-ScreenshotDependencies = [
+ScreenshotControlDependencies = [
 dependency('gtk+-3.0'),
 dependency('gstreamer-1.0'),
 dependency('cairo'),
@@ -72,7 +72,7 @@ dependency('gio-2.0'),
 meson.get_compiler('c').find_library('m', required: false)
 ]
 
-sources += gnome.compile_resources(
+control_sources += gnome.compile_resources(
   'screenshot-resources',
   'screenshot.gresource.xml',
   source_dir: 'icons',
@@ -84,15 +84,32 @@ ScreenshotValaArgs = [
     '--target-glib=2.38',
 ]
 
+main_sources = [
+  'screenshot_main.vala',
+]
+
+ScreenshotMainDependencies = [
+dependency('gtk+-3.0'),
+]
+
 SCREENSHOT_PATH=join_paths(libdir, 'budgie-desktop', 'screenshot')
 
 executable(
-    'budgie-screenshot', sources,
-    dependencies: ScreenshotDependencies,
+    'screenshot-control', control_sources,
+    dependencies: ScreenshotControlDependencies,
     install: true,
     vala_args: ScreenshotValaArgs,
     install_dir: SCREENSHOT_PATH,
 )
+
+executable(
+    'budgie-screenshot', main_sources,
+    dependencies: ScreenshotMainDependencies,
+    install: true,
+    vala_args: ScreenshotValaArgs,
+    install_dir: SCREENSHOT_PATH,
+)
+
 
 install_data('schema/org.buddiesofbudgie.screenshot.gschema.xml',
     install_dir: join_paths(datadir, 'glib-2.0', 'schemas')
