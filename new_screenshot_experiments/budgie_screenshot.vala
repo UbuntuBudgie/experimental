@@ -104,7 +104,6 @@ namespace ScreenshotApp {
     int newstate;
     //  ulong? connect_mainwindowheader;
     ulong? connect_aftershotheader;
-    ulong? incl_cursor_sensitive;
     bool startedfromgui = false;
 
 
@@ -141,11 +140,6 @@ namespace ScreenshotApp {
                 buttonplacement.disconnect(connect_aftershotheader);
                 connect_aftershotheader = null;
             }
-            if (incl_cursor_sensitive != null) {
-                screenshot_settings.disconnect(incl_cursor_sensitive);
-                incl_cursor_sensitive = null;
-            }
-
             (newstate == 0)?  startedfromgui = false : startedfromgui;
             (newstate == 1)?  startedfromgui = true : startedfromgui;
             print(@"newstate $newstate\n"); // remove
@@ -352,12 +346,6 @@ namespace ScreenshotApp {
                 "include-cursor", showpointerswitch, "state",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
-            incl_cursor_sensitive = screenshot_settings.changed["screenshot-mode"].connect(()=> { // disconnected on destroy
-                print("setting cursor\n");
-                showpointerbox.set_sensitive(
-                    screenshot_settings.get_string("screenshot-mode") != "Window"
-                );
-            });
             showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
             showpointerbox.pack_end(showpointerswitchgrid);
             Label showpointerlabel = new Label("Show Pointer");
