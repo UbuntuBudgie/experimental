@@ -107,7 +107,7 @@ executable(
     dependencies: ScreenshotMainDependencies,
     install: true,
     vala_args: ScreenshotValaArgs,
-    install_dir: SCREENSHOT_PATH,
+    install_dir: bindir,
 )
 
 
