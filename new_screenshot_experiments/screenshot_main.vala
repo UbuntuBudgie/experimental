@@ -14,32 +14,10 @@ should have received a copy of the GNU General Public License along with this
 program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// valac --pkg gtk+-3.0
-
-
-/* 
-try {
-    raven_proxy.ToggleNotificationsView.begin();
-} catch (Error e) {
-    message("Failed to toggle Raven: %s", e.message);
-}
--->
-raven_proxy.ToggleNotificationsView.begin((obj,res) => {
-    try {
-        raven_proxy.ToggleNotificationsView.end(res);
-    } catch (Error e) {
-        message("Failed to toggle Raven: %s", e.message);
-    }
-});
-*/
-
 namespace Budgie {
 
     [DBus (name = "org.buddiesofbudgie.ScreenshotControl")]
     interface ScreenshotControl : GLib.Object {
-        public signal void received_im_msg (int account, string sender, string msg,
-                                            int conv, uint flags);
-
         public async abstract void StartMainWindow() throws GLib.Error;
         public async abstract void StartAreaSelect() throws GLib.Error;
         public async abstract void StartWindowScreenshot() throws GLib.Error;
@@ -93,7 +71,7 @@ namespace Budgie {
                     } catch (Error e) {
                         message("Failed to StartAreaSelect: %s", e.message);
                     }
-                });;
+                });
                 return 0;
             }
             if (window){
@@ -103,7 +81,7 @@ namespace Budgie {
                     } catch (Error e) {
                         message("Failed to StartWindowScreenshot: %s", e.message);
                     }
-                });;
+                });
                 return 0;
             }
 
