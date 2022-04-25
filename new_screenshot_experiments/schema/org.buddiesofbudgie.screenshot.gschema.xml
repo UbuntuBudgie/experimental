@@ -46,6 +46,11 @@
             <description>Wether to include the cursor in the screenshot or not</description>
             <default>false</default>
         </key>
+        <key name="auto-save-directory" type="s">
+            <default>''</default>
+            <summary>Screenshot directory</summary>
+            <description>The directory where the screenshots will be saved by default.</description>
+        </key>
     </schema>
 </schemalist>
 
