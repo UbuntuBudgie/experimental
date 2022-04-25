@@ -46,27 +46,27 @@ namespace BudgieScreenshotControl {
             settings.set_int("delay", 0);
         }
 
-        public void StartMainWindow() throws Error {
+        public async void StartMainWindow() throws Error {
             if (getcurrentstate() == 0) {
                 new ScreenshotApp.ScreenshotHomeWindow();
             }
         }
 
-        public void StartAreaSelect() throws Error {
+        public async void StartAreaSelect() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Selection");
                 new ScreenshotApp.SelectLayer();
             }
         }
 
-        public void StartWindowScreenshot() throws Error {
+        public async void StartWindowScreenshot() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Window");
                 new ScreenshotApp.MakeScreenshot(null);
             }
         }
 
-        public void StartFullScreenshot() throws Error {
+        public async void StartFullScreenshot() throws Error {
             if (getcurrentstate() == 0) {
                 set_target("Screen");
                 new ScreenshotApp.MakeScreenshot(null);
@@ -142,8 +142,6 @@ namespace ScreenshotApp {
             }
             (newstate == 0)?  startedfromgui = false : startedfromgui;
             (newstate == 1)?  startedfromgui = true : startedfromgui;
-            print(@"newstate $newstate\n"); // remove
-            print(@"$startedfromgui\n");
         }
     }
 
@@ -195,6 +193,7 @@ namespace ScreenshotApp {
                 );
             }
             catch (Error e) {
+                print("shooting error\n");
                 stderr.printf ("%s, failed to make screenhot\n", e.message);
                 windowstate.statechanged(WindowState.NONE);
             }
@@ -313,7 +312,6 @@ namespace ScreenshotApp {
             / (re-?) arranging headerbar buttons
             */
             buttonplacement.changed["button-style"].connect(()=> { // disconnected on destroy
-                print("rearranging mainwin\n"); // remove
                 rearrange_headerbar();
             });
             rearrange_headerbar();
@@ -364,7 +362,6 @@ namespace ScreenshotApp {
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
             this.destroy.connect(()=> {
-                print(@"destroying mainwin\n"); // remove
                 // prevent WindowState.NONE if follow up button is pressed
                 GLib.Timeout.add(100, ()=> {
                     if (newstate == WindowState.MAINWINDOW) {
@@ -473,7 +470,6 @@ namespace ScreenshotApp {
                 Gtk.STYLE_CLASS_SUGGESTED_ACTION
             );
             shootbutton.clicked.connect(()=> {
-                print("run action from shootbutton\n");
                 this.close();
                 string shootmode = screenshot_settings.get_string(
                     "screenshot-mode"
@@ -504,11 +500,7 @@ namespace ScreenshotApp {
             Gtk.Button helpbutton = new Gtk.Button();
             Popover helppopover = make_info_popover(helpbutton);
             helpbutton.clicked.connect (() => {
-                print("updating shortcuts\n");
                 update_current_shortcuts();
-                //  foreach (string s in currshortcuts) {
-                //      print(@"$string\n");
-                //  }
                 helppopover.set_visible (true);
             });
             helpbutton.label = "･･･";
@@ -842,7 +834,6 @@ namespace ScreenshotApp {
             connect_aftershotheader = buttonplacement.changed[ // disconnected on destroy
                 "button-style"
             ].connect(()=> {
-                print("running action on button placement change\n"); // remove
                 decisionbuttons = {};
                 setup_headerbar(decisionbar, filenameentry, clp, pxb);
             });
@@ -1223,5 +1214,3 @@ namespace ScreenshotApp {
         return 0;
     }
 }
-
-// 1090
