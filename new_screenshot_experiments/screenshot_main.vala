@@ -16,6 +16,23 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 // valac --pkg gtk+-3.0
 
+
+/* 
+try {
+    raven_proxy.ToggleNotificationsView.begin();
+} catch (Error e) {
+    message("Failed to toggle Raven: %s", e.message);
+}
+-->
+raven_proxy.ToggleNotificationsView.begin((obj,res) => {
+    try {
+        raven_proxy.ToggleNotificationsView.end(res);
+    } catch (Error e) {
+        message("Failed to toggle Raven: %s", e.message);
+    }
+});
+*/
+
 namespace Budgie {
 
     [DBus (name = "org.buddiesofbudgie.ScreenshotControl")]
