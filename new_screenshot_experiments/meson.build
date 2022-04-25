@@ -122,7 +122,7 @@ desktop_file = 'org.buddiesofbudgie.screenshot.desktop'
 mytargetw = custom_target('screenshot',
   output : desktop_file,
   input : desktop_file + '.in',
-  command : [substprog, '@INPUT@', SCREENSHOT_PATH, '@OUTPUT@', podir],
+  command : [substprog, '@INPUT@', bindir, '@OUTPUT@', podir],
   install : true,
   install_dir : join_paths(datadir, 'applications')
 )
