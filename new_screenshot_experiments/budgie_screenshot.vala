@@ -294,6 +294,9 @@ namespace Budgie {
                 "com.solus-project.budgie-wm"
             );
             set_wmclass("budgie-screenshot", "budgie-screenshot");
+            var theme = Gtk.IconTheme.get_default();
+            theme.add_resource_path ("/org/buddiesofbudgie/Screenshot/icons/scalable/apps/");
+
             //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             //this.set_resizable(false);
             string home_css = """
@@ -434,8 +437,10 @@ namespace Budgie {
             / so.. add icon to grid, grid to button, button behaves. pfff.
             */
             Gtk.Button shootbutton = new Gtk.Button();
-            Gtk.Image shootimage = new Gtk.Image.from_icon_name(
-                "shootscreen-symbolic", Gtk.IconSize.DND);
+            //Gtk.Image shootimage = new Gtk.Image.from_icon_name(
+            //    "shootscreen-symbolic", Gtk.IconSize.DND);
+            var iconfile =  new ThemedIcon(name="shootscreen-symbolic");
+            Gtk.Image shootimage = new Gtk.Image.from_gicon(iconfile,Gtk.IconSize.DND);
             shootimage.pixel_size = 24;
             Gtk.Grid shootgrid = new Gtk.Grid();
             shootgrid.attach(shootimage, 0, 0, 1, 1);
@@ -513,9 +518,8 @@ namespace Budgie {
             int i = 0;
             ToggleButton[] selectbuttons = {};
             foreach (string s in areabuttons_labels) {
-                Gtk.Image selecticon = new Gtk.Image.from_icon_name(
-                    icon_names[i], Gtk.IconSize.DIALOG
-                );
+                var iconfile =  new ThemedIcon(name=icon_names[i]);
+                Gtk.Image selecticon = new Gtk.Image.from_gicon(iconfile,Gtk.IconSize.DIALOG);
                 selecticon.pixel_size = 60;
                 Grid buttongrid = new Gtk.Grid();
                 buttongrid.attach(selecticon, 0, 0, 1, 1);
