@@ -40,10 +40,10 @@ namespace Budgie {
         public signal void received_im_msg (int account, string sender, string msg,
                                             int conv, uint flags);
 
-        public abstract void StartMainWindow() throws GLib.Error;
-        public abstract void StartAreaSelect() throws GLib.Error;
-        public abstract void StartWindowScreenshot() throws GLib.Error;
-        public abstract void StartFullScreenshot() throws GLib.Error;
+        public async abstract void StartMainWindow() throws GLib.Error;
+        public async abstract void StartAreaSelect() throws GLib.Error;
+        public async abstract void StartWindowScreenshot() throws GLib.Error;
+        public async abstract void StartFullScreenshot() throws GLib.Error;
     }
 
     static bool interactive = false;
@@ -77,26 +77,48 @@ namespace Budgie {
             );
 
             if (interactive) {
-                control.StartMainWindow();
+                control.StartMainWindow.begin((obj,res) => {
+                    try {
+                        control.StartMainWindow.end(res);
+                    } catch (Error e) {
+                        message("Failed to StartMainWindow: %s", e.message);
+                    }
+                });
                 return 0;
             }
             if (area) {
-                control.StartAreaSelect();
+                control.StartAreaSelect.begin((obj,res) => {
+                    try {
+                        control.StartAreaSelect.end(res);
+                    } catch (Error e) {
+                        message("Failed to StartAreaSelect: %s", e.message);
+                    }
+                });;
                 return 0;
             }
             if (window){
-                control.StartWindowScreenshot();
+                control.StartWindowScreenshot.begin((obj,res) => {
+                    try {
+                        control.StartWindowScreenshot.end(res);
+                    } catch (Error e) {
+                        message("Failed to StartWindowScreenshot: %s", e.message);
+                    }
+                });;
                 return 0;
             }
 
-            control.StartFullScreenshot();
+            control.StartFullScreenshot.begin((obj,res) => {
+                try {
+                    control.StartFullScreenshot.end(res);
+                } catch (Error e) {
+                    message("Failed to StartFullScreenshot: %s", e.message);
+                }
+            });
             return 0;
         }
         catch (Error e) {
             stderr.printf ("%s\n", e.message);
             return 1;
         }
-
-        return 0;
     }
 }
