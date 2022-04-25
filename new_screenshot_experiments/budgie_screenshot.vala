@@ -295,6 +295,7 @@ namespace Budgie {
             buttonplacement = new GLib.Settings(
                 "com.solus-project.budgie-wm"
             );
+            set_wmclass("budgie-screenshot", "budgie-screenshot");
             //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             //this.set_resizable(false);
             string home_css = """
@@ -800,6 +801,7 @@ namespace Budgie {
             int scale = get_scaling();
             Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
             Pixbuf pxb = clp.wait_for_image();
+            set_wmclass("budgie-screenshot", "budgie-screenshot");
             windowstate.statechanged(WindowState.AFTERSHOT);
             //this.set_resizable(false);
             //this.set_default_size(100, 100);
