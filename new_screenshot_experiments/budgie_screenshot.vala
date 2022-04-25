@@ -288,7 +288,7 @@ namespace Budgie {
         private unowned Gtk.Switch? showpointerswitch;
 
         public ScreenshotHomeWindow() {
-            this.set_focus_on_map(true);
+            this.set_keep_above(true);
             windowstate.statechanged(WindowState.MAINWINDOW);
             buttonplacement = new GLib.Settings(
                 "com.solus-project.budgie-wm"
@@ -756,7 +756,7 @@ namespace Budgie {
         }
 
         public AfterShotWindow() {
-            this.set_focus_on_map(true);
+            this.set_keep_above(true);
             int scale = get_scaling();
             Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
             Pixbuf pxb = clp.wait_for_image();
