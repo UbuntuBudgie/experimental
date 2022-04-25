@@ -102,7 +102,6 @@ namespace Budgie {
     ScreenshotClient client;
     CurrentState windowstate;
     int newstate;
-    //  ulong? connect_mainwindowheader;
     ulong? connect_aftershotheader;
     bool startedfromgui = false;
 
@@ -133,7 +132,6 @@ namespace Budgie {
     }
 
     private class CurrentState : GLib.Object {
-        //  public signal void changed();
         public void statechanged(int n) {
             newstate = n;
             if (connect_aftershotheader != null) {
@@ -274,7 +272,6 @@ namespace Budgie {
     [GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/ui/screenshothome.ui")]
     class ScreenshotHomeWindow : Gtk.Window {
 
-        //  GLib.Settings? buttonplacement;
         Gtk.HeaderBar topbar;
         int selectmode = 0;
         bool ignore = false;
@@ -291,11 +288,11 @@ namespace Budgie {
         private unowned Gtk.Switch? showpointerswitch;
 
         public ScreenshotHomeWindow() {
+            this.set_focus_on_map(true);
             windowstate.statechanged(WindowState.MAINWINDOW);
             buttonplacement = new GLib.Settings(
                 "com.solus-project.budgie-wm"
             );
-            set_wmclass("budgie-screenshot", "budgie-screenshot");
             //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
             //this.set_resizable(false);
             string home_css = """
@@ -326,7 +323,6 @@ namespace Budgie {
                 rearrange_headerbar();
             });
             rearrange_headerbar();
-
             // css stuff
             Gdk.Screen screen = this.get_screen();
             Gtk.CssProvider css_provider = new Gtk.CssProvider();
@@ -341,33 +337,14 @@ namespace Budgie {
                 print("Error loading css data\n");
             }
             // so, let's add some content - areabuttons
-            //Grid maingrid = new Gtk.Grid();
-            //maingrid.set_row_spacing(10);
-            //set_margins(maingrid, 25, 25, 25, 25);
             Gtk.Box areabuttonbox = setup_areabuttons();
-            maingrid.attach(areabuttonbox, 0, 0, 1, 1);
-            //maingrid.attach(new Label(""), 0, 1, 1, 1);
+            maingrid.attach(areabuttonbox, 0, 0, 1, 1);;
             // - show pointer
-            //Gtk.Box showpointerbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            //Gtk.Grid showpointerswitchgrid = new Gtk.Grid();
-            //Gtk.Switch showpointerswitch = new Gtk.Switch();
             screenshot_settings.bind(
                 "include-cursor", showpointerswitch, "state",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
             );
-            //showpointerswitchgrid.attach(showpointerswitch, 0, 0, 1, 1);
-            //showpointerbox.pack_end(showpointerswitchgrid);
-            //Label showpointerlabel = new Label("Show Pointer");
-            // let's set a larger width than the actual, so font size won't matter
-            //showpointerlabel.set_size_request(290, 10);
-            //showpointerlabel.get_style_context().add_class("optionslabel");
-            //showpointerlabel.xalign = 0;
-            //showpointerbox.pack_start(showpointerlabel);
-            //maingrid.attach(showpointerbox, 0, 2, 1, 1);
             // - delay
-            //Gtk.Box delaybox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            //Gtk.Grid spinbuttongrid = new Gtk.Grid();
-            //Gtk.SpinButton delayspin = new Gtk.SpinButton.with_range(0, 60, 1);
             screenshot_settings.bind(
                 "delay", delayspin, "value",
                 SettingsBindFlags.GET|SettingsBindFlags.SET
@@ -380,19 +357,7 @@ namespace Budgie {
                     }
                     return false;
                 });
-                // to make sure, let's unbind
-                //  screenshot_settings.unbind(delayspin, "value");
             });
-            //spinbuttongrid.attach(delayspin, 1, 0, 1, 1);
-            //delaybox.pack_end(spinbuttongrid);
-            // delaylabel = new Label("Delay in seconds");
-            // let's set a larger width than the actual, so font size won't matter
-            //delaylabel.set_size_request(230, 10);
-            //delaylabel.get_style_context().add_class("optionslabel");
-            //delaylabel.xalign = 0;
-            //delaybox.pack_start(delaylabel);
-            //maingrid.attach(delaybox, 0, 3, 1, 1);
-            //this.add(maingrid);
             this.show_all();
         }
 
@@ -427,8 +392,6 @@ namespace Budgie {
             Popover newpopover = new Gtk.Popover(b);
             Grid popovergrid = new Gtk.Grid();
             set_margins(popovergrid, 15, 15, 15, 15);
-            //  string[] currshortcuts = get_current_shortcuts();
-
             Label[] shortcutnames = {
                 new Label("Screenshot entire screen:\t"),
                 new Label("Screenshot selected area:\t"),
@@ -629,14 +592,9 @@ namespace Budgie {
         double blue = 1; // fallback
         GLib.Settings? theme_settings;
 
-
         public SelectLayer(int? overrule_delay=null) {
-
             windowstate.statechanged(WindowState.SELECTINGAREA);
             theme_settings = new GLib.Settings("org.gnome.desktop.interface");
-            //  theme_settings.changed["gtk-theme"].connect(()=> { // change theme during select area, seriously?
-            //      get_theme_fillcolor();
-            //  });
             this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
             this.fullscreen();
             this.set_keep_above(true);
@@ -798,51 +756,15 @@ namespace Budgie {
         }
 
         public AfterShotWindow() {
+            this.set_focus_on_map(true);
             int scale = get_scaling();
             Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
             Pixbuf pxb = clp.wait_for_image();
-            set_wmclass("budgie-screenshot", "budgie-screenshot");
             windowstate.statechanged(WindowState.AFTERSHOT);
-            //this.set_resizable(false);
-            //this.set_default_size(100, 100);
-            //this.set_position(Gtk.WindowPosition.CENTER_ALWAYS);
-            // general window furniture
-            // grids
-            //Gtk.Grid maingrid = new Gtk.Grid();
             // create resized image for preview
             var pixbuf = resize_pixbuf(pxb, scale);
             img.set_from_pixbuf(pixbuf);
-            //maingrid.attach(img, 0, 0, 1, 1);
-            //this.add(maingrid);
-            //set_margins(maingrid, 25, 25, 25, 25);
-            //Gtk.Grid directorygrid = new Gtk.Grid();
-            //directorygrid.set_row_spacing(8);
-            //set_margins(directorygrid, 0, 0, 25, 0);
-            // dir-entry (in a box)
-            //Box filenamebox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            //Label filenamelabel = new Gtk.Label("Name" + ":");
-            //filenamelabel.xalign = 0;
-            //filenamelabel.set_size_request(80, 10);
-            //filenamebox.pack_start(filenamelabel);
-            //Entry filenameentry = new Gtk.Entry();
-            //filenameentry.set_size_request(265, 10);
             filenameentry.set_text(get_scrshotname());
-            //filenamebox.pack_end(filenameentry);
-            //directorygrid.attach(filenamebox, 0, 0, 1, 1);
-            // combo (in a box)
-            //dir_liststore = new Gtk.ListStore (
-            //    4, typeof (string), typeof (string), typeof (string), typeof (bool)
-            //);
-            //Box pickdirbox = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 0);
-            //Label pickdirlabel = new Gtk.Label("Folder" + ":");
-            //pickdirlabel.xalign = 0;
-            //pickdirlabel.set_size_request(80, 10);
-            //pickdirbox.pack_start(pickdirlabel);
-            //pickdir_combo = new Gtk.ComboBox.with_model (dir_liststore);
-            //pickdir_combo.set_popup_fixed_width(true);
-            //pickdir_combo.set_size_request(265, 10);
-            //pickdirbox.pack_end(pickdir_combo);
-            //directorygrid.attach(pickdirbox, 0, 1, 1, 1);
             // volume monitor
             monitor = VolumeMonitor.get();
             monitor.mount_added.connect(update_dropdown);
@@ -851,7 +773,6 @@ namespace Budgie {
             pickdir_combo.changed.connect(()=> {
                 if (act_ondropdown) {item_changed(pickdir_combo);}
             });
-            //maingrid.attach(directorygrid, 0, 1, 1, 1);
             // headerbar
             HeaderBar decisionbar = new Gtk.HeaderBar();
             decisionbar.show_close_button = false;
