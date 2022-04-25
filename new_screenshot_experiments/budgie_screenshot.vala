@@ -290,9 +290,6 @@ namespace Budgie {
         [GtkChild]
         private unowned Gtk.Switch? showpointerswitch;
 
-        [GtkChild]
-        private unowned Gtk.Box? showpointerbox;
-
         public ScreenshotHomeWindow() {
             windowstate.statechanged(WindowState.MAINWINDOW);
             buttonplacement = new GLib.Settings(
