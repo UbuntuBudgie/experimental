@@ -169,10 +169,10 @@ index 52c06959..02a042d2 100644
  budgie_wm_status_vala_args = []
 diff --git a/src/wm/screenshot.vala b/src/wm/screenshot.vala
 new file mode 100644
-index 00000000..af304daf
+index 00000000..a6689a96
 --- /dev/null
 +++ b/src/wm/screenshot.vala
-@@ -0,0 +1,366 @@
+@@ -0,0 +1,338 @@
 +/*
 + * This file is part of budgie-desktop
 + *
@@ -234,8 +234,8 @@ index 00000000..af304daf
 +			double[] keyframes = { 0.3f, 0.8f };
 +			GLib.Value[] values = { 180U, 0U };
 +
-+			// do some boundary checks
-+			if (x < 0 || y < 0 || !(width >= 1 && height >= 1)) {
++			// do some sizing checks
++			if (!(width >= 1 && height >= 1)) {
 +				throw new DBusError.FAILED ("flash area - Invalid sizing parameters");
 +			}
 +
@@ -281,8 +281,8 @@ index 00000000..af304daf
 +		public async void screenshot_area (int x, int y, int width, int height, bool include_cursor, bool flash, string filename, out bool success, out string filename_used) throws DBusError, IOError {
 +			yield wait_stage_repaint ();
 +
-+			// do some boundary checks
-+			if (x < 0 || y < 0 || !(width >= 1 && height >= 1)) {
++			// do some sizing checks
++			if (!(width >= 1 && height >= 1)) {
 +				success = false;
 +				throw new DBusError.FAILED ("screenshot_area Invalid sizing parameters");
 +			}
@@ -318,8 +318,8 @@ index 00000000..af304daf
 +				rect = window.frame_rect_to_client_rect (rect);
 +			}
 +
-+			// do some boundary checks
-+			if (rect.x < 0 || rect.y < 0 || !(rect.width >= 1 && rect.height >= 1)) {
++			// do some sizing checks
++			if (!(rect.width >= 1 && rect.height >= 1)) {
 +				throw new DBusError.FAILED ("screenshot_window Invalid sizing parameters");
 +			}
 +
@@ -342,34 +342,6 @@ index 00000000..af304daf
 +				throw new DBusError.FAILED ("Failed to save image");
 +		}
 +
-+
-+		static string find_target_path () {
-+			/*
-+			 * If path in screenshots exists/or can be created then use this path
-+			 * otherwise use the PICTURES xdg-dir path
-+			 * default is the home folder as the ultimate fallback
-+			 */
-+			unowned string? base_path = Environment.get_user_special_dir (UserDirectory.PICTURES);
-+			if (base_path != null && FileUtils.test (base_path, FileTest.EXISTS)) {
-+				var path = "";
-+				var settings_schema = "org.gnome.gnome-screenshot";  /*DM this needs changing to a budgie-desktop path*/
-+				var schema = GLib.SettingsSchemaSource.get_default ().lookup (settings_schema, true);
-+				if (schema != null) { // settings schema does exist
-+					var settings = new Settings(settings_schema);
-+					path = settings.get_string("auto-save-directory");
-+				}
-+				if (FileUtils.test (path, FileTest.EXISTS)) {
-+					return path;
-+				} else if (DirUtils.create (path, 0755) == 0) {
-+					return path;
-+				} else {
-+					return base_path;
-+				}
-+			}
-+
-+			return Environment.get_home_dir ();
-+		}
-+
 +		private async bool save_image (Cairo.ImageSurface image, string filename, out string used_filename) {
 +			used_filename = filename;
 +
@@ -384,7 +356,7 @@ index 00000000..af304daf
 +					used_filename = used_filename.splice (scale_pos, scale_pos, "@%ix".printf (scale_factor));
 +				}
 +
-+				var path = find_target_path ();
++				var path = Environment.get_tmp_dir();
 +				used_filename = Path.build_filename (path, used_filename, null);
 +			}
 +
@@ -558,27 +530,35 @@ index 3b48f237..a0372d8d 100644
  			display = wm.get_display();
  			display.accelerator_activated.connect(on_accelerator_activated);
 diff --git a/src/wm/wm.vala b/src/wm/wm.vala
-index 447149ab..6d773c7a 100644
+index 447149ab..88056f1e 100644
 --- a/src/wm/wm.vala
 +++ b/src/wm/wm.vala
-@@ -36,6 +36,10 @@ namespace Budgie {
+@@ -36,6 +36,11 @@ namespace Budgie {
  	public const string SWITCHER_DBUS_NAME = "org.budgie_desktop.TabSwitcher";
  	public const string SWITCHER_DBUS_OBJECT_PATH = "/org/budgie_desktop/TabSwitcher";
  
++	//public const string SCREENSHOTCONTROL_DBUS_NAME = "org.buddiesofbudgie.ScreenshotControl";
++	//public const string SCREENSHOTCONTROL_DBUS_OBJECT_PATH = "/org/buddiesofbudgie/ScreenshotControl";
 +	public const string SCREENSHOTCLIENT_DBUS_NAME = "org.budgie_desktop.ScreenshotClient";
 +	public const string SCREENSHOTCLIENT_DBUS_OBJECT_PATH = "/org/budgie_desktop/ScreenshotClient";
-+
 +
  	[Flags]
  	public enum PanelAction {
  		NONE = 1 << 0,
-@@ -101,6 +105,16 @@ namespace Budgie {
+@@ -101,6 +106,23 @@ namespace Budgie {
  		public abstract async void StopSwitcher() throws Error;
  	}
  
 +	/**
 +	* Allows us to invoke the screenshot client without directly using GTK+ ourselves
 +	*/
++	/*[DBus (name = "org.buddiesofbudgie.ScreenshotControl")]
++    interface ScreenshotControl : GLib.Object {
++        public async abstract void StartMainWindow() throws GLib.Error;
++        public async abstract void StartAreaSelect() throws GLib.Error;
++        public async abstract void StartWindowScreenshot() throws GLib.Error;
++        public async abstract void StartFullScreenshot() throws GLib.Error;
++    }*/
 +	[DBus (name="org.budgie_desktop.ScreenshotClient")]
 +	public interface ScreenshotClient: GLib.Object {
 +		public abstract async void ScreenshotClientArea() throws Error;
@@ -589,97 +569,134 @@ index 447149ab..6d773c7a 100644
  	public class MinimizeData {
  		public float scale_x;
  		public float scale_y;
-@@ -138,6 +152,8 @@ namespace Budgie {
+@@ -138,6 +160,9 @@ namespace Budgie {
  		RavenRemote? raven_proxy = null;
  		ShellShim? shim = null;
  		BudgieWMDBUS? focus_interface = null;
 +		ScreenshotManager? screenshot = null;
-+		ScreenshotClient? screenshotclient_proxy = null;
++		//ScreenshotControl? screenshotcontrol_proxy = null;
++		ScreenshotClient? screenshotcontrol_proxy = null;
  		PanelRemote? panel_proxy = null;
  		LoginDRemote? logind_proxy = null;
  		MenuManager? menu_proxy = null;
-@@ -171,6 +187,15 @@ namespace Budgie {
+@@ -171,6 +196,15 @@ namespace Budgie {
  			return FileUtils.test("/run/systemd/seats", FileTest.EXISTS);
  		}
  
-+		/* Hold onto our ScreenshotClient proxy ref */
-+		void on_screenshotclient_get(Object? o, AsyncResult? res) {
++		/* Hold onto our ScreenshotControl proxy ref */
++		void on_screenshotcontrol_get(Object? o, AsyncResult? res) {
 +			try {
-+				screenshotclient_proxy = Bus.get_proxy.end(res);
++				screenshotcontrol_proxy = Bus.get_proxy.end(res);
 +			} catch (Error e) {
-+				warning("Failed to gain ScreenshotClient proxy: %s", e.message);
++				warning("Failed to gain ScreenshotControl proxy: %s", e.message);
 +			}
 +		}
 +
  		/* Hold onto our Raven proxy ref */
  		void on_raven_get(Object? o, AsyncResult? res) {
  			try {
-@@ -271,6 +296,9 @@ namespace Budgie {
+@@ -269,8 +303,19 @@ namespace Budgie {
+ 		void on_take_full_screenshot(Meta.Display display, Meta.Window? window, Clutter.KeyEvent? event, Meta.KeyBinding binding) {
+ 			try {
  				string cmd=this.settings.get_string("full-screenshot-cmd");
- 				if (cmd != "")
+-				if (cmd != "")
++				if (cmd != "") {
  					Process.spawn_command_line_async(cmd);
-+				else
-+					screenshotclient_proxy.ScreenshotClientFullscreen.begin();
++				}
++				/*else {
++					screenshotcontrol_proxy.StartFullScreenshot.begin((obj,res) => {
++						try {
++							screenshotcontrol_proxy.StartFullScreenshot.end(res);
++						} catch (Error e) {
++							message("Failed to StartFullScreenshot: %s", e.message);
++						}
++					});
++				}*/
 +
  			} catch (SpawnError e) {
  				print("Error: %s\n", e.message);
  			}
-@@ -278,10 +306,14 @@ namespace Budgie {
+@@ -278,10 +323,22 @@ namespace Budgie {
  
  		/* Binding for take-region-screenshot */
  		void on_take_region_screenshot(Meta.Display display, Meta.Window? window, Clutter.KeyEvent? event, Meta.KeyBinding binding) {
 +			message("on take region");
  			try {
  				string cmd=this.settings.get_string("take-region-screenshot-cmd");
- 				if (cmd != "")
+-				if (cmd != "")
++				if (cmd != "") {
  					Process.spawn_command_line_async(cmd);
-+				else
-+					screenshotclient_proxy.ScreenshotClientArea.begin();
++				}
++				/*else {
++					screenshotcontrol_proxy.StartAreaSelect.begin((obj,res) => {
++						try {
++							screenshotcontrol_proxy.StartAreaSelect.end(res);
++						} catch (Error e) {
++							message("Failed to StartAreaSelect: %s", e.message);
++						}
++					});
++				}*/
 +
  			} catch (SpawnError e) {
  				print("Error: %s\n", e.message);
  			}
-@@ -293,6 +325,9 @@ namespace Budgie {
+@@ -291,8 +348,19 @@ namespace Budgie {
+ 		void on_take_window_screenshot(Meta.Display display, Meta.Window? window, Clutter.KeyEvent? event, Meta.KeyBinding binding) {
+ 			try {
  				string cmd=this.settings.get_string("take-window-screenshot-cmd");
- 				if (cmd != "")
+-				if (cmd != "")
++				if (cmd != "") {
  					Process.spawn_command_line_async(cmd);
-+				else
-+					screenshotclient_proxy.ScreenshotClientWindow.begin();
++				}
++				/*else {
++					screenshotcontrol_proxy.StartWindowScreenshot.begin((obj,res) => {
++						try {
++							screenshotcontrol_proxy.StartWindowScreenshot.end(res);
++						} catch (Error e) {
++							message("Failed to StartWindowScreenshot: %s", e.message);
++						}
++					});
++				}*/
 +
  			} catch (SpawnError e) {
  				print("Error: %s\n", e.message);
  			}
-@@ -352,6 +387,17 @@ namespace Budgie {
+@@ -352,6 +420,20 @@ namespace Budgie {
  			});
  		}
  
-+		/* Set up the proxy when raven appears */
-+		void has_screenshotclient() {
-+			if (screenshotclient_proxy == null) {
-+				Bus.get_proxy.begin<ScreenshotClient>(BusType.SESSION, SCREENSHOTCLIENT_DBUS_NAME, SCREENSHOTCLIENT_DBUS_OBJECT_PATH, 0, null, on_screenshotclient_get);
++		/* Set up the proxy when screenshotcontrol appears */
++		void has_screenshotcontrol() {
++			//if (screenshotcontrol_proxy == null) {
++			//	Bus.get_proxy.begin<ScreenshotControl>(BusType.SESSION, SCREENSHOTCONTROL_DBUS_NAME, SCREENSHOTCONTROL_DBUS_OBJECT_PATH, 0, null, on_screenshotcontrol_get);
++			//}
++			if (screenshotcontrol_proxy == null) {
++				Bus.get_proxy.begin<ScreenshotClient>(BusType.SESSION, SCREENSHOTCLIENT_DBUS_NAME, SCREENSHOTCLIENT_DBUS_OBJECT_PATH, 0, null, on_screenshotcontrol_get);
 +			}
 +		}
 +
-+		void lost_screenshotclient() {
-+			screenshotclient_proxy = null;
++		void lost_screenshotcontrol() {
++			screenshotcontrol_proxy = null;
 +		}
 +
  		/* Set up the proxy when raven appears */
  		void has_raven() {
  			if (raven_proxy == null) {
-@@ -490,6 +536,11 @@ namespace Budgie {
+@@ -490,6 +572,13 @@ namespace Budgie {
  			Bus.watch_name(BusType.SESSION, SWITCHER_DBUS_NAME, BusNameWatcherFlags.NONE,
  				has_switcher, lost_switcher);
  
-+			/* ScreenshotClient */
++			/* ScreenshotControl */
++			//Bus.watch_name(BusType.SESSION, SCREENSHOTCONTROL_DBUS_NAME, BusNameWatcherFlags.NONE,
++			//	has_screenshotcontrol, lost_screenshotcontrol);
 +			Bus.watch_name(BusType.SESSION, SCREENSHOTCLIENT_DBUS_NAME, BusNameWatcherFlags.NONE,
-+				has_screenshotclient, lost_screenshotclient);
++				has_screenshotcontrol, lost_screenshotcontrol);
 +
 +
  			/* Keep an eye out for systemd stuffs */
  			if (have_logind()) {
  				get_logind();
-@@ -525,6 +576,9 @@ namespace Budgie {
+@@ -525,6 +614,9 @@ namespace Budgie {
  			keyboard.hook_extra();
  
  			display.get_workspace_manager().override_workspace_layout(Meta.DisplayCorner.TOPLEFT, false, 1, -1);
