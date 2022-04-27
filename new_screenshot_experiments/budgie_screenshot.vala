@@ -1143,6 +1143,11 @@ namespace Budgie {
 				custompath_row = {custompath, mention, ic_name};
 				update_dropdown();
 			}
+			else {
+				pickdir_combo.set_active(
+					screenshot_settings.get_int("last-save-directory")
+				);
+			}
 			dialog.destroy ();
 		}
 
