@@ -6,4 +6,4 @@ Exec=PATH_LOC/budgie-screenshot -i
 Icon=org.buddiesofbudgie.screenshot
 Categories=Utility;
 Keywords=Screenshot
-StartupWMClass=budgie-screenshot
+StartupWMClass=screenshot-control

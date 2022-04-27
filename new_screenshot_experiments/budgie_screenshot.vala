@@ -194,7 +194,7 @@ namespace Budgie {
 				);
 			}
 			catch (Error e) {
-				stderr.printf ("%s, failed to make screenhot\n", e.message);
+				stderr.printf ("%s, failed to make screenshot\n", e.message);
 				windowstate.statechanged(WindowState.NONE);
 			}
 			if (success) {
@@ -295,7 +295,6 @@ namespace Budgie {
 			buttonplacement = new GLib.Settings(
 				"com.solus-project.budgie-wm"
 			);
-			set_wmclass("budgie-screenshot", "budgie-screenshot");
 			var theme = Gtk.IconTheme.get_default();
 			theme.add_resource_path ("/org/buddiesofbudgie/Screenshot/icons/scalable/apps/");
 
@@ -804,7 +803,6 @@ namespace Budgie {
 
 		private void makeaftershotwindow(Pixbuf pxb) {
 			this.set_keep_above(true);
-			set_wmclass("budgie-screenshot", "budgie-screenshot");
 			int scale = get_scaling();
 			Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
 			//  Pixbuf pxb = clp.wait_for_image();
@@ -1117,14 +1115,29 @@ namespace Budgie {
 			act_ondropdown = true;
 		}
 
+		private string lookup_icon_name(File customdir) {
+			try {
+				FileInfo info = customdir.query_info("standard::icon", 0);
+				Icon icon = info.get_icon();
+				return get_icon_fromgicon(icon);
+			}
+			catch (Error e) {
+				stderr.printf ("%s\n", e.message);
+				return "";
+			}
+		}
+
 		void save_customdir (Gtk.Dialog dialog, int response_id) {
 			// setting user response on dialog as custom path (the labor work)
 			var save_dialog = dialog as Gtk.FileChooserDialog;
 			if (response_id == Gtk.ResponseType.ACCEPT) {
 				File file = save_dialog.get_file();
-				FileInfo info = file.query_info("standard::icon", 0);
-				Icon icon = info.get_icon();
-				string ic_name = get_icon_fromgicon(icon);
+				string ic_name = lookup_icon_name(file);
+
+				//  FileInfo info = file.query_info("standard::icon", 0);
+				//  Icon icon = info.get_icon();
+				//  string ic_name = get_icon_fromgicon(icon);
+
 				// so, the actual path
 				string custompath = file.get_path();
 				// ...and its mention in the dropdown
@@ -1213,7 +1226,10 @@ namespace Budgie {
 		// set windowstate signal and initial state
 		Gtk.init(ref args);
 		string username = Environment.get_user_name();
-		tempfile_path = "/tmp/".concat(username, "_budgiescreenshot_tempfile");
+		string tmpdir = GLib.Environment.get_tmp_dir();
+		tempfile_path = tmpdir.concat(
+			"/", username, "_budgiescreenshot_tempfile"
+		);
 		homedir_path = GLib.Environment.get_home_dir();
 		windowstate = new CurrentState();
 		newstate = 0;
