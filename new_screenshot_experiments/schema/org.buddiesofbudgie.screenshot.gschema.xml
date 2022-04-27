@@ -19,8 +19,8 @@
             <default>"Screen"</default>
         </key>
         <key type="i" name="last-save-directory">
-            <summary>Enum value of last used user-dirs</summary>
-            <description>Enum from UserDirectory https://valadoc.org/glib-2.0/GLib.UserDirectory.html</description>
+            <summary>Index of the last used directory</summary>
+            <description>Index of the last used directory. If default user-dirs are there, index equals Enum from: UserDirectory https://valadoc.org/glib-2.0/GLib.UserDirectory.html. in case of index error, fallback is user home directory</description>
             <default>4</default>
 	    <range min="0" max="7"/>
         </key>

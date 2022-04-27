@@ -104,6 +104,8 @@ namespace Budgie {
 	int newstate;
 	ulong? connect_aftershotheader;
 	bool startedfromgui = false;
+	string tempfile_path;
+	string homedir_path;
 
 
 	[DBus (name = "org.buddiesofbudgie.Screenshot")]
@@ -187,11 +189,11 @@ namespace Budgie {
 				play_shuttersound(200);
 			try {
 				yield client.ScreenshotWindow (
-					include_frame, include_cursor, true, "", out success, out filename_used
+					include_frame, include_cursor, true, tempfile_path,
+					out success, out filename_used
 				);
 			}
 			catch (Error e) {
-				print("shooting error\n");
 				stderr.printf ("%s, failed to make screenhot\n", e.message);
 				windowstate.statechanged(WindowState.NONE);
 			}
@@ -206,7 +208,7 @@ namespace Budgie {
 			play_shuttersound(200);
 			try {
 				yield client.Screenshot (
-					include_cursor, true, "", out success, out filename_used
+					include_cursor, true, tempfile_path, out success, out filename_used
 				);
 			}
 			catch (Error e) {
@@ -232,7 +234,7 @@ namespace Budgie {
 			try {
 				yield client.ScreenshotArea (
 					topleftx*scale, toplefty*scale, width*scale, height*scale,
-					include_cursor, true, "", out success, out filename_used
+					include_cursor, true, tempfile_path, out success, out filename_used
 				);
 			}
 			catch (Error e) {
@@ -725,6 +727,7 @@ namespace Budgie {
 	}
 
 	[GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/ui/aftershot.ui")]
+
 	class AfterShotWindow : Gtk.Window {
 		/*
 		* after the screenshot was taken, we need to present user a window
@@ -749,7 +752,7 @@ namespace Budgie {
 		string[] alldirs = {};
 		Button[] decisionbuttons = {};
 		string? extension;
-		int n_dirs;
+		int counted_dirs;
 
 		enum Column {
 			DIRPATH,
@@ -758,12 +761,53 @@ namespace Budgie {
 			ISSEPARATOR
 		}
 
+		private void delete_file(File file) {
+			try {
+				file.delete();
+			}
+			catch (Error e) {
+				// nothing to do, file does not exist
+			}
+		}
+
+		private Gdk.Pixbuf? get_pxb() {
+			// wait max 2 sec for file to appear in /tmp
+			File pixfile = GLib.File.new_for_path(tempfile_path);
+			int n = 0;
+			while (n < 20) {
+				Thread.usleep(100000);
+				if (pixfile.query_exists()) {
+					try {
+						Pixbuf pxb = new Gdk.Pixbuf.from_file(tempfile_path);
+						delete_file(pixfile);
+						return pxb;
+					}
+					catch (Error e) {
+						print("unable to load image from /tmp\n");
+					}
+				}
+				n += 1;
+			}
+			return null;
+		}
+
 		public AfterShotWindow() {
+			Gdk.Pixbuf pxb = get_pxb();
+			if (pxb == null) {
+				print("Error loading pixbuf!\n");
+				windowstate.statechanged(WindowState.NONE);
+			}
+			else {
+				makeaftershotwindow(pxb);
+			}
+		}
+
+		private void makeaftershotwindow(Pixbuf pxb) {
 			this.set_keep_above(true);
 			set_wmclass("budgie-screenshot", "budgie-screenshot");
 			int scale = get_scaling();
 			Clipboard clp = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD);
-			Pixbuf pxb = clp.wait_for_image();
+			//  Pixbuf pxb = clp.wait_for_image();
 			windowstate.statechanged(WindowState.AFTERSHOT);
 			// create resized image for preview
 			var pixbuf = resize_pixbuf(pxb, scale);
@@ -836,25 +880,32 @@ namespace Budgie {
 					this.close();
 					new ScreenshotHomeWindow();
 				}
+				// delete tempfile
 			});
 			// - save to file
 			decisionbuttons[1].clicked.connect(()=> {
-				save_tofile(filenameentry, pickdir_combo, pxb);
-				windowstate.statechanged(WindowState.NONE);
-				this.close();
+				if (save_tofile(filenameentry, pickdir_combo, pxb) != "fail") {
+					windowstate.statechanged(WindowState.NONE);
+					this.close();
+					// delete tempfile
+				}
 			});
 			// - copy to clipboard
 			decisionbuttons[2].clicked.connect(()=> {
 				clp.set_image(pxb);
 				windowstate.statechanged(WindowState.NONE);
 				this.close();
+				// delete tempfile
 			});
-			// - save to file
+			// - save to file. open in default
 			decisionbuttons[3].clicked.connect(()=> {
 				string usedpath = save_tofile(filenameentry, pickdir_combo, pxb);
-				open_indefaultapp(usedpath);
-				windowstate.statechanged(WindowState.NONE);
-				this.close();
+				if (usedpath != "fail") {
+					open_indefaultapp(usedpath);
+					windowstate.statechanged(WindowState.NONE);
+					this.close();
+				}
+				// delete tempfile
 			});
 			this.set_titlebar(bar);
 			this.show_all();
@@ -862,7 +913,7 @@ namespace Budgie {
 
 		private void open_indefaultapp(string path) {
 			File file = File.new_for_path (path);
-			if (file.query_exists ()) {
+			if (file.query_exists()) {
 				try {
 					AppInfo.launch_default_for_uri (file.get_uri (), null);
 				} catch (Error e) {
@@ -902,6 +953,7 @@ namespace Budgie {
 				set_buttoncontent(
 					decisionbuttons[1], "saveshot-noaccess-symbolic"
 				);
+				return "fail";
 			}
 			return usedpath;
 		}
@@ -969,6 +1021,11 @@ namespace Budgie {
 			return (bool)is_sep;
 		}
 
+		private string get_dir_basename(string path) {
+			string[] dirmention = path.split("/");
+			return dirmention[dirmention.length-1];
+		}
+
 		private void update_dropdown() {
 			alldirs = {};
 			// temporarily surpass dropdown-connect
@@ -983,14 +1040,26 @@ namespace Budgie {
 				"folder-templates", "folder-videos"
 			}; // do we need fallbacks?
 			// first section: user-dirs
-			n_dirs = UserDirectory.N_DIRECTORIES;
+			int n_dirs = UserDirectory.N_DIRECTORIES;
+			counted_dirs = 0;
 			for(int i=0; i<n_dirs; i++) {
 				string path = Environment.get_user_special_dir(i);
-				string[] dirmention = path.split("/");
-				string mention = dirmention[dirmention.length-1];
+				string mention = get_dir_basename(path);
+				//  string[] dirmention = path.split("/");
+				//  string mention = dirmention[dirmention.length-1];
 				string iconname = userdir_iconnames[i];
-				create_row(path, mention, iconname, false);
+				// check if dir exists
+				if (GLib.File.new_for_path(path).query_exists()) {
+					create_row(path, mention, iconname, false);
+					counted_dirs += 1;
+				}
 			}
+			create_row(null, null, null, true);
+			// (home)
+			create_row(
+				homedir_path, get_dir_basename(homedir_path),
+				"user-home", false
+			);
 			create_row(null, null, null, true);
 			// second section: look up mounted volumes
 			bool add_separator = false;
@@ -1039,7 +1108,9 @@ namespace Budgie {
 			int active_row;
 			active_row = screenshot_settings.get_int("last-save-directory");
 			// prevent segfault error on incorrect gsettings value
-			(active_row > n_dirs)? active_row = 0 : active_row;
+			// if set row > found number of user dirs -> land on home row
+			(active_row > counted_dirs - 1)? active_row = counted_dirs + 1 : active_row;
+			// a bit overdone, since we already checked on row creation but:
 			(r_index != -1)? active_row = r_index : active_row;
 			pickdir_combo.set_active(active_row);
 			pickdir_combo.show();
@@ -1108,7 +1179,7 @@ namespace Budgie {
 			* set after window is called, and selection is set.
 			*/
 			int new_selection = combo.get_active();
-			if (new_selection <= n_dirs) {
+			if (new_selection <= counted_dirs) {
 				screenshot_settings.set_int("last-save-directory", new_selection);
 			}
 			// if we change directory, reset save button's icon
@@ -1141,6 +1212,9 @@ namespace Budgie {
 	public static int main(string[] args) {
 		// set windowstate signal and initial state
 		Gtk.init(ref args);
+		string username = Environment.get_user_name();
+		tempfile_path = "/tmp/".concat(username, "_budgiescreenshot_tempfile");
+		homedir_path = GLib.Environment.get_home_dir();
 		windowstate = new CurrentState();
 		newstate = 0;
 		try {
