@@ -885,7 +885,6 @@ namespace Budgie {
 				if (save_tofile(filenameentry, pickdir_combo, pxb) != "fail") {
 					windowstate.statechanged(WindowState.NONE);
 					this.close();
-					// delete tempfile
 				}
 			});
 			// - copy to clipboard
@@ -893,7 +892,6 @@ namespace Budgie {
 				clp.set_image(pxb);
 				windowstate.statechanged(WindowState.NONE);
 				this.close();
-				// delete tempfile
 			});
 			// - save to file. open in default
 			decisionbuttons[3].clicked.connect(()=> {
@@ -903,7 +901,6 @@ namespace Budgie {
 					windowstate.statechanged(WindowState.NONE);
 					this.close();
 				}
-				// delete tempfile
 			});
 			this.set_titlebar(bar);
 			this.show_all();
@@ -948,8 +945,12 @@ namespace Budgie {
 			}
 			catch (Error e) {
 				stderr.printf ("%s\n", e.message);
+				Button savebutton = decisionbuttons[1];
 				set_buttoncontent(
-					decisionbuttons[1], "saveshot-noaccess-symbolic"
+					savebutton, "saveshot-noaccess-symbolic"
+				);
+				savebutton.set_tooltip_text(
+					"A permission error on the directory occurred"
 				);
 				return "fail";
 			}
@@ -1133,11 +1134,6 @@ namespace Budgie {
 			if (response_id == Gtk.ResponseType.ACCEPT) {
 				File file = save_dialog.get_file();
 				string ic_name = lookup_icon_name(file);
-
-				//  FileInfo info = file.query_info("standard::icon", 0);
-				//  Icon icon = info.get_icon();
-				//  string ic_name = get_icon_fromgicon(icon);
-
 				// so, the actual path
 				string custompath = file.get_path();
 				// ...and its mention in the dropdown
@@ -1196,7 +1192,9 @@ namespace Budgie {
 				screenshot_settings.set_int("last-save-directory", new_selection);
 			}
 			// if we change directory, reset save button's icon
-			set_buttoncontent(decisionbuttons[1], "save-shot-symbolic");
+			Button savebutton = decisionbuttons[1];
+			set_buttoncontent(savebutton, "save-shot-symbolic");
+			savebutton.set_has_tooltip(false);
 			if (get_path_fromcombo(combo) == null) {
 				get_customdir();
 			}
