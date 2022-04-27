@@ -42,8 +42,6 @@
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkLabel" id="filenamelabel">
-                    <property name="width-request">80</property>
-                    <property name="height-request">10</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">Name:</property>
@@ -58,14 +56,14 @@
                 <child>
                   <object class="GtkEntry" id="filenameentry">
                     <property name="width-request">265</property>
-                    <property name="height-request">10</property>
                     <property name="visible">True</property>
                     <property name="can-focus">True</property>
-                    <property name="margin-top">25</property>
+                    <property name="halign">end</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="pack-type">end</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -81,8 +79,6 @@
                 <property name="can-focus">False</property>
                 <child>
                   <object class="GtkLabel" id="pickdirlabel">
-                    <property name="width-request">80</property>
-                    <property name="height-request">10</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">Folder:	</property>
@@ -97,7 +93,6 @@
                 <child>
                   <object class="GtkComboBox" id="pickdir_combo">
                     <property name="width-request">265</property>
-                    <property name="height-request">10</property>
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="model">dir_liststore</property>
@@ -105,6 +100,7 @@
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
+                    <property name="pack-type">end</property>
                     <property name="position">1</property>
                   </packing>
                 </child>
@@ -124,6 +120,7 @@
           <object class="GtkImage" id="img">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="margin-bottom">25</property>
             <property name="stock">gtk-missing-image</property>
           </object>
           <packing>
