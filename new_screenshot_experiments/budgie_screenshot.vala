@@ -106,6 +106,7 @@ namespace Budgie {
 	bool startedfromgui = false;
 	string tempfile_path;
 	string homedir_path;
+	bool showtooltips = true;
 
 
 	[DBus (name = "org.buddiesofbudgie.Screenshot")]
@@ -344,7 +345,7 @@ namespace Budgie {
 			maingrid.attach(areabuttonbox, 0, 0, 1, 1);;
 			// - show pointer
 			screenshot_settings.bind(
-				"include-cursor", showpointerswitch, "state",
+				"include-cursor", showpointerswitch, "active",
 				SettingsBindFlags.GET|SettingsBindFlags.SET
 			);
 			// - delay
@@ -415,6 +416,17 @@ namespace Budgie {
 				popovergrid.attach(newshortcutlabel, 1, ypos, 1, 1);
 				ypos += 1;
 			}
+
+			//  popovergrid.attach(new Label(""), 0, 9, 1, 1);
+			//  CheckButton toggletooltips = new Gtk.CheckButton.with_label(
+			//  	"Show tooltips"
+			//  );
+			//  screenshot_settings.bind(
+			//  	"showtooltips", toggletooltips, "active",
+			//  	SettingsBindFlags.GET|SettingsBindFlags.SET
+			//  );
+			//  popovergrid.attach(toggletooltips, 0, 10, 1, 1);
+
 			newpopover.add(popovergrid);
 			popovergrid.show_all();
 			return newpopover;
@@ -436,6 +448,9 @@ namespace Budgie {
 			/ so.. add icon to grid, grid to button, button behaves. pfff.
 			*/
 			Gtk.Button shootbutton = new Gtk.Button();
+			if (showtooltips) {
+				shootbutton.set_tooltip_text("Take a screenshot");
+			}
 			//Gtk.Image shootimage = new Gtk.Image.from_icon_name(
 			//    "shootscreen-symbolic", Gtk.IconSize.DND);
 			var iconfile =  new ThemedIcon(name="shootscreen-symbolic");
@@ -838,18 +853,30 @@ namespace Budgie {
 				w.destroy();
 			}
 			string buttonpos = buttonplacement.get_string("button-style");
+			string[] tooltips = {
+				"Cancel screenshot",
+				"Save screenshot to the selected directory",
+				"Copy screenshot to the clipboard",
+				"Open screenshot in default application"
+			};
 			string[] header_imagenames = {
 				"trash-shot-symbolic",
 				"save-shot-symbolic",
 				"clipboard-shot-symbolic",
 				"edit-shot-symbolic"
 			};
+			int currbutton = 0;
 			foreach (string s in header_imagenames) {
 				Button decisionbutton = new Gtk.Button();
+				if (showtooltips) {
+					decisionbutton.set_tooltip_text(tooltips[currbutton]);
+				}
 				decisionbutton.set_can_focus(false);
 				set_buttoncontent(decisionbutton, s);
 				decisionbuttons += decisionbutton;
+				currbutton += 1;
 			}
+			// set suggested on save button
 			decisionbuttons[1].get_style_context().add_class(
 				Gtk.STYLE_CLASS_SUGGESTED_ACTION
 			);
@@ -878,7 +905,6 @@ namespace Budgie {
 					this.close();
 					new ScreenshotHomeWindow();
 				}
-				// delete tempfile
 			});
 			// - save to file
 			decisionbuttons[1].clicked.connect(()=> {
@@ -1251,6 +1277,11 @@ namespace Budgie {
 		buttonplacement = new GLib.Settings(
 			"com.solus-project.budgie-wm"
 		);
+		showtooltips = screenshot_settings.get_boolean("showtooltips");
+		screenshot_settings.changed["showtooltips"].connect(()=>{
+			showtooltips = screenshot_settings.get_boolean("showtooltips");
+			print(@"$showtooltips\n");
+		});
 		BudgieScreenshotControl.setup_dbus();
 		Gtk.main();
 		return 0;
