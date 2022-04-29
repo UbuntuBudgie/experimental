@@ -29,15 +29,43 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
-namespace BudgieScreenshotControl {
+namespace Budgie {
 
+	GLib.Settings? screenshot_settings;
+	GLib.Settings? buttonplacement;
+	ScreenshotClient client;
+	ulong? connect_aftershotheader;
+	bool startedfromgui = false;
+	string tempfile_path;
+	string homedir_path;
+	bool showtooltips = true;
+
+
+	[SingleInstance]
+	public class CurrentState : GLib.Object {
+		public int newstate { get; private set; default = 0; }
+
+		public CurrentState () {
+
+		}
+
+		public void statechanged(int n) {
+			newstate = n;
+			if (connect_aftershotheader != null) {
+				buttonplacement.disconnect(connect_aftershotheader);
+				connect_aftershotheader = null;
+			}
+			(newstate == 0)?  startedfromgui = false : startedfromgui;
+			(newstate == 1)?  startedfromgui = true : startedfromgui;
+		}
+	}
 
 	[DBus (name = "org.buddiesofbudgie.ScreenshotControl")]
-
-	public class BudgieScreenshotServer : GLib.Object {
+	public class ScreenshotServer : GLib.Object {
+		CurrentState windowstate;
 
 		private int getcurrentstate() throws Error {
-			return Budgie.newstate;
+			return windowstate.newstate;
 		}
 
 		private void set_target(string target) {
@@ -72,42 +100,30 @@ namespace BudgieScreenshotControl {
 				new Budgie.MakeScreenshot(null);
 			}
 		}
-	}
-
-	// setup dbus
-	void on_bus_acquired (DBusConnection conn) {
-		// register the bus
-		try {
-			conn.register_object ("/org/buddiesofbudgie/ScreenshotControl",
-				new BudgieScreenshotServer ());
+		public ScreenshotServer () {
+			windowstate = new CurrentState();
 		}
-		catch (IOError e) {
-			stderr.printf ("Could not register service\n");
+
+		// setup dbus
+		void on_bus_acquired (DBusConnection conn) {
+			// register the bus
+			try {
+				conn.register_object ("/org/buddiesofbudgie/ScreenshotControl",
+					new ScreenshotServer ());
+			}
+			catch (IOError e) {
+				stderr.printf ("Could not register service\n");
+			}
 		}
+
+		public void setup_dbus () throws Error {
+			GLib.Bus.own_name (
+				BusType.SESSION, "org.buddiesofbudgie.ScreenshotControl",
+				BusNameOwnerFlags.NONE, on_bus_acquired,
+				() => {}, () => stderr.printf ("Could not acquire name\n"));
+		}
+
 	}
-
-	public void setup_dbus () {
-		GLib.Bus.own_name (
-			BusType.SESSION, "org.buddiesofbudgie.ScreenshotControl",
-			BusNameOwnerFlags.NONE, on_bus_acquired,
-			() => {}, () => stderr.printf ("Could not acquire name\n"));
-	}
-}
-
-
-namespace Budgie {
-
-	GLib.Settings? screenshot_settings;
-	GLib.Settings? buttonplacement;
-	ScreenshotClient client;
-	CurrentState windowstate;
-	int newstate;
-	ulong? connect_aftershotheader;
-	bool startedfromgui = false;
-	string tempfile_path;
-	string homedir_path;
-	bool showtooltips = true;
-
 
 	[DBus (name = "org.buddiesofbudgie.Screenshot")]
 
@@ -134,18 +150,6 @@ namespace Budgie {
 		WAITINGFORSHOT,
 	}
 
-	private class CurrentState : GLib.Object {
-		public void statechanged(int n) {
-			newstate = n;
-			if (connect_aftershotheader != null) {
-				buttonplacement.disconnect(connect_aftershotheader);
-				connect_aftershotheader = null;
-			}
-			(newstate == 0)?  startedfromgui = false : startedfromgui;
-			(newstate == 1)?  startedfromgui = true : startedfromgui;
-		}
-	}
-
 	class MakeScreenshot {
 
 		int delay;
@@ -154,8 +158,10 @@ namespace Budgie {
 		string screenshot_mode;
 		bool include_cursor;
 		bool include_frame;
+		CurrentState windowstate;
 
 		public MakeScreenshot(int[]? area) {
+			windowstate = new CurrentState();
 			this.area = area;
 			scale = get_scaling();
 			delay = screenshot_settings.get_int("delay");
@@ -276,6 +282,7 @@ namespace Budgie {
 	class ScreenshotHomeWindow : Gtk.Window {
 
 		Gtk.HeaderBar topbar;
+		CurrentState windowstate;
 		int selectmode = 0;
 		bool ignore = false;
 		GLib.Settings? buttonplacement;
@@ -291,6 +298,7 @@ namespace Budgie {
 		private unowned Gtk.Switch? showpointerswitch;
 
 		public ScreenshotHomeWindow() {
+			windowstate=new CurrentState();
 			this.set_keep_above(true);
 			windowstate.statechanged(WindowState.MAINWINDOW);
 			buttonplacement = new GLib.Settings(
@@ -356,7 +364,7 @@ namespace Budgie {
 			this.destroy.connect(()=> {
 				// prevent WindowState.NONE if follow up button is pressed
 				GLib.Timeout.add(100, ()=> {
-					if (newstate == WindowState.MAINWINDOW) {
+					if (windowstate.newstate == WindowState.MAINWINDOW) {
 						windowstate.statechanged(WindowState.NONE);
 					}
 					return false;
@@ -610,8 +618,10 @@ namespace Budgie {
 		double green = 0; // fallback
 		double blue = 1; // fallback
 		GLib.Settings? theme_settings;
+		CurrentState windowstate;
 
 		public SelectLayer(int? overrule_delay=null) {
+			windowstate=new CurrentState();
 			windowstate.statechanged(WindowState.SELECTINGAREA);
 			theme_settings = new GLib.Settings("org.gnome.desktop.interface");
 			this.set_type_hint(Gdk.WindowTypeHint.UTILITY);
@@ -767,6 +777,7 @@ namespace Budgie {
 		Button[] decisionbuttons = {};
 		string? extension;
 		int counted_dirs;
+		CurrentState windowstate;
 
 		enum Column {
 			DIRPATH,
@@ -806,6 +817,7 @@ namespace Budgie {
 		}
 
 		public AfterShotWindow() {
+			windowstate=new CurrentState();
 			Gdk.Pixbuf pxb = get_pxb();
 			if (pxb == null) {
 				print("Error loading pixbuf!\n");
@@ -1260,8 +1272,7 @@ namespace Budgie {
 			"/", username, "_budgiescreenshot_tempfile"
 		);
 		homedir_path = GLib.Environment.get_home_dir();
-		windowstate = new CurrentState();
-		newstate = 0;
+
 		try {
 			client = GLib.Bus.get_proxy_sync (
 				BusType.SESSION, "org.buddiesofbudgie.Screenshot",
@@ -1282,7 +1293,8 @@ namespace Budgie {
 			showtooltips = screenshot_settings.get_boolean("showtooltips");
 			print(@"$showtooltips\n");
 		});
-		BudgieScreenshotControl.setup_dbus();
+		Budgie.ScreenshotServer server = new Budgie.ScreenshotServer();
+		server.setup_dbus();
 		Gtk.main();
 		return 0;
 	}
