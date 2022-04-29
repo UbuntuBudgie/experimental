@@ -31,9 +31,7 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace Budgie {
 
-	GLib.Settings? buttonplacement;
 	ScreenshotClient client;
-	ulong? connect_aftershotheader;
 	bool startedfromgui = false;
 	string tempfile_path;
 	string homedir_path;
@@ -46,16 +44,36 @@ namespace Budgie {
 		WAITINGFORSHOT,
 	}
 
+	enum ButtonPlacement {
+		LEFT,
+		RIGHT,
+	}
+
 	[SingleInstance]
 	public class CurrentState : GLib.Object {
+
+		GLib.Settings? buttonplacement;
+
 		public GLib.Settings screenshot_settings { get; private set; }
 		public int newstate { get; private set; default = WindowState.NONE; }
 		public bool showtooltips { get; set; default=true; }
+		public int buttonpos { get; private set;}
+		public signal void buttonpos_changed ();
 
 		public CurrentState () {
 			screenshot_settings = new GLib.Settings(
 				"org.buddiesofbudgie.screenshot"
 			);
+
+			buttonplacement = new GLib.Settings(
+				"com.solus-project.budgie-wm"
+			);
+
+			buttonplacement.changed["button-style"].connect(()=> {
+				fill_buttonpos();
+				buttonpos_changed();
+			});
+			fill_buttonpos();
 
 			showtooltips = screenshot_settings.get_boolean("showtooltips");
 			screenshot_settings.changed["showtooltips"].connect(()=>{
@@ -63,12 +81,18 @@ namespace Budgie {
 			});
 		}
 
+		private void fill_buttonpos() {
+			if (buttonplacement.get_string("button-style")=="left") {
+				buttonpos=ButtonPlacement.LEFT;
+			}
+			else {
+				buttonpos=ButtonPlacement.RIGHT;
+			}
+		}
+
 		public void statechanged(int n) {
 			newstate = n;
-			if (connect_aftershotheader != null) {
-				buttonplacement.disconnect(connect_aftershotheader);
-				connect_aftershotheader = null;
-			}
+
 			(newstate == 0)?  startedfromgui = false : startedfromgui;
 			(newstate == 1)?  startedfromgui = true : startedfromgui;
 		}
@@ -89,28 +113,28 @@ namespace Budgie {
 
 		public async void StartMainWindow() throws Error {
 			if (getcurrentstate() == 0) {
-				new Budgie.ScreenshotHomeWindow();
+				new ScreenshotHomeWindow();
 			}
 		}
 
 		public async void StartAreaSelect() throws Error {
 			if (getcurrentstate() == 0) {
 				set_target("Selection");
-				new Budgie.SelectLayer();
+				new SelectLayer();
 			}
 		}
 
 		public async void StartWindowScreenshot() throws Error {
 			if (getcurrentstate() == 0) {
 				set_target("Window");
-				new Budgie.MakeScreenshot(null);
+				new MakeScreenshot(null);
 			}
 		}
 
 		public async void StartFullScreenshot() throws Error {
 			if (getcurrentstate() == 0) {
 				set_target("Screen");
-				new Budgie.MakeScreenshot(null);
+				new MakeScreenshot(null);
 			}
 		}
 		public ScreenshotServer () {
@@ -290,8 +314,8 @@ namespace Budgie {
 		CurrentState windowstate;
 		int selectmode = 0;
 		bool ignore = false;
-		GLib.Settings? buttonplacement;
 		Label[] shortcutlabels;
+		static ulong? button_id=null;
 
 		[GtkChild]
 		private unowned Gtk.Grid? maingrid;
@@ -306,9 +330,7 @@ namespace Budgie {
 			windowstate=new CurrentState();
 			this.set_keep_above(true);
 			windowstate.statechanged(WindowState.MAINWINDOW);
-			buttonplacement = new GLib.Settings(
-				"com.solus-project.budgie-wm"
-			);
+
 			var theme = Gtk.IconTheme.get_default();
 			theme.add_resource_path ("/org/buddiesofbudgie/Screenshot/icons/scalable/apps/");
 
@@ -336,9 +358,12 @@ namespace Budgie {
 			/ left or right windowbuttons, that's the question when
 			/ (re-?) arranging headerbar buttons
 			*/
-			buttonplacement.changed["button-style"].connect(()=> { // disconnected on destroy
-				rearrange_headerbar();
-			});
+			if (button_id == null) {
+				message("homewindow chaged");
+				button_id=windowstate.buttonpos_changed.connect(()=> {
+					rearrange_headerbar();
+				});
+			}
 			rearrange_headerbar();
 			// css stuff
 			Gdk.Screen screen = this.get_screen();
@@ -450,7 +475,6 @@ namespace Budgie {
 			/ we want screenshot button and help button arranged
 			/ outside > inside, so order depends on button positions
 			*/
-			string buttonpos = buttonplacement.get_string("button-style");
 			foreach (Widget w in topbar.get_children()) {
 				w.destroy();
 			}
@@ -514,7 +538,7 @@ namespace Budgie {
 			helpbutton.get_style_context().add_class(
 				Gtk.STYLE_CLASS_RAISED
 			);
-			if (buttonpos == "left") {
+			if (windowstate.buttonpos == ButtonPlacement.LEFT) {
 				topbar.pack_end(shootbutton);
 				topbar.pack_end(helpbutton);
 			}
@@ -783,6 +807,7 @@ namespace Budgie {
 		string? extension;
 		int counted_dirs;
 		CurrentState windowstate;
+		static ulong? button_id=null;
 
 		enum Column {
 			DIRPATH,
@@ -854,12 +879,13 @@ namespace Budgie {
 			// headerbar
 			HeaderBar decisionbar = new Gtk.HeaderBar();
 			decisionbar.show_close_button = false;
-			connect_aftershotheader = buttonplacement.changed[ // disconnected on destroy
-				"button-style"
-			].connect(()=> {
-				decisionbuttons = {};
-				setup_headerbar(decisionbar, filenameentry, clp, pxb);
-			});
+			if (button_id == null) {
+				message("makeaftershowwindow");
+				button_id=windowstate.buttonpos_changed.connect(()=> {
+					decisionbuttons = {};
+					setup_headerbar(decisionbar, filenameentry, clp, pxb);
+				});
+			}
 			setup_headerbar(decisionbar, filenameentry, clp, pxb);
 		}
 
@@ -869,7 +895,6 @@ namespace Budgie {
 			foreach (Widget w in bar.get_children()) {
 				w.destroy();
 			}
-			string buttonpos = buttonplacement.get_string("button-style");
 			string[] tooltips = {
 				"Cancel screenshot",
 				"Save screenshot to the selected directory",
@@ -899,7 +924,7 @@ namespace Budgie {
 			);
 			// aligned headerbar buttons
 			string[] align = {"left", "right", "right", "right"};
-			(buttonpos == "left")? align = {"right", "left", "left", "left"} : align;
+			(windowstate.buttonpos == ButtonPlacement.LEFT)? align = {"right", "left", "left", "left"} : align;
 			int b_index = 0;
 			foreach (Button b in decisionbuttons) {
 				if (align[b_index] == "left") {
@@ -1287,10 +1312,6 @@ namespace Budgie {
 		catch (Error e) {
 			stderr.printf ("%s\n", e.message);
 		}
-
-		buttonplacement = new GLib.Settings(
-			"com.solus-project.budgie-wm"
-		);
 
 		Budgie.ScreenshotServer server = new Budgie.ScreenshotServer();
 		server.setup_dbus();
