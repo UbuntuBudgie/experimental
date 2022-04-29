@@ -31,22 +31,36 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace Budgie {
 
-	GLib.Settings? screenshot_settings;
 	GLib.Settings? buttonplacement;
 	ScreenshotClient client;
 	ulong? connect_aftershotheader;
 	bool startedfromgui = false;
 	string tempfile_path;
 	string homedir_path;
-	bool showtooltips = true;
 
+	enum WindowState {
+		NONE,
+		MAINWINDOW,
+		SELECTINGAREA,
+		AFTERSHOT,
+		WAITINGFORSHOT,
+	}
 
 	[SingleInstance]
 	public class CurrentState : GLib.Object {
-		public int newstate { get; private set; default = 0; }
+		public GLib.Settings screenshot_settings { get; private set; }
+		public int newstate { get; private set; default = WindowState.NONE; }
+		public bool showtooltips { get; set; default=true; }
 
 		public CurrentState () {
+			screenshot_settings = new GLib.Settings(
+				"org.buddiesofbudgie.screenshot"
+			);
 
+			showtooltips = screenshot_settings.get_boolean("showtooltips");
+			screenshot_settings.changed["showtooltips"].connect(()=>{
+				showtooltips = screenshot_settings.get_boolean("showtooltips");
+			});
 		}
 
 		public void statechanged(int n) {
@@ -69,9 +83,8 @@ namespace Budgie {
 		}
 
 		private void set_target(string target) {
-			GLib.Settings settings = Budgie.screenshot_settings;
-			settings.set_string("screenshot-mode", target);
-			settings.set_int("delay", 0);
+			windowstate.screenshot_settings.set_string("screenshot-mode", target);
+			windowstate.screenshot_settings.set_int("delay", 0);
 		}
 
 		public async void StartMainWindow() throws Error {
@@ -142,14 +155,6 @@ namespace Budgie {
 		) throws Error;
 	}
 
-	enum WindowState {
-		NONE,
-		MAINWINDOW,
-		SELECTINGAREA,
-		AFTERSHOT,
-		WAITINGFORSHOT,
-	}
-
 	class MakeScreenshot {
 
 		int delay;
@@ -164,10 +169,10 @@ namespace Budgie {
 			windowstate = new CurrentState();
 			this.area = area;
 			scale = get_scaling();
-			delay = screenshot_settings.get_int("delay");
-			screenshot_mode = screenshot_settings.get_string("screenshot-mode");
-			include_cursor = screenshot_settings.get_boolean("include-cursor");
-			include_frame = screenshot_settings.get_boolean("include-frame");
+			delay = windowstate.screenshot_settings.get_int("delay");
+			screenshot_mode = windowstate.screenshot_settings.get_string("screenshot-mode");
+			include_cursor = windowstate.screenshot_settings.get_boolean("include-cursor");
+			include_frame = windowstate.screenshot_settings.get_boolean("include-frame");
 			switch (screenshot_mode) {
 				case "Selection":
 				GLib.Timeout.add(200 + (delay*1000), ()=> {
@@ -352,12 +357,12 @@ namespace Budgie {
 			Gtk.Box areabuttonbox = setup_areabuttons();
 			maingrid.attach(areabuttonbox, 0, 0, 1, 1);;
 			// - show pointer
-			screenshot_settings.bind(
+			windowstate.screenshot_settings.bind(
 				"include-cursor", showpointerswitch, "active",
 				SettingsBindFlags.GET|SettingsBindFlags.SET
 			);
 			// - delay
-			screenshot_settings.bind(
+			windowstate.screenshot_settings.bind(
 				"delay", delayspin, "value",
 				SettingsBindFlags.GET|SettingsBindFlags.SET
 			);
@@ -456,7 +461,7 @@ namespace Budgie {
 			/ so.. add icon to grid, grid to button, button behaves. pfff.
 			*/
 			Gtk.Button shootbutton = new Gtk.Button();
-			if (showtooltips) {
+			if (windowstate.showtooltips) {
 				shootbutton.set_tooltip_text("Take a screenshot");
 			}
 			//Gtk.Image shootimage = new Gtk.Image.from_icon_name(
@@ -473,7 +478,7 @@ namespace Budgie {
 			);
 			shootbutton.clicked.connect(()=> {
 				this.close();
-				string shootmode = screenshot_settings.get_string(
+				string shootmode = windowstate.screenshot_settings.get_string(
 					"screenshot-mode"
 				);
 				// allow the window to gracefully disappear
@@ -524,7 +529,7 @@ namespace Budgie {
 			Gtk.Box areabuttonbox = new Gtk.Box(
 				Gtk.Orientation.HORIZONTAL, 0
 			);
-			string mode = screenshot_settings.get_string("screenshot-mode");
+			string mode = windowstate.screenshot_settings.get_string("screenshot-mode");
 			// we cannot use areabuttons_labels, since these will be translated
 			string[] mode_options =  {"Screen", "Window", "Selection"}; // don't translate, internal use
 			int active = find_stringindex(mode, mode_options);
@@ -587,7 +592,7 @@ namespace Budgie {
 				}
 				else {
 					selectmode = i;
-					screenshot_settings.set_string(
+					windowstate.screenshot_settings.set_string(
 						"screenshot-mode", selectmodes[i]
 					);
 				}
@@ -880,7 +885,7 @@ namespace Budgie {
 			int currbutton = 0;
 			foreach (string s in header_imagenames) {
 				Button decisionbutton = new Gtk.Button();
-				if (showtooltips) {
+				if (windowstate.showtooltips) {
 					decisionbutton.set_tooltip_text(tooltips[currbutton]);
 				}
 				decisionbutton.set_can_focus(false);
@@ -966,7 +971,7 @@ namespace Budgie {
 
 		private string get_scrshotname() {
 			// create timestamped name
-			extension = screenshot_settings.get_string("file-type");
+			extension = windowstate.screenshot_settings.get_string("file-type");
 			GLib.DateTime now = new GLib.DateTime.now_local();
 			return now.format(@"Snapshot_%F_%H-%M-%S.$extension");
 		}
@@ -1143,7 +1148,7 @@ namespace Budgie {
 			pickdir_combo.set_attributes (cell_pb, "icon_name", Column.ICON);
 			// if we picked a custom dir, set it active
 			int active_row;
-			active_row = screenshot_settings.get_int("last-save-directory");
+			active_row = windowstate.screenshot_settings.get_int("last-save-directory");
 			// prevent segfault error on incorrect gsettings value
 			// if set row > found number of user dirs -> land on home row
 			(active_row > counted_dirs - 1)? active_row = counted_dirs + 1 : active_row;
@@ -1183,7 +1188,7 @@ namespace Budgie {
 			}
 			else {
 				pickdir_combo.set_active(
-					screenshot_settings.get_int("last-save-directory")
+					windowstate.screenshot_settings.get_int("last-save-directory")
 				);
 			}
 			dialog.destroy ();
@@ -1232,7 +1237,7 @@ namespace Budgie {
 			*/
 			int new_selection = combo.get_active();
 			if (new_selection <= counted_dirs) {
-				screenshot_settings.set_int("last-save-directory", new_selection);
+				windowstate.screenshot_settings.set_int("last-save-directory", new_selection);
 			}
 			// if we change directory, reset save button's icon
 			Button savebutton = decisionbuttons[1];
@@ -1282,17 +1287,11 @@ namespace Budgie {
 		catch (Error e) {
 			stderr.printf ("%s\n", e.message);
 		}
-		screenshot_settings = new GLib.Settings(
-			"org.buddiesofbudgie.screenshot"
-		);
+
 		buttonplacement = new GLib.Settings(
 			"com.solus-project.budgie-wm"
 		);
-		showtooltips = screenshot_settings.get_boolean("showtooltips");
-		screenshot_settings.changed["showtooltips"].connect(()=>{
-			showtooltips = screenshot_settings.get_boolean("showtooltips");
-			print(@"$showtooltips\n");
-		});
+
 		Budgie.ScreenshotServer server = new Budgie.ScreenshotServer();
 		server.setup_dbus();
 		Gtk.main();
