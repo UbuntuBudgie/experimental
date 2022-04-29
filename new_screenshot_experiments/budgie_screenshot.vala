@@ -317,7 +317,7 @@ namespace Budgie {
 		int selectmode = 0;
 		bool ignore = false;
 		Label[] shortcutlabels;
-		static ulong? button_id=null;
+		ulong? button_id=null;
 
 		[GtkChild]
 		private unowned Gtk.Grid? maingrid;
@@ -362,10 +362,7 @@ namespace Budgie {
 			/ left or right windowbuttons, that's the question when
 			/ (re-?) arranging headerbar buttons
 			*/
-			if (button_id == null) {
-				message("homewindow chaged");
-				button_id=windowstate.buttonpos_changed.connect(()=> {rearrange_headerbar();});
-			}
+			button_id=windowstate.buttonpos_changed.connect(()=> {rearrange_headerbar();});
 			rearrange_headerbar();
 
 			// css stuff
@@ -491,6 +488,7 @@ namespace Budgie {
 			set_margins(shootgrid, 10, 10, 0, 0);
 			shootbutton.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
 			shootbutton.clicked.connect(()=> {
+				windowstate.disconnect(button_id);
 				this.close();
 				string shootmode = windowstate.screenshot_settings.get_string(
 					"screenshot-mode"
@@ -793,7 +791,7 @@ namespace Budgie {
 		string? extension;
 		int counted_dirs;
 		CurrentState windowstate;
-		static ulong? button_id=null;
+		ulong? button_id=null;
 
 		enum Column {
 			DIRPATH,
@@ -869,14 +867,17 @@ namespace Budgie {
 			// headerbar
 			HeaderBar decisionbar = new Gtk.HeaderBar();
 			decisionbar.show_close_button = false;
-			if (button_id == null) {
-				button_id=windowstate.buttonpos_changed.connect(()=> {
-					decisionbuttons = {};
-					setup_headerbar(decisionbar, filenameentry, clp, pxb);
-				});
-			}
+			button_id=windowstate.buttonpos_changed.connect(()=> {
+				decisionbuttons = {};
+				setup_headerbar(decisionbar, filenameentry, clp, pxb);
+			});
 
 			setup_headerbar(decisionbar, filenameentry, clp, pxb);
+		}
+
+		private void close_window() {
+			windowstate.disconnect(button_id);
+			this.close();
 		}
 
 		private void setup_headerbar(HeaderBar bar, Entry filenameentry, Clipboard clp, Pixbuf pxb) {
@@ -934,11 +935,11 @@ namespace Budgie {
 			decisionbuttons[0].clicked.connect(()=> {
 				if (!windowstate.startedfromgui) {
 					windowstate.statechanged(WindowState.NONE);
-					this.close();
+					close_window();
 				}
 				else {
 					windowstate.statechanged(WindowState.MAINWINDOW);
-					this.close();
+					close_window();
 					new ScreenshotHomeWindow();
 				}
 			});
@@ -947,7 +948,7 @@ namespace Budgie {
 			decisionbuttons[1].clicked.connect(()=> {
 				if (save_tofile(filenameentry, pickdir_combo, pxb) != "fail") {
 					windowstate.statechanged(WindowState.NONE);
-					this.close();
+					close_window();
 				}
 			});
 
@@ -955,7 +956,7 @@ namespace Budgie {
 			decisionbuttons[2].clicked.connect(()=> {
 				clp.set_image(pxb);
 				windowstate.statechanged(WindowState.NONE);
-				this.close();
+				close_window();
 			});
 
 			// - save to file. open in default
@@ -964,7 +965,7 @@ namespace Budgie {
 				if (usedpath != "fail") {
 					open_indefaultapp(usedpath);
 					windowstate.statechanged(WindowState.NONE);
-					this.close();
+					close_window();
 				}
 			});
 
