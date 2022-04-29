@@ -33,8 +33,6 @@ namespace Budgie {
 
 	ScreenshotClient client;
 	bool startedfromgui = false;
-	string tempfile_path;
-	string homedir_path;
 
 	enum WindowState {
 		NONE,
@@ -58,6 +56,7 @@ namespace Budgie {
 		public int newstate { get; private set; default = WindowState.NONE; }
 		public bool showtooltips { get; set; default=true; }
 		public int buttonpos { get; private set;}
+		public string tempfile_path { get; private set;}
 		public signal void buttonpos_changed ();
 
 		public CurrentState () {
@@ -79,7 +78,18 @@ namespace Budgie {
 			screenshot_settings.changed["showtooltips"].connect(()=>{
 				showtooltips = screenshot_settings.get_boolean("showtooltips");
 			});
+
+			// we need to use the same temporary file across instances
+			// so use the logged in user to differentiate in multiuser
+			// scenarious
+			string username = Environment.get_user_name();
+			string tmpdir = GLib.Environment.get_tmp_dir();
+			tempfile_path = tmpdir.concat(
+				"/", username, "_budgiescreenshot_tempfile"
+			);
 		}
+
+
 
 		private void fill_buttonpos() {
 			if (buttonplacement.get_string("button-style")=="left") {
@@ -225,7 +235,7 @@ namespace Budgie {
 				play_shuttersound(200);
 			try {
 				yield client.ScreenshotWindow (
-					include_frame, include_cursor, true, tempfile_path,
+					include_frame, include_cursor, true, windowstate.tempfile_path,
 					out success, out filename_used
 				);
 			}
@@ -244,7 +254,7 @@ namespace Budgie {
 			play_shuttersound(200);
 			try {
 				yield client.Screenshot (
-					include_cursor, true, tempfile_path, out success, out filename_used
+					include_cursor, true, windowstate.tempfile_path, out success, out filename_used
 				);
 			}
 			catch (Error e) {
@@ -270,7 +280,7 @@ namespace Budgie {
 			try {
 				yield client.ScreenshotArea (
 					topleftx*scale, toplefty*scale, width*scale, height*scale,
-					include_cursor, true, tempfile_path, out success, out filename_used
+					include_cursor, true, windowstate.tempfile_path, out success, out filename_used
 				);
 			}
 			catch (Error e) {
@@ -827,13 +837,13 @@ namespace Budgie {
 
 		private Gdk.Pixbuf? get_pxb() {
 			// wait max 2 sec for file to appear in /tmp
-			File pixfile = GLib.File.new_for_path(tempfile_path);
+			File pixfile = GLib.File.new_for_path(windowstate.tempfile_path);
 			int n = 0;
 			while (n < 20) {
 				Thread.usleep(100000);
 				if (pixfile.query_exists()) {
 					try {
-						Pixbuf pxb = new Gdk.Pixbuf.from_file(tempfile_path);
+						Pixbuf pxb = new Gdk.Pixbuf.from_file(windowstate.tempfile_path);
 						delete_file(pixfile);
 						return pxb;
 					}
@@ -1124,8 +1134,10 @@ namespace Budgie {
 			create_row(null, null, null, true);
 			// (home)
 			create_row(
-				homedir_path, get_dir_basename(homedir_path),
-				"user-home", false
+				GLib.Environment.get_home_dir(),
+				get_dir_basename(GLib.Environment.get_home_dir()),
+				"user-home",
+				false
 			);
 			create_row(null, null, null, true);
 			// second section: look up mounted volumes
@@ -1294,14 +1306,7 @@ namespace Budgie {
 	}
 
 	public static int main(string[] args) {
-		// set windowstate signal and initial state
 		Gtk.init(ref args);
-		string username = Environment.get_user_name();
-		string tmpdir = GLib.Environment.get_tmp_dir();
-		tempfile_path = tmpdir.concat(
-			"/", username, "_budgiescreenshot_tempfile"
-		);
-		homedir_path = GLib.Environment.get_home_dir();
 
 		try {
 			client = GLib.Bus.get_proxy_sync (
