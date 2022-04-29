@@ -32,7 +32,6 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 namespace Budgie {
 
 	ScreenshotClient client;
-	bool startedfromgui = false;
 
 	enum WindowState {
 		NONE,
@@ -57,6 +56,8 @@ namespace Budgie {
 		public bool showtooltips { get; set; default=true; }
 		public int buttonpos { get; private set;}
 		public string tempfile_path { get; private set;}
+		public bool startedfromgui { get; private set; default=false; }
+
 		public signal void buttonpos_changed ();
 
 		public CurrentState () {
@@ -948,7 +949,7 @@ namespace Budgie {
 			// set headerbar button actions
 			// - trash button: cancel
 			decisionbuttons[0].clicked.connect(()=> {
-				if (!startedfromgui) {
+				if (!windowstate.startedfromgui) {
 					windowstate.statechanged(WindowState.NONE);
 					this.close();
 				}
