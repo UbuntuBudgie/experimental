@@ -1318,7 +1318,6 @@ namespace Budgie {
 
 	public static int main(string[] args) {
 		Gtk.init(ref args);
-
 		try {
 			client = GLib.Bus.get_proxy_sync (
 				BusType.SESSION, "org.buddiesofbudgie.Screenshot",
@@ -1328,11 +1327,14 @@ namespace Budgie {
 		catch (Error e) {
 			stderr.printf ("%s\n", e.message);
 		}
-
-		Budgie.ScreenshotServer server = new Budgie.ScreenshotServer();
-		server.setup_dbus();
+		try {
+			Budgie.ScreenshotServer server = new Budgie.ScreenshotServer();
+			server.setup_dbus();
+		}
+		catch (Error e) {
+			stderr.printf ("%s\n", e.message);
+		}
 		Gtk.main();
-
 		return 0;
 	}
 }
