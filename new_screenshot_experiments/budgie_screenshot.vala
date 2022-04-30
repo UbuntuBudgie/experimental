@@ -122,21 +122,21 @@ namespace Budgie {
 
 		public async void StartAreaSelect() throws Error {
 			if (getcurrentstate() == 0) {
-				set_target("Selection");
+				set_target("Selection"); // don't translate!
 				new SelectLayer();
 			}
 		}
 
 		public async void StartWindowScreenshot() throws Error {
 			if (getcurrentstate() == 0) {
-				set_target("Window");
+				set_target("Window"); // don't translate!
 				new MakeScreenshot(null);
 			}
 		}
 
 		public async void StartFullScreenshot() throws Error {
 			if (getcurrentstate() == 0) {
-				set_target("Screen");
+				set_target("Screen"); // don't translate!
 				new MakeScreenshot(null);
 			}
 		}
@@ -439,13 +439,14 @@ namespace Budgie {
 			Grid popovergrid = new Gtk.Grid();
 			set_margins(popovergrid, 15, 15, 15, 15);
 			Label[] shortcutnames = {
-				new Label("Screenshot entire screen:\t"),
-				new Label("Screenshot selected area:\t"),
-				new Label("Screenshot active window:\t"),
+				// Translators: be as brief as possible; popovers ar cut off if broader than the window
+				new Label(_("Screenshot entire screen") + ":\t"),
+				new Label(_("Screenshot selected area") + ":\t"),
+				new Label(_("Screenshot active window") + ":\t"),
 			};
 
 			shortcutlabels = {};
-
+			// Shortcuts is about -keyboard- shortcuts
 			Label header = new Label("Shortcuts:");
 			header.get_style_context().add_class("popoverheader");
 			header.xalign = 0;
@@ -505,14 +506,14 @@ namespace Budgie {
 				// allow the window to gracefully disappear
 				GLib.Timeout.add(100, ()=> {
 					switch (shootmode) {
-						case "Selection":
+						case "Selection": // don't translate!
 							new SelectLayer();
 							break;
-						case "Screen":
+						case "Screen": // don't translate!
 							windowstate.statechanged(WindowState.WAITINGFORSHOT);
 							new MakeScreenshot(null);
 							break;
-						case "Window":
+						case "Window": // don't translate!
 							windowstate.statechanged(WindowState.WAITINGFORSHOT);
 							new MakeScreenshot(null);
 							break;
@@ -549,9 +550,9 @@ namespace Budgie {
 			string[] mode_options =  {"Screen", "Window", "Selection"}; // don't translate, internal use
 			int active = find_stringindex(mode, mode_options);
 
-			// translate!
+			// translate! These are the interface names
 			string[] areabuttons_labels = {
-				"Screen", "Window", "Selection"
+				_("Screen"), _("Window"), _("Selection")
 			};
 
 			string[] icon_names = {
@@ -604,7 +605,7 @@ namespace Budgie {
 		}
 
 		private void select_action(ToggleButton b, ToggleButton[] btns) {
-			string[] selectmodes = {"Screen", "Window", "Selection"};
+			string[] selectmodes = {"Screen", "Window", "Selection"}; // don't translate!
 			int i = 0;
 
 			foreach (ToggleButton bt in btns) {
@@ -896,10 +897,10 @@ namespace Budgie {
 
 			// translate
 			string[] tooltips = {
-				"Cancel screenshot",
-				"Save screenshot to the selected directory",
-				"Copy screenshot to the clipboard",
-				"Open screenshot in default application"
+				_("Cancel screenshot"),
+				_("Save screenshot to the selected directory"),
+				_("Copy screenshot to the clipboard"),
+				_("Open screenshot in default application")
 			};
 			string[] header_imagenames = {
 				"trash-shot-symbolic",
@@ -925,8 +926,8 @@ namespace Budgie {
 			decisionbuttons[1].get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
 
 			// aligned headerbar buttons
-			string[] align = {"left", "right", "right", "right"};
-			(windowstate.buttonpos == ButtonPlacement.LEFT)? align = {"right", "left", "left", "left"} : align;
+			string[] align = {"left", "right", "right", "right"}; // don't translate!
+			(windowstate.buttonpos == ButtonPlacement.LEFT)? align = {"right", "left", "left", "left"} : align; // don't translate!
 
 			int b_index = 0;
 			foreach (Button b in decisionbuttons) {
@@ -1084,8 +1085,6 @@ namespace Budgie {
 			dir_liststore.set(iter, Column.DISPLAYEDNAME, mention);
 			dir_liststore.set(iter, Column.ICON, iconname);
 			dir_liststore.set(iter, Column.ISSEPARATOR, separator);
-
-			(path == null)? path = "#None" : path;
 			alldirs += path;
 		}
 
@@ -1180,7 +1179,8 @@ namespace Budgie {
 			}
 
 			// Other -> call Filebrowser (path = null)
-			create_row(null, "Other...", null, false);
+			// 'Other' is about setting a custom directory on a dropdown list
+			create_row(null, _("Other..."), null, false);
 
 			// set separator
 			pickdir_combo.set_row_separator_func(is_separator);
@@ -1266,7 +1266,8 @@ namespace Budgie {
 		private void get_customdir() {
 			// set custom dir to found dir
 			Gtk.FileChooserDialog dialog = new Gtk.FileChooserDialog(
-				"Open Folder", this, Gtk.FileChooserAction.SELECT_FOLDER,("Cancel"), Gtk.ResponseType.CANCEL, ("Open"),Gtk.ResponseType.ACCEPT, null
+				_("Open Folder"), this, Gtk.FileChooserAction.SELECT_FOLDER,
+				_("Cancel"), Gtk.ResponseType.CANCEL, _("Open"),Gtk.ResponseType.ACCEPT, null
 			);
 
 			dialog.response.connect(save_customdir);
