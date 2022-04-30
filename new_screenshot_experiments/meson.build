@@ -50,8 +50,8 @@ resource_data = files(
   'icons/selectselection-symbolic.svg',
   'icons/shootscreen-symbolic.svg',
   'icons/saveshot-noaccess-symbolic.svg',
-  'ui/screenshothome.ui',
-  'ui/aftershot.ui',
+  'screenshothome.ui',
+  'aftershot.ui',
 )
 
 install_data('icons/org.buddiesofbudgie.screenshot.svg',
@@ -61,6 +61,7 @@ install_data('icons/org.buddiesofbudgie.screenshot.svg',
 
 control_sources = [
   'budgie_screenshot.vala',
+  'budgie_screenshot_init.vala',
 ]
 
 ScreenshotControlDependencies = [

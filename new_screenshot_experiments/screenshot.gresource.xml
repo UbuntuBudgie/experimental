@@ -12,7 +12,7 @@
     <file alias="saveshot-noaccess-symbolic.svg">icons/saveshot-noaccess-symbolic.svg</file>
   </gresource>
   <gresource prefix="/org/buddiesofbudgie/Screenshot">
-    <file preprocess="xml-stripblanks" compressed="true">ui/screenshothome.ui</file>
-    <file preprocess="xml-stripblanks" compressed="true">ui/aftershot.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">screenshothome.ui</file>
+    <file preprocess="xml-stripblanks" compressed="true">aftershot.ui</file>
   </gresource>
 </gresources>

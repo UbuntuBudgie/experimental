@@ -283,7 +283,16 @@ namespace Budgie {
 
 		private void play_shuttersound(int timeout, string[]? args=null) {
 			// todo: we should probably not hardcode the soundfile?
-			Gst.init(ref args);
+			try {
+				var check = Gst.init_check(ref args);
+				if (!check) {
+					warning("Could not initialise gstreamer");
+					return;
+				}
+			}
+			catch (Error e) {
+				error ("Error: %s", e.message);
+			}
 			Gst.Element pipeline;
 
 			try {
@@ -309,7 +318,7 @@ namespace Budgie {
 		}
 	}
 
-	[GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/ui/screenshothome.ui")]
+	[GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/screenshothome.ui")]
 	class ScreenshotHomeWindow : Gtk.Window {
 
 		Gtk.HeaderBar topbar;
@@ -425,8 +434,8 @@ namespace Budgie {
 			}
 		}
 
-		private Popover make_info_popover(Button b) {
-			Popover newpopover = new Gtk.Popover(b);
+		private Gtk.Popover make_info_popover(Button b) {
+			Gtk.Popover newpopover = new Gtk.Popover(b);
 			Grid popovergrid = new Gtk.Grid();
 			set_margins(popovergrid, 15, 15, 15, 15);
 			Label[] shortcutnames = {
@@ -514,7 +523,7 @@ namespace Budgie {
 			});
 
 			Gtk.Button helpbutton = new Gtk.Button();
-			Popover helppopover = make_info_popover(helpbutton);
+			Gtk.Popover helppopover = make_info_popover(helpbutton);
 			helpbutton.clicked.connect(() => {
 				update_current_shortcuts();
 				helppopover.set_visible(true);
@@ -764,7 +773,7 @@ namespace Budgie {
 		}
 	}
 
-	[GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/ui/aftershot.ui")]
+	[GtkTemplate (ui="/org/buddiesofbudgie/Screenshot/aftershot.ui")]
 	class AfterShotWindow : Gtk.Window {
 		/*
 		* after the screenshot was taken, we need to present user a window
@@ -1314,27 +1323,5 @@ namespace Budgie {
 		}
 
 		return -1;
-	}
-
-	public static int main(string[] args) {
-		Gtk.init(ref args);
-		try {
-			client = GLib.Bus.get_proxy_sync (
-				BusType.SESSION, "org.buddiesofbudgie.Screenshot",
-				("/org/buddiesofbudgie/Screenshot")
-			);
-		}
-		catch (Error e) {
-			stderr.printf ("%s\n", e.message);
-		}
-		try {
-			Budgie.ScreenshotServer server = new Budgie.ScreenshotServer();
-			server.setup_dbus();
-		}
-		catch (Error e) {
-			stderr.printf ("%s\n", e.message);
-		}
-		Gtk.main();
-		return 0;
 	}
 }
