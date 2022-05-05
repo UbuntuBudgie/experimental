@@ -29,10 +29,7 @@ program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 
-namespace Budgie {
-
-	ScreenshotClient client;
-
+namespace BudgieScr {
 	enum WindowState {
 		NONE,
 		MAINWINDOW,
@@ -151,15 +148,15 @@ namespace Budgie {
 				conn.register_object("/org/buddiesofbudgie/ScreenshotControl",	new ScreenshotServer());
 			}
 			catch (IOError e) {
-				stderr.printf ("Could not register service\n");
+				warning("on_bus_acquired Could not register service\n");
 			}
 		}
 
 		public void setup_dbus() throws Error {
 			GLib.Bus.own_name (
 				BusType.SESSION, "org.buddiesofbudgie.ScreenshotControl",
-				BusNameOwnerFlags.NONE, on_bus_acquired,
-				() => {}, () => stderr.printf ("Could not acquire name\n"));
+				BusNameOwnerFlags.ALLOW_REPLACEMENT|BusNameOwnerFlags.REPLACE, on_bus_acquired,
+				() => {}, () => warning("setup_dbus Could not acquire name\n"));
 		}
 
 	}
@@ -182,8 +179,22 @@ namespace Budgie {
 		bool include_cursor;
 		bool include_frame;
 		CurrentState windowstate;
+		static ScreenshotClient? client=null;
 
 		public MakeScreenshot(int[]? area) {
+
+			if (client == null) {
+				try {
+					client = GLib.Bus.get_proxy_sync (
+						BusType.SESSION, "org.buddiesofbudgie.Screenshot",
+						("/org/buddiesofbudgie/Screenshot")
+					);
+				}
+				catch (Error e) {
+					warning("MakeScreenshot get_proxy_sync %s\n", e.message);
+					client=null;
+				}
+			}
 			windowstate = new CurrentState();
 			this.area = area;
 			scale = get_scaling();
@@ -226,7 +237,7 @@ namespace Budgie {
 				yield client.ScreenshotWindow(include_frame, include_cursor, true, windowstate.tempfile_path, out success, out filename_used);
 			}
 			catch (Error e) {
-				stderr.printf ("%s, failed to make screenshot\n", e.message);
+				warning("shoow_window %s, failed to make screenshot\n", e.message);
 				windowstate.statechanged(WindowState.NONE);
 			}
 
@@ -245,7 +256,7 @@ namespace Budgie {
 				yield client.Screenshot(include_cursor, true, windowstate.tempfile_path, out success, out filename_used);
 			}
 			catch (Error e) {
-				stderr.printf ("%s, failed to make screenhot\n", e.message);
+				warning("shoot_screen %s, failed to make screenhot\n", e.message);
 				windowstate.statechanged(WindowState.NONE);
 			}
 			if (success) {
@@ -273,7 +284,7 @@ namespace Budgie {
 				);
 			}
 			catch (Error e) {
-				stderr.printf ("%s, failed to make screenhot\n", e.message);
+				warning("shoot_area %s, failed to make screenhot\n", e.message);
 				windowstate.statechanged(WindowState.NONE);
 			}
 			if (success) {
@@ -1022,7 +1033,7 @@ namespace Budgie {
 				pxb.save(usedpath, extension);
 			}
 			catch (Error e) {
-				stderr.printf ("%s\n", e.message);
+				warning("save_tofile %s\n", e.message);
 				Button savebutton = decisionbuttons[1];
 				set_buttoncontent(
 					savebutton, "saveshot-noaccess-symbolic"
@@ -1219,7 +1230,7 @@ namespace Budgie {
 				return get_icon_fromgicon(icon);
 			}
 			catch (Error e) {
-				stderr.printf ("%s\n", e.message);
+				warning("lookup_icon_name %s\n", e.message);
 
 				return "";
 			}

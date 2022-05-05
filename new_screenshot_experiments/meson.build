@@ -60,7 +60,7 @@ install_data('icons/org.buddiesofbudgie.screenshot.svg',
 
 
 control_sources = [
-  'budgie_screenshot.vala',
+  'screenshot.vala',
   'budgie_screenshot_init.vala',
 ]
 
