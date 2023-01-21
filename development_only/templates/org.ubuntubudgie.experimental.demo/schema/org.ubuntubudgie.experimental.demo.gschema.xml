@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.ubuntubudgie.experimental.demo">
+    <key type="b" name="do-nothing">
+      <default>true</default>
+      <summary>Do nothing</summary>
+      <description>This does nothing</description>
+    </key>
+  </schema>
+</schemalist>
