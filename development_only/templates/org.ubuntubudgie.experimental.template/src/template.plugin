@@ -1,0 +1,9 @@
+[Plugin]
+Module=org.ubuntubudgie.experimental.template
+Builtin=false
+Name=Template Widget
+Description=Template Raven Widget
+Authors=Sam Lane
+Copyright=Ubuntu Budgie Developers
+Website=https://www.ubuntubudgie.org
+Icon=template-widget-icon
