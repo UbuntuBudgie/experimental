@@ -20,6 +20,8 @@ public class TestRavenPlugin : Budgie.RavenPlugin, Peas.ExtensionBase {
 
 public class TestRavenWidget : Budgie.RavenWidget {
 	private Gtk.Revealer? content_revealer = null;
+	private uint timeout_id = 0;
+	private int count = 0;
 
 	public TestRavenWidget(string uuid, GLib.Settings? settings) {
 		initialize(uuid, settings);
@@ -73,12 +75,33 @@ public class TestRavenWidget : Budgie.RavenWidget {
 		rows.set_column_spacing(8);
 		content.add(rows);
 
-		Gtk.Label hellolabel = new Gtk.Label("Test Label");
+		Gtk.Label hellolabel = new Gtk.Label("Count=");
 		Gtk.Button hellobutton = new Gtk.Button();
 		hellobutton.set_label("Test Button");
 		rows.attach(hellolabel, 0, 0, 1, 1);
 		rows.attach(hellobutton, 0, 1, 1, 1);
 		show_all();
+
+		/* 
+		 * raven_expaneded signal - triggered when Raven is expanded or closed
+		 * (borrowed from Usage Monitor) - widget counter will increase while
+		 * Raven is open and be dormant while Raven is closed.
+		 */
+		raven_expanded.connect((expanded) => {
+			if (!expanded && timeout_id != 0) {
+				Source.remove(timeout_id);
+				timeout_id = 0;
+			} else if (expanded && timeout_id == 0) {
+				timeout_id = Timeout.add(1000, () => {
+					hellolabel.set_text("Count=" + count.to_string());
+					count++;
+					if (count > 99) {
+						count = 0;
+					}
+					return GLib.Source.CONTINUE;
+				});
+			}
+		});
 	}
 
 	public override Gtk.Widget build_settings_ui() {
@@ -93,7 +116,7 @@ public class TestRavenWidgetSettings : Gtk.Grid {
 	public TestRavenWidgetSettings (Settings? settings) {
 		button = new Gtk.Button();
 		button.set_label("- Test Settings Button -");
-		hello = new Gtk.Label("OK");
+		hello = new Gtk.Label("Settings Label");
 		attach(hello, 0, 0, 1, 1);
 		attach(button, 0, 1, 1, 1);
 		show_all();
