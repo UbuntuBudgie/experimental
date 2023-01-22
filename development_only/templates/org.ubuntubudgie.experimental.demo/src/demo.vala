@@ -8,9 +8,9 @@
  * (at your option) any later version.
  */
 
-public class TestRavenPlugin : Budgie.RavenPlugin, Peas.ExtensionBase {
+public class DemoRavenPlugin : Budgie.RavenPlugin, Peas.ExtensionBase {
 	public Budgie.RavenWidget new_widget_instance(string uuid, GLib.Settings? settings) {
-		return new TestRavenWidget(uuid, settings);
+		return new DemoRavenWidget(uuid, settings);
 	}
 
 	public bool supports_settings() {
@@ -18,12 +18,12 @@ public class TestRavenPlugin : Budgie.RavenPlugin, Peas.ExtensionBase {
 	}
 }
 
-public class TestRavenWidget : Budgie.RavenWidget {
+public class DemoRavenWidget : Budgie.RavenWidget {
 	private Gtk.Revealer? content_revealer = null;
 	private uint timeout_id = 0;
 	private int count = 0;
 
-	public TestRavenWidget(string uuid, GLib.Settings? settings) {
+	public DemoRavenWidget(string uuid, GLib.Settings? settings) {
 		initialize(uuid, settings);
 
 		var main_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
@@ -39,7 +39,7 @@ public class TestRavenWidget : Budgie.RavenWidget {
 		icon.margin_end = 10;
 		header.add(icon);
 
-		var header_label = new Gtk.Label("Ubuntu Budgie Test");
+		var header_label = new Gtk.Label("Ubuntu Budgie Demo");
 		header.add(header_label);
 
 		var content = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
@@ -75,14 +75,11 @@ public class TestRavenWidget : Budgie.RavenWidget {
 		rows.set_column_spacing(8);
 		content.add(rows);
 
-		Gtk.Label hellolabel = new Gtk.Label("Count=");
-		Gtk.Button hellobutton = new Gtk.Button();
-		hellobutton.set_label("Test Button");
-		rows.attach(hellolabel, 0, 0, 1, 1);
-		rows.attach(hellobutton, 0, 1, 1, 1);
+		Gtk.Label count_label = new Gtk.Label("Count = 0");
+		rows.attach(count_label, 0, 0, 1, 1);
 		show_all();
 
-		/* 
+		/*
 		 * raven_expaneded signal - triggered when Raven is expanded or closed
 		 * (borrowed from Usage Monitor) - widget counter will increase while
 		 * Raven is open and be dormant while Raven is closed.
@@ -93,11 +90,12 @@ public class TestRavenWidget : Budgie.RavenWidget {
 				timeout_id = 0;
 			} else if (expanded && timeout_id == 0) {
 				timeout_id = Timeout.add(1000, () => {
-					hellolabel.set_text("Count=" + count.to_string());
-					count++;
-					if (count > 99) {
+					if (count > 10000) {
 						count = 0;
+					} else {
+						count++;
 					}
+					count_label.set_text("Count = " + count.to_string());
 					return GLib.Source.CONTINUE;
 				});
 			}
@@ -105,19 +103,19 @@ public class TestRavenWidget : Budgie.RavenWidget {
 	}
 
 	public override Gtk.Widget build_settings_ui() {
-		return new TestRavenWidgetSettings(get_instance_settings());
+		return new DemoRavenWidgetSettings(get_instance_settings());
 	}
 }
 
-public class TestRavenWidgetSettings : Gtk.Grid {
-	Gtk.Label hello;
+public class DemoRavenWidgetSettings : Gtk.Grid {
+	Gtk.Label label;
 	Gtk.Button button;
 
-	public TestRavenWidgetSettings (Settings? settings) {
+	public DemoRavenWidgetSettings (Settings? settings) {
 		button = new Gtk.Button();
-		button.set_label("- Test Settings Button -");
-		hello = new Gtk.Label("Settings Label");
-		attach(hello, 0, 0, 1, 1);
+		button.set_label("OK");
+		label = new Gtk.Label("Settings");
+		attach(label, 0, 0, 1, 1);
 		attach(button, 0, 1, 1, 1);
 		show_all();
 	}
@@ -127,5 +125,5 @@ public class TestRavenWidgetSettings : Gtk.Grid {
 public void peas_register_types(TypeModule module) {
 	// boilerplate - all modules need this
 	var objmodule = module as Peas.ObjectModule;
-	objmodule.register_extension_type(typeof(Budgie.RavenPlugin), typeof(TestRavenPlugin));
+	objmodule.register_extension_type(typeof(Budgie.RavenPlugin), typeof(DemoRavenPlugin));
 }
