@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
   <schema id="org.ubuntubudgie.experimental.demo">
-    <key type="b" name="do-nothing">
+    <key type="b" name="show-seconds">
       <default>true</default>
-      <summary>Do nothing</summary>
-      <description>This does nothing</description>
+      <summary>Show the seconds</summary>
+      <description>Include the seconds in the uptime</description>
     </key>
   </schema>
 </schemalist>

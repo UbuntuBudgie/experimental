@@ -1,0 +1,10 @@
+[Plugin]
+Loader=python3
+Module=org_ubuntubudgie_experimental_pythonravenwidget
+Name=Python Widget
+Built-in=false
+Description=Example of a Python Widget
+Authors=Sam Lane
+Copyright=Copyright © 2023 Ubuntu Budgie Developers
+Website=https://ubuntubudgie.org
+Icon=python-widget-icon-symbolic

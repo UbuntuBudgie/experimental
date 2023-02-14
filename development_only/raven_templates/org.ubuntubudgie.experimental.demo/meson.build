@@ -11,14 +11,9 @@ libdir = join_paths(prefix, get_option('libdir'))
 datadir = join_paths(prefix, get_option('datadir'))
 
 LOCALE_DIR = join_paths(prefix, get_option('localedir'))
-
-VAPI_DIR = join_paths(meson.source_root(), 
-                      'vapi')
-
+VAPI_DIR = join_paths(meson.source_root(), 'vapi')
 PIXMAPS_DIR = join_paths(datadir, 'pixmaps')
-
 LIB_INSTALL_DIR = join_paths(prefix, libdir, 'budgie-desktop', 'raven-plugins', meson.project_name())
-
 SCHEMADIR = join_paths(prefix, 'share', 'glib-2.0', 'schemas')
 
 install_data('schema/org.ubuntubudgie.experimental.demo.gschema.xml',

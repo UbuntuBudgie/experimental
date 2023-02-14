@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.ubuntubudgie.experimental.pythonravenwidget">
+    <key type="b" name="boolean-setting">
+      <default>true</default>
+      <summary>Boolean Setting</summary>
+      <description>Boolean Setting</description>
+    </key>
+  </schema>
+</schemalist>
