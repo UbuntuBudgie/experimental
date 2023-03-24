@@ -1,3 +1,0 @@
-defaults 							/usr/share/budgie-hotcorners
-org.ubuntubudgie.budgie-extras.HotCorners.desktop		/usr/share/applications
-org.ubuntubudgie.budgie-extras.HotCorners-autostart.desktop	/etc/xdg/autostart
