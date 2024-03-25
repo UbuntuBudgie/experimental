@@ -10,6 +10,15 @@ keyboard:
 packages:
   - ubuntu-budgie-desktop-minimal
   - remmina
+late-command:
+  - apt remove ubuntu-budgie-desktop
+  - snap remove ubuntu-budgie-welcome
+  - apt autoremove
 updates: all
 timezone: Europe/London
-
+storage:
+    layout:
+      name: lvm
+      password: password
+      match:
+        size: largest
