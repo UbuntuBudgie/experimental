@@ -1,6 +1,15 @@
 version: 1
 identity:
+    realname: ''
     hostname: hostname
     password: "$6$SFSJImkPPNDMWnW1$AGxOm4TudWtN155NmI2B/BNdjs7E0.jo2JAf8tJF.KDtIBTlv3n7YJ2EkRb0JoG2VOnSAszrynJUE.U8JSu2j."
     username: ubuntu
+locale: en_GB.UTF-8
+keyboard:
+  layout: gb
+packages:
+  - ubuntu-budgie-desktop-minimal
+  - remmina
+updates: all
+timezone: Europe/London
 
