@@ -1,6 +1,6 @@
 version: 1
 identity:
     hostname: hostname
-    username: username
-    password: $6$SFSJImkPPNDMWnW1$AGxOm4TudWtN155NmI2B/BNdjs7E0.jo2JAf8tJF.KDtIBTlv3n7YJ2EkRb0JoG2VOnSAszrynJUE.U8JSu2j.
+    password: "$6$SFSJImkPPNDMWnW1$AGxOm4TudWtN155NmI2B/BNdjs7E0.jo2JAf8tJF.KDtIBTlv3n7YJ2EkRb0JoG2VOnSAszrynJUE.U8JSu2j."
+    username: ubuntu
 
