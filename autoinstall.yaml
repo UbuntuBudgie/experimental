@@ -13,7 +13,10 @@ source:
 packages:
   - remmina
 late-commands:
-  - curtin in-target --target=/target -- snap remove --no-wait ubuntu-budgie-welcome || true
+  - curtin in-target --target=/target -- snap remove --purge --no-wait ubuntu-budgie-welcome || true
+  - curtin in-target --target=/target -- snap remove --purge --no-wait snap-store || true
+  - curtin in-target --target=/target -- snap remove --purge --no-wait snapd-desktop-integration || true
+  - curtin in-target --target=/target -- apt-get -y --quiet=2 remove onboard magnus  || true
   - curtin in-target --target=/target -- apt-get -y --quiet=2 autoremove || true
 updates: all
 timezone: Europe/London
