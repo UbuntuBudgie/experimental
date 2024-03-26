@@ -13,11 +13,22 @@ source:
 packages:
   - remmina
 late-commands:
-  - curtin in-target --target=/target -- snap remove --purge --no-wait ubuntu-budgie-welcome || true
-  - curtin in-target --target=/target -- snap remove --purge --no-wait snap-store || true
-  - curtin in-target --target=/target -- snap remove --purge --no-wait snapd-desktop-integration || true
+  - curtin in-target --target=/target -- find /var/lib/snapd -name "snapd-desktop*" -delete
+  - curtin in-target --target=/target -- rm -y /snap/bin/snap-store*
+  - curtin in-target --target=/target -- find /var/lib/snapd -name "ubuntu-budgie-desktop*" -delete
+  - curtin in-target --target=/target -- rm -y /snap/bin/ubuntu-budgie-welcome*
+  - curtin in-target --target=/target -- rm -y /snap/bin/budgie*
+  - curtin in-target --target=/target -- rm -y /snap/bin/snap-store*
+  - curtin in-target --target=/target -- find /var/lib/snapd -name "snap-store*" -delete
+  - curtin in-target --target=/target -- rm -rf /var/lib/snap-store
+  - curtin in-target --target=/target -- rm -rf /var/lib/ubuntu-budgie-welcome
+  - curtin in-target --target=/target -- rm -rf /var/lib/snapd-desktop-integration
+  - curtin in-target --target=/target -- rm -rf /snap/snap-store
+  - curtin in-target --target=/target -- rm -rf /snap/ubuntu-budgie-welcome
+  - curtin in-target --target=/target -- rm -rf /snap/snapd-desktop-integration
   - curtin in-target --target=/target -- apt-get -y --quiet=2 remove onboard magnus  || true
   - curtin in-target --target=/target -- apt-get -y --quiet=2 autoremove || true
+  - curtin in-target -- apt install -y $(check-language-support -l en)
 updates: all
 timezone: Europe/London
 storage:
