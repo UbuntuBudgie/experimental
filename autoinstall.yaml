@@ -7,12 +7,11 @@ identity:
 locale: en_GB.UTF-8
 keyboard:
   layout: gb
-autoinstall:
-  source:
-    id: ubuntu-budgie-desktop-minimal
+source:
+  id: ubuntu-budgie-desktop-minimal
 packages:
   - remmina
-late-command:
+late-commands:
   - curtin in-target -- snap remove ubuntu-budgie-welcome
   - curtin in-target -- apt autoremove
 updates: all
