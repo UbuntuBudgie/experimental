@@ -1,3 +1,4 @@
+# https://github.com/canonical/subiquity
 version: 1
 identity:
     realname: ''
@@ -12,8 +13,8 @@ source:
 packages:
   - remmina
 late-commands:
-  - curtin in-target -- snap remove ubuntu-budgie-welcome
-  - curtin in-target -- apt autoremove
+  - curtin in-target --target=/target -- snap remove --no-wait ubuntu-budgie-welcome || true
+  - curtin in-target --target=/target -- apt-get -y --quiet=2 autoremove || true
 updates: all
 timezone: Europe/London
 storage:
