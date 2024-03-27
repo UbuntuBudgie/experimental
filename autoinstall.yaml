@@ -1,36 +1,30 @@
 # https://github.com/canonical/subiquity
 version: 1
+# sets the default user name and password - in this case "password" - has been created via mkpasswd -m sha-512
 identity:
     realname: ''
     hostname: hostname
     password: "$6$SFSJImkPPNDMWnW1$AGxOm4TudWtN155NmI2B/BNdjs7E0.jo2JAf8tJF.KDtIBTlv3n7YJ2EkRb0JoG2VOnSAszrynJUE.U8JSu2j."
     username: ubuntu
+# set the default locale and keyboard
 locale: en_GB.UTF-8
 keyboard:
   layout: gb
+# defines the start point - so minimal - default if omitted is a full install
 source:
   id: ubuntu-budgie-desktop-minimal
+# what extra packages to be installed
 packages:
   - remmina
+# what to run immediately after the installation - curtin with target means to perform
+# the operation on the target install
 late-commands:
-  - curtin in-target --target=/target -- find /var/lib/snapd -name "snapd-desktop*" -delete
-  - curtin in-target --target=/target -- rm -y /snap/bin/snap-store*
-  - curtin in-target --target=/target -- find /var/lib/snapd -name "ubuntu-budgie-desktop*" -delete
-  - curtin in-target --target=/target -- rm -y /snap/bin/ubuntu-budgie-welcome*
-  - curtin in-target --target=/target -- rm -y /snap/bin/budgie*
-  - curtin in-target --target=/target -- rm -y /snap/bin/snap-store*
-  - curtin in-target --target=/target -- find /var/lib/snapd -name "snap-store*" -delete
-  - curtin in-target --target=/target -- rm -rf /var/lib/snap-store
-  - curtin in-target --target=/target -- rm -rf /var/lib/ubuntu-budgie-welcome
-  - curtin in-target --target=/target -- rm -rf /var/lib/snapd-desktop-integration
-  - curtin in-target --target=/target -- rm -rf /snap/snap-store
-  - curtin in-target --target=/target -- rm -rf /snap/ubuntu-budgie-welcome
-  - curtin in-target --target=/target -- rm -rf /snap/snapd-desktop-integration
-  - curtin in-target --target=/target -- apt-get -y --quiet=2 remove onboard magnus  || true
-  - curtin in-target --target=/target -- apt-get -y --quiet=2 autoremove || true
+  - curtin in-target --target=/target -- apt-get -y --quiet=2 remove onboard magnus
+  - curtin in-target --target=/target -- apt-get -y --quiet=2 autoremove
   - curtin in-target -- apt install -y $(check-language-support -l en)
 updates: all
 timezone: Europe/London
+# define what type of install - here is lvm with a password to make an encrypted installation
 storage:
     layout:
       name: lvm
