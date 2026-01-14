@@ -1,0 +1,6 @@
+option('budgie-version',
+  type: 'combo',
+  value: '3.0',
+  description: 'Budgie library version to build against (1.0, 2.0, or 3.0)',
+  choices: ['1.0', '2.0', '3.0']
+)

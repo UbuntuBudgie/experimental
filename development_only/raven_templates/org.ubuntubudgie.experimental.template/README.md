@@ -1,18 +1,37 @@
 # Raven Widget Template Plugin
 
-Barebones Raven Widget Template
+Barebones Raven Widget Template with Settings
 
 Dependencies
 
 * gtk+-3.0
+
+For Budgie Desktop 10.9.3 and earlier (Raven plugins introduced in 10.7)
+
 * budgie-raven-plugin-1.0
-* libpeas-gtk-1.0
+* libpeas-1.0
 
-To install (for Debian/Ubuntu):
+For Budgie Destkop 10.9.4 (and later 10.9.x versions)
 
-    mkdir build
-    cd build
-    meson --prefix=/usr --libdir=/usr/lib
+* budgie-raven-plugin-2.0
+* libpeas-2
+
+For 10.10 (Wayland)
+
+* budgie-raven-plugin-3.0
+* libpeas-2
+
+To specify the version to build for, use ```-Dbudgie-version``` option
+```
+ -Dbudgie-version=1.0  (for 10.9.3 and ealier)
+ -Dbudgie-version=2.0  (for 10.9.4)
+ -Dbudgie-version=3.0  (for 10.10 and later)
+```
+
+To install (for Debian/Ubuntu): 
+
+    mkdir build && cd build
+    meson --prefix=/usr -Dbudgie-version=[1.0, 2.0, 3.0]
     ninja
     sudo ninja install
 

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.ubuntubudgie.experimental.template">
+    <key type="b" name="demo-setting">
+      <default>true</default>
+      <summary>Just a demo setting</summary>
+      <description>Just a demo setting</description>
+    </key>
+  </schema>
+</schemalist>

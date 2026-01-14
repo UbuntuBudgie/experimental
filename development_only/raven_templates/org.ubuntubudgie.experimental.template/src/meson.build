@@ -2,8 +2,8 @@ TemplateWidgetSources = ['template.vala']
 
 TemplateWidgetDependencies = [
     dependency('gtk+-3.0', version: '>=3.18'), 
-    dependency('libpeas-gtk-1.0'),
-    dependency('budgie-raven-plugin-1.0'),
+    peas_dep,
+    raven_dep,
     meson.get_compiler('c').find_library('m', required: false)
 ]
 
