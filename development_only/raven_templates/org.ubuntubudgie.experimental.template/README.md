@@ -37,7 +37,7 @@ sudo apt install meson valac budgie-core-dev
 To build and install for Budgie Deskop on Ubuntu Budgie 23.04 - 25.10 (Budgie Desktop 10.7 - 10.9.3):
 ```
 mkdir build && cd build
-meson --prefix=/usr --libdir=/usr/lib -Dbudgie-version=1.0
+meson setup --prefix=/usr --libdir=/usr/lib -Dbudgie-version=1.0
 ninja
 sudo ninja install
 ```
@@ -46,7 +46,7 @@ To build and install on Ubuntu 26.04 and later (Budgie Desktop 10.10 Wayland), o
 
 ```
 mkdir build && cd build
-meson --prefix=/usr -Dbudgie-version=3.0
+meson setup --prefix=/usr -Dbudgie-version=3.0
 ninja
 sudo ninja install
 ```
